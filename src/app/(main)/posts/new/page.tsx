@@ -1,17 +1,17 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PostForm } from '@/components/posts';
 import { useCategories, useCreatePost, useAuth } from '@/hooks';
 import { ROUTES } from '@/lib/constants';
 import type { PostFormData } from '@/lib/validations/post';
 import type { PostType } from '@/types';
 
-export default function NewPostPage() {
+function NewPostForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultType = (searchParams.get('type') as PostType) || 'teach';
@@ -20,7 +20,6 @@ export default function NewPostPage() {
   const { categories, isLoading: categoriesLoading } = useCategories();
   const { createPost, isSubmitting } = useCreatePost();
 
-  // ログインしていない場合はログインページへ
   if (!authLoading && !isAuthenticated) {
     router.push(`${ROUTES.LOGIN}?redirect=${ROUTES.POST_NEW}`);
     return null;
@@ -28,7 +27,7 @@ export default function NewPostPage() {
 
   const handleSubmit = async (data: PostFormData) => {
     try {
-      const post = await createPost(data);
+      const post = await createPost(data) as { id: string };
       toast.success('投稿しました！');
       router.push(`/posts/${post.id}`);
     } catch (error) {
@@ -42,8 +41,8 @@ export default function NewPostPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 w-32 bg-muted rounded" />
-            <div className="h-64 bg-muted rounded-xl" />
+            <div className="h-8 w-32 bg-gray-200 rounded" />
+            <div className="h-64 bg-gray-200 rounded-xl" />
           </div>
         </div>
       </div>
@@ -53,29 +52,32 @@ export default function NewPostPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        {/* Back Link */}
         <Link
           href={ROUTES.EXPLORE}
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
           戻る
         </Link>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl">新しい投稿を作成</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PostForm
-              categories={categories}
-              defaultType={defaultType}
-              onSubmit={handleSubmit}
-              isSubmitting={isSubmitting}
-            />
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl shadow-lg border p-6">
+          <h1 className="text-2xl font-bold mb-6">新しい投稿を作成</h1>
+          <PostForm
+            categories={categories}
+            defaultType={defaultType}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+          />
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function NewPostPage() {
+  return (
+    <Suspense fallback={<div className="text-center py-8">Loading...</div>}>
+      <NewPostForm />
+    </Suspense>
   );
 }
