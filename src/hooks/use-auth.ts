@@ -164,6 +164,7 @@ export function useAuth() {
 
     const { data, error } = await supabase
       .from('profiles')
+      //@ts-ignore
       .update(updates)
       .eq('id', user.id)
       .select()
