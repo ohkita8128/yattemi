@@ -26,8 +26,8 @@ export function useAuth() {
   // プロフィールを取得
   const fetchProfile = useCallback(
     async (userId: string) => {
-      const { data, error } = await supabase
-        .from('profiles')
+      const { data, error } = await (supabase
+        .from('profiles') as any)
         .select('*')
         .eq('id', userId)
         .single();
