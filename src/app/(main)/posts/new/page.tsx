@@ -30,7 +30,7 @@ export default function NewPostPage() {
     try {
       const post = await createPost(data);
       toast.success('投稿しました！');
-      router.push(ROUTES.POST_DETAIL(post.id));
+      router.push(`/posts/${post.id}`);
     } catch (error) {
       console.error('Error creating post:', error);
       toast.error('投稿に失敗しました');
