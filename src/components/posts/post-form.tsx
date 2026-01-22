@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { LevelSlider, LevelRangeSlider } from '@/components/ui/level-slider';
 import { postSchema, type PostFormData } from '@/lib/validations/post';
 import { POST_TYPES } from '@/lib/constants';
 import type { Category, PostType } from '@/types';
@@ -20,6 +21,7 @@ import type { Category, PostType } from '@/types';
 interface PostFormProps {
   categories: Category[];
   defaultType?: PostType;
+  defaultValues?: Partial<PostFormData>;
   onSubmit: (data: PostFormData) => Promise<void>;
   isSubmitting?: boolean;
 }
@@ -27,6 +29,7 @@ interface PostFormProps {
 export function PostForm({
   categories,
   defaultType = 'teach',
+  defaultValues,
   onSubmit,
   isSubmitting,
 }: PostFormProps) {
@@ -43,11 +46,18 @@ export function PostForm({
       maxApplicants: 1,
       isOnline: true,
       tags: [],
+      myLevel: 5,
+      targetLevelMin: 0,
+      targetLevelMax: 10,
+      ...defaultValues,
     },
   });
 
   const selectedType = watch('type');
   const isOnline = watch('isOnline');
+  const myLevel = watch('myLevel') ?? 5;
+  const targetLevelMin = watch('targetLevelMin') ?? 0;
+  const targetLevelMax = watch('targetLevelMax') ?? 10;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -134,6 +144,26 @@ export function PostForm({
         {errors.categoryId && (
           <p className="text-sm text-destructive">{errors.categoryId.message}</p>
         )}
+      </div>
+
+      {/* My Level */}
+      <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
+        <LevelSlider
+          value={myLevel}
+          onChange={(v) => setValue('myLevel', v)}
+          label={selectedType === 'teach' ? 'あなたのレベル（先輩として）' : 'あなたの現在レベル'}
+        />
+      </div>
+
+      {/* Target Level Range */}
+      <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
+        <LevelRangeSlider
+          minValue={targetLevelMin}
+          maxValue={targetLevelMax}
+          onMinChange={(v) => setValue('targetLevelMin', v)}
+          onMaxChange={(v) => setValue('targetLevelMax', v)}
+          label={selectedType === 'teach' ? '教えたい相手のレベル' : '希望する先輩のレベル'}
+        />
       </div>
 
       {/* Max Applicants */}

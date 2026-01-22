@@ -6,3 +6,4 @@ export * from './use-likes';
 export * from './use-messages';
 export * from './use-reviews';
 export * from './use-challenges';
+export * from './use-follow';

@@ -48,6 +48,7 @@ export default function ChallengesPage() {
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
   const supabase = getClient();
 
+  // 未ログインの場合はログインページへ
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       router.push(`${ROUTES.LOGIN}?redirect=/challenges`);
@@ -200,24 +201,28 @@ export default function ChallengesPage() {
       </div>
 
       {filteredChallenges.length === 0 ? (
-        <div className="text-center py-16">
-          <Rocket className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500 mb-4">
+        <div className="bg-white rounded-2xl border shadow-sm p-12 text-center">
+          <Rocket className="h-16 w-16 text-gray-200 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-700 mb-2">
             {filter === 'all' 
-              ? 'まだチャレンジがありません' 
+              ? 'チャレンジがまだありません' 
               : filter === 'active'
               ? '進行中のチャレンジはありません'
               : '完了したチャレンジはありません'}
+          </h2>
+          <p className="text-gray-500 mb-6">
+            {filter === 'all' 
+              ? '「教えたい」投稿に応募して、新しいスキルを学んでみよう！'
+              : 'フィルターを変更してみてください'}
           </p>
-          <p className="text-sm text-gray-400 mb-6">
-            「教えたい」投稿に応募して新しいスキルを学ぼう！
-          </p>
-          <Link
-            href={ROUTES.EXPLORE}
-            className="inline-flex items-center justify-center h-10 px-6 rounded-xl bg-cyan-500 text-white font-medium hover:bg-cyan-600"
-          >
-            投稿を探す
-          </Link>
+          {filter === 'all' && (
+            <Link
+              href={ROUTES.EXPLORE}
+              className="inline-flex items-center justify-center h-12 px-6 rounded-xl bg-cyan-500 text-white font-medium hover:bg-cyan-600"
+            >
+              「教えたい」投稿を探す
+            </Link>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

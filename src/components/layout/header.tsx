@@ -13,7 +13,8 @@ import {
   User,
   Settings,
   FileText,
-  Heart,
+  GraduationCap,
+  Rocket,
   ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '@/hooks';
@@ -166,12 +167,20 @@ export function Header() {
                       応募管理
                     </Link>
                     <Link
-                      href={ROUTES.MATCHES}
+                      href="/teach"
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
                     >
-                      <Heart className="h-4 w-4 text-gray-400" />
-                      マッチング
+                      <GraduationCap className="h-4 w-4 text-purple-500" />
+                      ティーチ
+                    </Link>
+                    <Link
+                      href="/challenges"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      <Rocket className="h-4 w-4 text-cyan-500" />
+                      チャレンジ
                     </Link>
                     <div className="border-t my-1" />
                     <Link
@@ -286,12 +295,20 @@ export function Header() {
                     応募管理
                   </Link>
                   <Link
-                    href={ROUTES.MATCHES}
+                    href="/teach"
                     onClick={closeMobileNav}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
                   >
-                    <Heart className="h-5 w-5 text-gray-500" />
-                    マッチング
+                    <GraduationCap className="h-5 w-5 text-purple-500" />
+                    ティーチ
+                  </Link>
+                  <Link
+                    href="/challenges"
+                    onClick={closeMobileNav}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
+                  >
+                    <Rocket className="h-5 w-5 text-cyan-500" />
+                    チャレンジ
                   </Link>
                 </div>
                 <div className="border-t pt-4 mt-4">

@@ -36,6 +36,25 @@ export const postSchema = z.object({
     .array(z.string().max(20, 'タグは20文字以内で入力してください'))
     .max(5, 'タグは5つまでです')
     .default([]),
+  // レベル関連
+  myLevel: z
+    .number()
+    .int()
+    .min(0, 'レベルは0以上です')
+    .max(10, 'レベルは10以下です')
+    .default(5),
+  targetLevelMin: z
+    .number()
+    .int()
+    .min(0, 'レベルは0以上です')
+    .max(10, 'レベルは10以下です')
+    .default(0),
+  targetLevelMax: z
+    .number()
+    .int()
+    .min(0, 'レベルは0以上です')
+    .max(10, 'レベルは10以下です')
+    .default(10),
 });
 
 export const postUpdateSchema = postSchema.partial();

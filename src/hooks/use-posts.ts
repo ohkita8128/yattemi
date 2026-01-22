@@ -160,6 +160,9 @@ export function useCreatePost() {
     isOnline: boolean;
     preferredSchedule?: string;
     tags: string[];
+    myLevel?: number;
+    targetLevelMin?: number;
+    targetLevelMax?: number;
   }) => {
     setIsSubmitting(true);
 
@@ -181,7 +184,10 @@ export function useCreatePost() {
           preferred_schedule: data.preferredSchedule || null,
           tags: data.tags,
           status: 'open',
-        }as any)
+          my_level: data.myLevel ?? 5,
+          target_level_min: data.targetLevelMin ?? 0,
+          target_level_max: data.targetLevelMax ?? 10,
+        } as any)
         .select()
         .single();
 
