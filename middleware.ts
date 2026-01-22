@@ -48,23 +48,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // ログイン済みユーザーがログイン/登録ページにアクセス
-  if (user && (pathname === '/login' || pathname === '/register')) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/dashboard';
-    return NextResponse.redirect(url);
-  }
-
-  // オンボーディング未完了チェック（ログイン済み & 認証必要ページ & オンボーディング以外）
-  if (user && !isPublicPath && pathname !== '/onboarding') {
+  // ログイン済みユーザーの場合
+  if (user) {
+    // オンボーディング状態を確認
     const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('onboarding_completed')
       .eq('id', user.id)
       .single();
 
-    // オンボーディング未完了ならリダイレクト
-    if (profile && profile.onboarding_completed === false) {
+    const needsOnboarding = profile && profile.onboarding_completed === false;
+
+    // ログイン/登録ページにいる場合
+    if (pathname === '/login' || pathname === '/register') {
+      const url = request.nextUrl.clone();
+      url.pathname = needsOnboarding ? '/onboarding' : '/dashboard';
+      return NextResponse.redirect(url);
+    }
+
+    // オンボーディングが必要なのに他のページにいる場合
+    if (needsOnboarding && pathname !== '/onboarding' && !isPublicPath) {
       const url = request.nextUrl.clone();
       url.pathname = '/onboarding';
       return NextResponse.redirect(url);
