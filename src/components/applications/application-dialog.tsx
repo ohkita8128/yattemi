@@ -44,8 +44,14 @@ export function ApplicationDialog({
       onClose();
     } catch (error) {
       console.error('Application error:', error);
-      toast.error('応募に失敗しました');
+      const err = error as any;
+      if (err?.code === '23505') {
+        toast.error('既に応募済みです');
+      } else {
+        toast.error('応募に失敗しました');
+      }
     }
+
   };
 
   return (

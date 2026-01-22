@@ -30,6 +30,12 @@ interface MatchWithDetails {
       avatar_url: string | null;
     };
   };
+  post_owner?: {
+    id: string;
+    username: string;
+    display_name: string;
+    avatar_url: string | null;
+  };
 }
 
 export default function MatchesPage() {
@@ -65,8 +71,20 @@ export default function MatchesPage() {
 
         if (error) throw error;
 
-        // 自分が関わっているマッチングのみフィルタ
-        const myMatches = (data || []).filter((match: MatchWithDetails) => {
+        // 投稿者情報を取得して、自分が関わっているマッチングのみフィルタ
+        const matchesWithOwners = await Promise.all(
+          (data || []).map(async (match: MatchWithDetails) => {
+            const { data: owner } = await (supabase as any)
+              .from('profiles')
+              .select('id, username, display_name, avatar_url')
+              .eq('id', match.application.post.user_id)
+              .single();
+            
+            return { ...match, post_owner: owner };
+          })
+        );
+
+        const myMatches = matchesWithOwners.filter((match) => {
           const isPostOwner = match.application.post.user_id === user.id;
           const isApplicant = match.application.applicant.id === user.id;
           return isPostOwner || isApplicant;
@@ -117,12 +135,13 @@ export default function MatchesPage() {
             const isPostOwner = match.application.post.user_id === user?.id;
             const partner = isPostOwner 
               ? match.application.applicant 
-              : null; // 投稿者情報は別途取得が必要
+              : match.post_owner;
 
             return (
-              <div
+              <Link
                 key={match.id}
-                className="bg-white rounded-xl border shadow-sm p-5"
+                href={`/matches/${match.id}`}
+                className="block bg-white rounded-xl border shadow-sm p-5 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start gap-4">
                   {/* Partner Avatar */}
@@ -140,12 +159,9 @@ export default function MatchesPage() {
 
                   {/* Content */}
                   <div className="flex-1">
-                    <Link
-                      href={`/posts/${match.application.post.id}`}
-                      className="font-semibold hover:text-orange-500"
-                    >
+                    <p className="font-semibold">
                       {match.application.post.title}
-                    </Link>
+                    </p>
                     
                     <p className="text-sm text-gray-500 mt-1">
                       {isPostOwner ? (
@@ -156,7 +172,12 @@ export default function MatchesPage() {
                           さんとマッチング
                         </>
                       ) : (
-                        'あなたの応募が承認されました'
+                        <>
+                          <span className="font-medium text-gray-700">
+                            {partner?.display_name}
+                          </span>
+                          さんの投稿に応募承認
+                        </>
                       )}
                     </p>
 
@@ -179,11 +200,11 @@ export default function MatchesPage() {
                   </div>
 
                   {/* Action */}
-                  <button className="p-2 rounded-lg hover:bg-gray-100">
-                    <MessageCircle className="h-5 w-5 text-gray-400" />
-                  </button>
+                  <div className="p-2 rounded-lg bg-orange-50 text-orange-500">
+                    <MessageCircle className="h-5 w-5" />
+                  </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>

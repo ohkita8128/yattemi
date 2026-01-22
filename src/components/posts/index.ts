@@ -1,6 +1,7 @@
-export { PostCard } from './post-card';
-export { PostCardSkeleton, PostCardSkeletonGrid } from './post-card-skeleton';
-export { PostList } from './post-list';
-export { PostFilters } from './post-filters';
-export { PostForm } from './post-form';
-export { PostTypeBadge } from './post-type-badge';
+export * from './post-card';
+export * from './post-card-skeleton';
+export * from './post-filters';
+export * from './post-form';
+export * from './post-list';
+export * from './post-type-badge';
+export * from './like-button';
