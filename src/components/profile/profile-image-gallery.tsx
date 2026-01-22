@@ -115,6 +115,7 @@ export function ProfileImageGallery({ userId, maxImages = 5 }: Props) {
         {/* 追加ボタン */}
         {images.length < maxImages && (
           <button
+            type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="aspect-square rounded-xl border-2 border-dashed border-gray-300 hover:border-orange-400 hover:bg-orange-50 transition flex flex-col items-center justify-center text-gray-400 hover:text-orange-500"
