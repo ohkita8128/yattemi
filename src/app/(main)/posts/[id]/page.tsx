@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -17,6 +18,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { PostTypeBadge } from '@/components/posts';
 import { CategoryBadge } from '@/components/common';
+import { ApplicationDialog } from '@/components/applications';
 import { usePost, useAuth } from '@/hooks';
 import { formatRelativeTime } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
@@ -28,6 +30,7 @@ export default function PostDetailPage() {
 
   const { post, isLoading, error } = usePost(postId);
   const { user, isAuthenticated } = useAuth();
+  const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
 
   const isOwner = user?.id === post?.user_id;
 
@@ -36,7 +39,7 @@ export default function PostDetailPage() {
       router.push(`${ROUTES.LOGIN}?redirect=${ROUTES.POST_DETAIL(postId)}`);
       return;
     }
-    toast.info('応募機能は Phase 3 で実装予定です');
+    setIsApplyDialogOpen(true);
   };
 
   const handleShare = async () => {
@@ -154,9 +157,12 @@ export default function PostDetailPage() {
                 >
                   編集する
                 </Link>
-                <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-2 font-medium hover:bg-gray-50">
+                <Link
+                  href="/applications"
+                  className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-2 font-medium hover:bg-gray-50"
+                >
                   応募を見る
-                </button>
+                </Link>
               </>
             ) : (
               <button
@@ -206,6 +212,17 @@ export default function PostDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Application Dialog */}
+      <ApplicationDialog
+        postId={post.id}
+        postTitle={post.title}
+        isOpen={isApplyDialogOpen}
+        onClose={() => setIsApplyDialogOpen(false)}
+        onSuccess={() => {
+          // 成功時の処理
+        }}
+      />
     </div>
   );
 }

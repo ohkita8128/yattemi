@@ -1,0 +1,6 @@
+プロジェクト: YatteMi!
+リポジトリ: https://github.com/ohkita8128/yattemi
+本番URL: https://yattemi.vercel.app
+Supabase: https://lbdrqjhifussacjgwnij.supabase.co
+完了: Phase 1, 2（認証・投稿）
+次: Phase 3（応募・マッチング）

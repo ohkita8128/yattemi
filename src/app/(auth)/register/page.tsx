@@ -53,27 +53,30 @@ export default function RegisterPage() {
 
   if (isSuccess) {
     return (
-      <Card className="border-0 shadow-large">
+      <Card className="border-0 shadow-lg">
         <CardContent className="pt-10 pb-10 text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
             <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
           <h2 className="text-2xl font-bold">確認メールを送信しました</h2>
-          <p className="text-muted-foreground">
+          <p className="text-gray-500">
             メールに記載されているリンクをクリックして
             <br />
             アカウントを有効化してください。
           </p>
-          <Button asChild className="mt-4">
-            <Link href={ROUTES.LOGIN}>ログインページへ</Link>
-          </Button>
+          <Link
+            href={ROUTES.LOGIN}
+            className="inline-flex items-center justify-center h-11 px-6 rounded-xl font-semibold bg-gradient-to-r from-orange-500 to-orange-600 text-white mt-4"
+          >
+            ログインページへ
+          </Link>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="border-0 shadow-large">
+    <Card className="border-0 shadow-lg">
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">アカウント作成</CardTitle>
         <CardDescription>
@@ -133,7 +136,7 @@ export default function RegisterPage() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">または</span>
+            <span className="bg-white px-2 text-gray-500">または</span>
           </div>
         </div>
 
@@ -143,7 +146,7 @@ export default function RegisterPage() {
             <div className="space-y-2">
               <Label htmlFor="username">ユーザー名</Label>
               <div className="relative">
-                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
                   id="username"
                   placeholder="username"
@@ -153,14 +156,14 @@ export default function RegisterPage() {
                 />
               </div>
               {errors.username && (
-                <p className="text-xs text-destructive">{errors.username.message}</p>
+                <p className="text-xs text-red-500">{errors.username.message}</p>
               )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="displayName">表示名</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <Input
                   id="displayName"
                   placeholder="山田太郎"
@@ -170,7 +173,7 @@ export default function RegisterPage() {
                 />
               </div>
               {errors.displayName && (
-                <p className="text-xs text-destructive">{errors.displayName.message}</p>
+                <p className="text-xs text-red-500">{errors.displayName.message}</p>
               )}
             </div>
           </div>
@@ -178,7 +181,7 @@ export default function RegisterPage() {
           <div className="space-y-2">
             <Label htmlFor="email">メールアドレス</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
                 id="email"
                 type="email"
@@ -189,14 +192,14 @@ export default function RegisterPage() {
               />
             </div>
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className="text-sm text-red-500">{errors.email.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="password">パスワード</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -208,7 +211,7 @@ export default function RegisterPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 {showPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -218,14 +221,14 @@ export default function RegisterPage() {
               </button>
             </div>
             {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
+              <p className="text-sm text-red-500">{errors.password.message}</p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">パスワード（確認）</Label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
                 id="confirmPassword"
                 type={showPassword ? 'text' : 'password'}
@@ -236,7 +239,7 @@ export default function RegisterPage() {
               />
             </div>
             {errors.confirmPassword && (
-              <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+              <p className="text-sm text-red-500">{errors.confirmPassword.message}</p>
             )}
           </div>
 
@@ -249,21 +252,21 @@ export default function RegisterPage() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-gray-500">
           登録することで、
-          <Link href="/terms" className="text-primary hover:underline">
+          <Link href="/terms" className="text-orange-500 hover:underline">
             利用規約
           </Link>
           と
-          <Link href="/privacy" className="text-primary hover:underline">
+          <Link href="/privacy" className="text-orange-500 hover:underline">
             プライバシーポリシー
           </Link>
           に同意したことになります。
         </p>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-gray-500">
           すでにアカウントをお持ちですか？{' '}
-          <Link href={ROUTES.LOGIN} className="text-primary hover:underline font-medium">
+          <Link href={ROUTES.LOGIN} className="text-orange-500 hover:underline font-medium">
             ログイン
           </Link>
         </p>

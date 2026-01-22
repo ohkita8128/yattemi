@@ -1,11 +1,23 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, Bell, Plus, LogOut, User, Settings, FileText, Heart } from 'lucide-react';
-import { useState } from 'react';
+import {
+  Menu,
+  X,
+  Bell,
+  Plus,
+  Search,
+  LogOut,
+  User,
+  Settings,
+  FileText,
+  Heart,
+  ChevronDown,
+} from 'lucide-react';
 import { useAuth } from '@/hooks';
-import { useNotificationStore } from '@/stores';
+import { useUIStore, useNotificationStore } from '@/stores';
 import { ROUTES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
@@ -16,14 +28,27 @@ const navItems = [
 
 export function Header() {
   const pathname = usePathname();
-  const { profile, isAuthenticated, isInitialized, signOut } = useAuth();
+  const { profile, isAuthenticated, signOut } = useAuth();
+  const { isMobileNavOpen, toggleMobileNav, closeMobileNav } = useUIStore();
   const { unreadCount } = useNotificationStore();
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // クリック外で閉じる
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSignOut = async () => {
     try {
       await signOut();
+      setIsDropdownOpen(false);
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -36,7 +61,7 @@ export function Header() {
         <Link
           href={ROUTES.HOME}
           className="flex items-center gap-2 text-xl font-bold"
-          onClick={() => setIsMobileNavOpen(false)}
+          onClick={closeMobileNav}
         >
           <span className="text-2xl">🎯</span>
           <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
@@ -54,7 +79,7 @@ export function Header() {
                 'px-4 py-2 text-sm font-medium rounded-lg transition-colors',
                 pathname === item.href
                   ? 'bg-orange-50 text-orange-600'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
               )}
             >
               {item.label}
@@ -67,10 +92,17 @@ export function Header() {
           {isAuthenticated ? (
             <>
               <Link
-                href={ROUTES.NOTIFICATIONS}
-                className="relative p-2 rounded-lg hover:bg-gray-100"
+                href={ROUTES.EXPLORE}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
               >
-                <Bell className="h-5 w-5 text-gray-600" />
+                <Search className="h-5 w-5 text-gray-500" />
+              </Link>
+
+              <Link
+                href={ROUTES.NOTIFICATIONS}
+                className="p-2 rounded-lg hover:bg-gray-100 transition-colors relative"
+              >
+                <Bell className="h-5 w-5 text-gray-500" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
@@ -80,92 +112,85 @@ export function Header() {
 
               <Link
                 href={ROUTES.POST_NEW}
-                className="inline-flex items-center h-10 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium hover:shadow-md transition-all"
+                className="flex items-center gap-1 px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium hover:shadow-lg transition-all"
               >
-                <Plus className="h-4 w-4 mr-1" />
+                <Plus className="h-4 w-4" />
                 投稿する
               </Link>
 
               {/* User Dropdown */}
-              <div className="relative">
+              <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"
+                  className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
                 >
-                  {!isInitialized ? (
-                    <span className="animate-pulse text-gray-400">•</span>
-                  ) : profile?.avatar_url ? (
-                    <img
-                      src={profile.avatar_url}
-                      alt={profile.display_name}
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <span className="font-medium">
-                      {profile?.display_name?.[0]?.toUpperCase() ?? 'U'}
-                    </span>
-                  )}
+                  <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden">
+                    {profile?.avatar_url ? (
+                      <img
+                        src={profile.avatar_url}
+                        alt={profile.display_name}
+                        className="h-9 w-9 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-orange-600 font-medium">
+                        {profile?.display_name?.[0]?.toUpperCase() ?? 'U'}
+                      </span>
+                    )}
+                  </div>
+                  <ChevronDown className={cn(
+                    'h-4 w-4 text-gray-400 transition-transform',
+                    isDropdownOpen && 'rotate-180'
+                  )} />
                 </button>
 
                 {isDropdownOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setIsDropdownOpen(false)}
-                    />
-                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border z-20">
-                      <div className="p-3 border-b">
-                        <p className="font-medium">{profile?.display_name}</p>
-                        <p className="text-sm text-gray-500">@{profile?.username}</p>
-                      </div>
-                      <div className="p-2">
-                        <Link
-                          href={ROUTES.PROFILE}
-                          onClick={() => setIsDropdownOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm"
-                        >
-                          <User className="h-4 w-4" />
-                          プロフィール
-                        </Link>
-                        <Link
-                          href={ROUTES.APPLICATIONS}
-                          onClick={() => setIsDropdownOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm"
-                        >
-                          <FileText className="h-4 w-4" />
-                          応募管理
-                        </Link>
-                        <Link
-                          href={ROUTES.MATCHES}
-                          onClick={() => setIsDropdownOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm"
-                        >
-                          <Heart className="h-4 w-4" />
-                          マッチング
-                        </Link>
-                        <Link
-                          href={ROUTES.PROFILE_EDIT}
-                          onClick={() => setIsDropdownOpen(false)}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 text-sm"
-                        >
-                          <Settings className="h-4 w-4" />
-                          設定
-                        </Link>
-                      </div>
-                      <div className="p-2 border-t">
-                        <button
-                          onClick={() => {
-                            handleSignOut();
-                            setIsDropdownOpen(false);
-                          }}
-                          className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-red-50 text-sm text-red-600 w-full"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          ログアウト
-                        </button>
-                      </div>
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border py-2 z-50">
+                    <div className="px-4 py-2 border-b">
+                      <p className="font-medium text-sm">{profile?.display_name}</p>
+                      <p className="text-xs text-gray-500">@{profile?.username}</p>
                     </div>
-                  </>
+                    <Link
+                      href={ROUTES.PROFILE}
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      <User className="h-4 w-4 text-gray-400" />
+                      プロフィール
+                    </Link>
+                    <Link
+                      href={ROUTES.APPLICATIONS}
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      <FileText className="h-4 w-4 text-gray-400" />
+                      応募管理
+                    </Link>
+                    <Link
+                      href={ROUTES.MATCHES}
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      <Heart className="h-4 w-4 text-gray-400" />
+                      マッチング
+                    </Link>
+                    <div className="border-t my-1" />
+                    <Link
+                      href={ROUTES.PROFILE_EDIT}
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      <Settings className="h-4 w-4 text-gray-400" />
+                      設定
+                    </Link>
+                    <div className="border-t my-1" />
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      ログアウト
+                    </button>
+                  </div>
                 )}
               </div>
             </>
@@ -179,7 +204,7 @@ export function Header() {
               </Link>
               <Link
                 href={ROUTES.REGISTER}
-                className="inline-flex items-center h-10 px-4 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium hover:shadow-md transition-all"
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium hover:shadow-lg transition-all"
               >
                 新規登録
               </Link>
@@ -190,7 +215,7 @@ export function Header() {
         {/* Mobile Menu Button */}
         <button
           className="md:hidden p-2 rounded-lg hover:bg-gray-100"
-          onClick={() => setIsMobileNavOpen(!isMobileNavOpen)}
+          onClick={toggleMobileNav}
         >
           {isMobileNavOpen ? (
             <X className="h-6 w-6" />
@@ -208,12 +233,12 @@ export function Header() {
               <Link
                 key={item.href}
                 href={item.href}
-                onClick={() => setIsMobileNavOpen(false)}
+                onClick={closeMobileNav}
                 className={cn(
                   'block px-4 py-3 rounded-xl text-sm font-medium transition-colors',
                   pathname === item.href
                     ? 'bg-orange-50 text-orange-600'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                 )}
               >
                 {item.label}
@@ -225,26 +250,55 @@ export function Header() {
                 <div className="border-t pt-4 mt-4 space-y-2">
                   <Link
                     href={ROUTES.POST_NEW}
-                    onClick={() => setIsMobileNavOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-orange-500 text-white font-medium"
+                    onClick={closeMobileNav}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 text-white font-medium"
                   >
                     <Plus className="h-5 w-5" />
                     投稿する
                   </Link>
                   <Link
-                    href={ROUTES.PROFILE}
-                    onClick={() => setIsMobileNavOpen(false)}
+                    href={ROUTES.NOTIFICATIONS}
+                    onClick={closeMobileNav}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
                   >
-                    <User className="h-5 w-5" />
+                    <Bell className="h-5 w-5 text-gray-500" />
+                    通知
+                    {unreadCount > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                  <Link
+                    href={ROUTES.PROFILE}
+                    onClick={closeMobileNav}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
+                  >
+                    <User className="h-5 w-5 text-gray-500" />
                     プロフィール
+                  </Link>
+                  <Link
+                    href={ROUTES.APPLICATIONS}
+                    onClick={closeMobileNav}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
+                  >
+                    <FileText className="h-5 w-5 text-gray-500" />
+                    応募管理
+                  </Link>
+                  <Link
+                    href={ROUTES.MATCHES}
+                    onClick={closeMobileNav}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
+                  >
+                    <Heart className="h-5 w-5 text-gray-500" />
+                    マッチング
                   </Link>
                 </div>
                 <div className="border-t pt-4 mt-4">
                   <button
                     onClick={() => {
                       handleSignOut();
-                      setIsMobileNavOpen(false);
+                      closeMobileNav();
                     }}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-left text-red-600 hover:bg-red-50"
                   >
@@ -257,15 +311,15 @@ export function Header() {
               <div className="border-t pt-4 mt-4 space-y-2">
                 <Link
                   href={ROUTES.LOGIN}
-                  onClick={() => setIsMobileNavOpen(false)}
+                  onClick={closeMobileNav}
                   className="block px-4 py-3 rounded-xl text-center font-medium hover:bg-gray-100"
                 >
                   ログイン
                 </Link>
                 <Link
                   href={ROUTES.REGISTER}
-                  onClick={() => setIsMobileNavOpen(false)}
-                  className="block px-4 py-3 rounded-xl text-center font-medium bg-orange-500 text-white"
+                  onClick={closeMobileNav}
+                  className="block px-4 py-3 rounded-xl text-center font-medium bg-gradient-to-r from-orange-500 to-orange-600 text-white"
                 >
                   新規登録
                 </Link>

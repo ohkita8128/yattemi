@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Slot } from '@radix-ui/react-slot';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -10,19 +9,19 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-md hover:shadow-glow hover:-translate-y-0.5 active:translate-y-0',
+          'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+          'bg-red-500 text-white hover:bg-red-600',
         outline:
-          'border-2 border-input bg-background hover:bg-accent hover:text-accent-foreground',
+          'border-2 border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+          'bg-gray-100 text-gray-900 hover:bg-gray-200',
+        ghost: 'hover:bg-gray-100 hover:text-gray-900',
+        link: 'text-orange-500 underline-offset-4 hover:underline',
         teach:
-          'bg-gradient-to-r from-teach to-teach-dark text-white shadow-md hover:shadow-lg hover:-translate-y-0.5',
+          'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5',
         learn:
-          'bg-gradient-to-r from-learn to-learn-dark text-white shadow-md hover:shadow-lg hover:-translate-y-0.5',
+          'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5',
       },
       size: {
         default: 'h-11 px-6 py-2',
@@ -42,15 +41,13 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
   isLoading?: boolean;
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, isLoading, children, disabled, ...props }, ref) => {
-    const Comp = asChild ? Slot : 'button';
+  ({ className, variant, size, isLoading, children, disabled, ...props }, ref) => {
     return (
-      <Comp
+      <button
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         disabled={disabled || isLoading}
@@ -58,10 +55,28 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {isLoading && <Loader2 className="animate-spin" />}
         {children}
-      </Comp>
+      </button>
     );
   }
 );
 Button.displayName = 'Button';
 
-export { Button, buttonVariants };
+// リンクスタイルのボタン用コンポーネント
+export interface LinkButtonProps extends VariantProps<typeof buttonVariants> {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+}
+
+function LinkButton({ href, variant, size, className, children }: LinkButtonProps) {
+  return (
+    <a
+      href={href}
+      className={cn(buttonVariants({ variant, size, className }))}
+    >
+      {children}
+    </a>
+  );
+}
+
+export { Button, LinkButton, buttonVariants };

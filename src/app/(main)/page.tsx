@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { ArrowRight, Sparkles, Users, Zap, Shield, Star } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
 
 const features = [
@@ -61,21 +63,24 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 md:py-32">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-teal-50" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(249,115,22,0.1),transparent_50%)]" />
         
         <div className="container relative mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-8">
-            <span className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-orange-100 text-orange-700 text-sm font-semibold">
-              <Star className="w-3.5 h-3.5 fill-yellow-400 text-yellow-400" />
+            <Badge variant="secondary" className="px-4 py-1.5">
+              <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-400 text-yellow-400" />
               大学生に人気のスキルシェアアプリ
-            </span>
+            </Badge>
 
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
               「やってみたい」を
               <br />
-              <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">「やってみた」</span>に
+              <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
+                「やってみた」
+              </span>に
             </h1>
 
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto">
               趣味や技術を教えたい人と学びたい人をつなぐ
               <br className="hidden md:block" />
               スキルシェアプラットフォーム
@@ -97,7 +102,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-400">
               ✓ 完全無料 ✓ 登録1分 ✓ 今すぐ使える
             </p>
           </div>
@@ -111,15 +116,15 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               2つのタイプで投稿
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-500">
               教える側も、学ぶ側も、どちらでも投稿できます
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="relative overflow-hidden rounded-2xl border-2 border-purple-200 bg-white p-8 hover:border-purple-400 transition-colors">
+            <Card className="relative overflow-hidden border-2 border-purple-100 hover:border-purple-300 transition-colors">
               <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="relative">
+              <CardContent className="p-8">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-4xl">{POST_TYPES.teach.emoji}</span>
                   <div>
@@ -127,21 +132,21 @@ export default function HomePage() {
                     <p className="text-sm text-gray-500">Teach</p>
                   </div>
                 </div>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-500 mb-6">
                   {POST_TYPES.teach.description}
                 </p>
                 <Link
                   href={`${ROUTES.POST_NEW}?type=teach`}
-                  className="inline-flex items-center justify-center h-11 px-6 font-semibold rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                  className="inline-flex items-center justify-center h-11 px-6 rounded-xl font-semibold bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
                 >
                   教えたいを投稿する
                 </Link>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-            <div className="relative overflow-hidden rounded-2xl border-2 border-cyan-200 bg-white p-8 hover:border-cyan-400 transition-colors">
+            <Card className="relative overflow-hidden border-2 border-cyan-100 hover:border-cyan-300 transition-colors">
               <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-100 rounded-full -translate-y-1/2 translate-x-1/2" />
-              <div className="relative">
+              <CardContent className="p-8">
                 <div className="flex items-center gap-3 mb-4">
                   <span className="text-4xl">{POST_TYPES.learn.emoji}</span>
                   <div>
@@ -149,17 +154,17 @@ export default function HomePage() {
                     <p className="text-sm text-gray-500">Learn</p>
                   </div>
                 </div>
-                <p className="text-gray-600 mb-6">
+                <p className="text-gray-500 mb-6">
                   {POST_TYPES.learn.description}
                 </p>
                 <Link
                   href={`${ROUTES.POST_NEW}?type=learn`}
-                  className="inline-flex items-center justify-center h-11 px-6 font-semibold rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                  className="inline-flex items-center justify-center h-11 px-6 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
                 >
                   教えてほしいを投稿する
                 </Link>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
@@ -171,7 +176,7 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               人気のカテゴリ
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-500">
               さまざまなジャンルで仲間を見つけよう
             </p>
           </div>
@@ -204,22 +209,24 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               YatteMi!の特徴
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-500">
               シンプルで使いやすい、スキルシェアの新しいかたち
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {features.map((feature) => (
-              <div key={feature.title} className="text-center p-6 rounded-2xl bg-white border shadow-sm">
-                <div className="mx-auto w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mb-4">
-                  <feature.icon className="w-7 h-7 text-orange-600" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-600">
-                  {feature.description}
-                </p>
-              </div>
+              <Card key={feature.title} className="text-center p-6">
+                <CardContent className="pt-4 space-y-4">
+                  <div className="mx-auto w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center">
+                    <feature.icon className="w-7 h-7 text-orange-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold">{feature.title}</h3>
+                  <p className="text-sm text-gray-500">
+                    {feature.description}
+                  </p>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
@@ -232,27 +239,29 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
               ユーザーの声
             </h2>
-            <p className="text-gray-600">
+            <p className="text-gray-500">
               実際に使っている人たちの感想
             </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {testimonials.map((testimonial) => (
-              <div key={testimonial.name} className="p-6 rounded-2xl bg-white border shadow-sm">
-                <p className="text-gray-600 mb-4">
-                  &ldquo;{testimonial.content}&rdquo;
-                </p>
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl">{testimonial.avatar}</span>
-                  <div>
-                    <p className="font-semibold">{testimonial.name}</p>
-                    <p className="text-sm text-gray-500">
-                      {testimonial.role}
-                    </p>
+              <Card key={testimonial.name} className="p-6">
+                <CardContent className="pt-4 space-y-4">
+                  <p className="text-gray-500">
+                    &ldquo;{testimonial.content}&rdquo;
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{testimonial.avatar}</span>
+                    <div>
+                      <p className="font-semibold">{testimonial.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {testimonial.role}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
@@ -271,7 +280,7 @@ export default function HomePage() {
           </p>
           <Link
             href={ROUTES.REGISTER}
-            className="inline-flex items-center justify-center h-14 px-10 text-lg font-semibold rounded-2xl bg-white text-orange-600 hover:bg-orange-50 transition-all"
+            className="inline-flex items-center justify-center h-14 px-10 text-lg font-semibold rounded-2xl bg-white text-orange-600 hover:bg-gray-50 transition-all"
           >
             無料で始める
             <ArrowRight className="ml-2 h-5 w-5" />
