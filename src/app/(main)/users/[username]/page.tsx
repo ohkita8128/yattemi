@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 import { useParams, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { 
-  User, MapPin, Calendar, Link as LinkIcon, 
-  GraduationCap, Rocket, Users
+  User, Calendar, Link as LinkIcon, 
+  GraduationCap
 } from 'lucide-react';
 import { getClient } from '@/lib/supabase/client';
 import { formatRelativeTime } from '@/lib/utils';
-import { useUserStats, useReviewsFromSenpai, useReviewsFromKouhai, SENPAI_BADGES, KOUHAI_BADGES, COMMON_BADGES } from '@/hooks/use-reviews';
+import { useUserStats, useReviewsFromSenpai, useReviewsFromKouhai } from '@/hooks/use-reviews';
 import { useFollowCounts } from '@/hooks/use-follow';
 import { useAuth } from '@/hooks';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -73,7 +73,7 @@ export default function UserProfilePage() {
             category:categories(name, slug, color)
           `)
           .eq('user_id', profileData.id)
-          .eq('status', 'published')
+          .eq('status', 'open')
           .order('created_at', { ascending: false });
 
         setPosts(postsData || []);
