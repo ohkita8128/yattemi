@@ -14,14 +14,11 @@ import {
   Share2,
   Flag,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PostTypeBadge } from '@/components/posts';
 import { CategoryBadge } from '@/components/common';
 import { usePost, useAuth } from '@/hooks';
-import { formatRelativeTime, formatFullDateTime } from '@/lib/utils';
+import { formatRelativeTime } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
 
 export default function PostDetailPage() {
@@ -39,7 +36,6 @@ export default function PostDetailPage() {
       router.push(`${ROUTES.LOGIN}?redirect=${ROUTES.POST_DETAIL(postId)}`);
       return;
     }
-    // TODO: 応募モーダルを開く
     toast.info('応募機能は Phase 3 で実装予定です');
   };
 
@@ -69,12 +65,15 @@ export default function PostDetailPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto text-center py-16">
           <h1 className="text-2xl font-bold mb-4">投稿が見つかりません</h1>
-          <p className="text-muted-foreground mb-8">
+          <p className="text-gray-500 mb-8">
             この投稿は削除されたか、存在しません。
           </p>
-          <Button asChild>
-            <Link href={ROUTES.EXPLORE}>投稿を探す</Link>
-          </Button>
+          <Link
+            href={ROUTES.EXPLORE}
+            className="inline-flex items-center justify-center h-10 px-6 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600"
+          >
+            投稿を探す
+          </Link>
         </div>
       </div>
     );
@@ -86,128 +85,126 @@ export default function PostDetailPage() {
         {/* Back Link */}
         <Link
           href={ROUTES.EXPLORE}
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-900 mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
           投稿一覧に戻る
         </Link>
 
         {/* Main Card */}
-        <Card className="mb-6">
-          <CardContent className="p-6 md:p-8">
-            {/* Header */}
-            <div className="flex flex-wrap items-center gap-3 mb-4">
-              <PostTypeBadge type={post.type} />
-              <CategoryBadge category={post.category} />
-              <span className="text-sm text-muted-foreground flex items-center gap-1 ml-auto">
-                <Eye className="h-4 w-4" />
-                {post.view_count}回閲覧
-              </span>
-            </div>
+        <div className="bg-white rounded-2xl shadow-lg border p-6 md:p-8 mb-6">
+          {/* Header */}
+          <div className="flex flex-wrap items-center gap-3 mb-4">
+            <PostTypeBadge type={post.type} />
+            <CategoryBadge category={post.category} />
+            <span className="text-sm text-gray-500 flex items-center gap-1 ml-auto">
+              <Eye className="h-4 w-4" />
+              {post.view_count}回閲覧
+            </span>
+          </div>
 
-            {/* Title */}
-            <h1 className="text-2xl md:text-3xl font-bold mb-6">{post.title}</h1>
+          {/* Title */}
+          <h1 className="text-2xl md:text-3xl font-bold mb-6">{post.title}</h1>
 
-            {/* Description */}
-            <div className="prose prose-gray max-w-none mb-8">
-              <p className="whitespace-pre-wrap text-muted-foreground leading-relaxed">
-                {post.description}
-              </p>
-            </div>
+          {/* Description */}
+          <div className="mb-8">
+            <p className="whitespace-pre-wrap text-gray-600 leading-relaxed">
+              {post.description}
+            </p>
+          </div>
 
-            {/* Meta Info */}
-            <div className="grid gap-4 sm:grid-cols-2 mb-8">
-              <div className="flex items-center gap-3 text-sm">
-                {post.is_online ? (
-                  <>
-                    <Globe className="h-5 w-5 text-green-500" />
-                    <span>オンライン対応</span>
-                  </>
-                ) : (
-                  <>
-                    <MapPin className="h-5 w-5 text-muted-foreground" />
-                    <span>{post.location || '場所未定'}</span>
-                  </>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <Users className="h-5 w-5 text-muted-foreground" />
-                <span>{post.max_applicants}人募集</span>
-              </div>
-              {post.preferred_schedule && (
-                <div className="flex items-center gap-3 text-sm">
-                  <Calendar className="h-5 w-5 text-muted-foreground" />
-                  <span>{post.preferred_schedule}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-3 text-sm">
-                <Clock className="h-5 w-5 text-muted-foreground" />
-                <span>{formatRelativeTime(post.created_at)}</span>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-wrap gap-3">
-              {isOwner ? (
+          {/* Meta Info */}
+          <div className="grid gap-4 sm:grid-cols-2 mb-8">
+            <div className="flex items-center gap-3 text-sm">
+              {post.is_online ? (
                 <>
-                  <Button asChild>
-                    <Link href={ROUTES.POST_EDIT(post.id)}>編集する</Link>
-                  </Button>
-                  <Button variant="outline">応募を見る</Button>
+                  <Globe className="h-5 w-5 text-green-500" />
+                  <span>オンライン対応</span>
                 </>
               ) : (
-                <Button onClick={handleApply} className="flex-1 sm:flex-none">
-                  応募する
-                </Button>
+                <>
+                  <MapPin className="h-5 w-5 text-gray-400" />
+                  <span>{post.location || '場所未定'}</span>
+                </>
               )}
-              <Button variant="outline" size="icon" onClick={handleShare}>
-                <Share2 className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon">
-                <Flag className="h-4 w-4" />
-              </Button>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex items-center gap-3 text-sm">
+              <Users className="h-5 w-5 text-gray-400" />
+              <span>{post.max_applicants}人募集</span>
+            </div>
+            {post.preferred_schedule && (
+              <div className="flex items-center gap-3 text-sm">
+                <Calendar className="h-5 w-5 text-gray-400" />
+                <span>{post.preferred_schedule}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3 text-sm">
+              <Clock className="h-5 w-5 text-gray-400" />
+              <span>{formatRelativeTime(post.created_at)}</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex flex-wrap gap-3">
+            {isOwner ? (
+              <>
+                <Link
+                  href={`/posts/${post.id}/edit`}
+                  className="inline-flex items-center justify-center h-10 px-6 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600"
+                >
+                  編集する
+                </Link>
+                <button className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-2 font-medium hover:bg-gray-50">
+                  応募を見る
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleApply}
+                className="flex-1 sm:flex-none inline-flex items-center justify-center h-10 px-6 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600"
+              >
+                応募する
+              </button>
+            )}
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center justify-center h-10 w-10 rounded-xl border-2 hover:bg-gray-50"
+            >
+              <Share2 className="h-4 w-4" />
+            </button>
+            <button className="inline-flex items-center justify-center h-10 w-10 rounded-xl hover:bg-gray-50">
+              <Flag className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
 
         {/* Author Card */}
-        <Card>
-          <CardContent className="p-6">
-            <h2 className="font-semibold mb-4">投稿者</h2>
-            <Link
-              href={ROUTES.PROFILE_USER(post.profile.username)}
-              className="flex items-center gap-4 hover:bg-muted/50 -m-2 p-2 rounded-xl transition-colors"
-            >
-              <Avatar className="h-14 w-14">
-                <AvatarImage src={post.profile.avatar_url ?? undefined} />
-                <AvatarFallback className="text-lg">
-                  {post.profile.display_name[0]}
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-semibold">{post.profile.display_name}</p>
-                <p className="text-sm text-muted-foreground">
-                  @{post.profile.username}
-                </p>
-                {post.profile.university && (
-                  <p className="text-sm text-muted-foreground">
-                    {post.profile.university}
-                  </p>
-                )}
-              </div>
-            </Link>
-            {post.profile.bio && (
-              <p className="mt-4 text-sm text-muted-foreground">
-                {post.profile.bio}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Timestamp */}
-        <p className="text-sm text-muted-foreground text-center mt-6">
-          {formatFullDateTime(post.created_at)}に投稿
-        </p>
+        <div className="bg-white rounded-2xl shadow-lg border p-6">
+          <h2 className="font-semibold mb-4">投稿者</h2>
+          <Link
+            href={`/profile/${post.profile.username}`}
+            className="flex items-center gap-4 hover:bg-gray-50 -m-2 p-2 rounded-xl transition-colors"
+          >
+            <div className="h-14 w-14 rounded-full bg-gray-200 flex items-center justify-center text-xl font-medium">
+              {post.profile.avatar_url ? (
+                <img
+                  src={post.profile.avatar_url}
+                  alt={post.profile.display_name}
+                  className="h-14 w-14 rounded-full object-cover"
+                />
+              ) : (
+                post.profile.display_name[0]
+              )}
+            </div>
+            <div>
+              <p className="font-semibold">{post.profile.display_name}</p>
+              <p className="text-sm text-gray-500">@{post.profile.username}</p>
+            </div>
+          </Link>
+          {post.profile.bio && (
+            <p className="mt-4 text-sm text-gray-500">{post.profile.bio}</p>
+          )}
+        </div>
       </div>
     </div>
   );
