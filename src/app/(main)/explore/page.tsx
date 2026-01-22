@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, X, SlidersHorizontal } from 'lucide-react';
 import { PostCard, PostCardSkeleton } from '@/components/posts';
 import { usePosts, useCategories, useDebounce } from '@/hooks';
+import { getCategoryIcon } from '@/lib/category-icons';
 import { getLevelInfo } from '@/lib/levels';
 
 function ExploreContent() {
@@ -157,7 +158,7 @@ function ExploreContent() {
                       : 'bg-gray-100 hover:bg-gray-200'
                   }`}
                 >
-                  {cat.icon} {cat.name}
+                  {(() => { const Icon = getCategoryIcon(cat.slug); return <Icon className="h-4 w-4 inline mr-1" />; })()} {cat.name}
                 </button>
               ))}
             </div>
