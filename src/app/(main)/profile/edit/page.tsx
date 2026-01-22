@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,7 @@ import Link from 'next/link';
 import { useAuth } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProfileImageGallery } from '@/components/profile/profile-image-gallery';
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -307,6 +308,13 @@ export default function ProfileEditPage() {
           </div>
           <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF（最大5MB）</p>
         </div>
+        
+        {/* プロフィール写真（複数枚） */}
+        {user && (
+          <div className="p-6 bg-gray-50 rounded-xl">
+            <ProfileImageGallery userId={user.id} maxImages={5} />
+          </div>
+        )}
 
         {/* 表示名 */}
         <div className="space-y-2">
