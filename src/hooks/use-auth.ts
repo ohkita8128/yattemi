@@ -184,9 +184,9 @@ export function useAuth() {
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return null;
 
-    // @ts-ignore
     const { data, error } = await supabase
-      .from('profiles')
+    .from('profiles')
+      // @ts-ignore
       .update(updates)
       .eq('id', user.id)
       .select()
