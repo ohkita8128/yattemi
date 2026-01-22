@@ -26,68 +26,90 @@ export function useAuth() {
   // プロフィールを取得
   const fetchProfile = useCallback(
     async (userId: string) => {
-      const { data, error } = await (supabase
-        .from('profiles') as any)
-        .select('*')
-        .eq('id', userId)
-        .single();
-
-      if (error) {
-        console.error('Profile fetch error:', error);
+      console.log('Fetching profile for:', userId);
+      
+      try {
+        // Supabase クライアントの代わりに直接 fetch を使う
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=*`,
+          {
+            headers: {
+              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+              'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+            },
+          }
+        );
+        
+        const data = await response.json();
+        console.log('Profile result:', data);
+        
+        if (data && data.length > 0) {
+          return data[0] as Profile;
+        }
+        
+        return null;
+      } catch (err) {
+        console.error('Profile fetch exception:', err);
         return null;
       }
-
-      return data as Profile;
     },
-    [supabase]
+    []
   );
 
   // 初期化処理
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
+    let isMounted = true;
 
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email ?? '',
-          });
-          const profile = await fetchProfile(session.user.id);
+    // Auth状態の変更を監視（これをメインにする）
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event, 'Session:', !!session);
+      
+      if (!isMounted) return;
+
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          email: session.user.email ?? '',
+        });
+        
+        const profile = await fetchProfile(session.user.id);
+        if (isMounted) {
           setProfile(profile);
         }
-      } catch (error) {
-        console.error('Auth init error:', error);
-      } finally {
+      } else if (event === 'SIGNED_OUT') {
+        reset();
+      }
+      
+      if (isMounted) {
+        setLoading(false);
+        setInitialized(true);
+      }
+    });
+
+    // 初期状態のチェック（フォールバック）
+    const checkInitialSession = async () => {
+      // 少し待ってからチェック（onAuthStateChangeが先に発火する可能性）
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (!isMounted) return;
+      
+      // まだ初期化されてなければ、セッションなしとして処理
+      if (!isInitialized) {
+        console.log('Fallback: No session detected');
         setLoading(false);
         setInitialized(true);
       }
     };
 
-    initAuth();
-
-    // Auth状態の変更を監視
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email ?? '',
-        });
-        const profile = await fetchProfile(session.user.id);
-        setProfile(profile);
-      } else if (event === 'SIGNED_OUT') {
-        reset();
-      }
-    });
+    checkInitialSession();
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase, setUser, setProfile, setLoading, setInitialized, reset, fetchProfile]);
+  }, [supabase, setUser, setProfile, setLoading, setInitialized, reset, fetchProfile, isInitialized]);
 
   // サインイン
   const signIn = async (email: string, password: string) => {
@@ -96,9 +118,9 @@ export function useAuth() {
       email,
       password,
     });
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       throw error;
     }
 
@@ -120,9 +142,9 @@ export function useAuth() {
         emailRedirectTo: `${window.location.origin}/api/auth/callback`,
       },
     });
-    setLoading(false);
 
     if (error) {
+      setLoading(false);
       throw error;
     }
 
@@ -162,9 +184,9 @@ export function useAuth() {
   const updateProfile = async (updates: Partial<Profile>) => {
     if (!user) return null;
 
+    // @ts-ignore
     const { data, error } = await supabase
       .from('profiles')
-      //@ts-ignore
       .update(updates)
       .eq('id', user.id)
       .select()

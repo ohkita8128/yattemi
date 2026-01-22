@@ -16,7 +16,7 @@ const navItems = [
 
 export function Header() {
   const pathname = usePathname();
-  const { profile, isAuthenticated, signOut } = useAuth();
+  const { profile, isAuthenticated, isInitialized, signOut } = useAuth();
   const { unreadCount } = useNotificationStore();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -92,7 +92,9 @@ export function Header() {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-300 transition-colors"
                 >
-                  {profile?.avatar_url ? (
+                  {!isInitialized ? (
+                    <span className="animate-pulse text-gray-400">•</span>
+                  ) : profile?.avatar_url ? (
                     <img
                       src={profile.avatar_url}
                       alt={profile.display_name}
