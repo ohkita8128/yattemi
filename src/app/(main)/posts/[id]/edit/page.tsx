@@ -1,0 +1,416 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { useAuth, usePost } from '@/hooks';
+import { getClient } from '@/lib/supabase/client';
+import { ROUTES, POST_TYPES } from '@/lib/constants';
+import { Skeleton } from '@/components/ui/skeleton';
+import type { Category } from '@/types';
+
+export default function EditPostPage() {
+  const params = useParams();
+  const router = useRouter();
+  const postId = params.id as string;
+
+  const { post, isLoading: postLoading } = usePost(postId);
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const supabase = getClient();
+
+  // フォームの状態
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [type, setType] = useState<'teach' | 'learn'>('teach');
+  const [categoryId, setCategoryId] = useState<number>(1);
+  const [maxApplicants, setMaxApplicants] = useState(1);
+  const [isOnline, setIsOnline] = useState(true);
+  const [location, setLocation] = useState('');
+  const [preferredSchedule, setPreferredSchedule] = useState('');
+  const [status, setStatus] = useState<'open' | 'closed'>('open');
+  
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hasApplications, setHasApplications] = useState(false);
+
+  // カテゴリ取得
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data } = await (supabase as any)
+        .from('categories')
+        .select('*')
+        .order('sort_order');
+      if (data) setCategories(data);
+    };
+    fetchCategories();
+  }, [supabase]);
+
+  // 認証チェック
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.push(ROUTES.LOGIN);
+    }
+  }, [authLoading, isAuthenticated, router]);
+
+  // オーナーチェック & データセット
+  useEffect(() => {
+    if (post && user) {
+      if (post.user_id !== user.id) {
+        toast.error('この投稿を編集する権限がありません');
+        router.push(ROUTES.EXPLORE);
+        return;
+      }
+      setTitle(post.title);
+      setDescription(post.description);
+      setType(post.type);
+      setCategoryId(post.category_id);
+      setMaxApplicants(post.max_applicants);
+      setIsOnline(post.is_online);
+      setLocation(post.location || '');
+      setPreferredSchedule(post.preferred_schedule || '');
+      setStatus(post.status === 'open' ? 'open' : 'closed');
+    }
+  }, [post, user, router]);
+
+  // 応募があるかチェック
+  useEffect(() => {
+    const checkApplications = async () => {
+      if (!postId) return;
+      const { data } = await (supabase as any)
+        .from('applications')
+        .select('id')
+        .eq('post_id', postId)
+        .limit(1);
+      setHasApplications(data && data.length > 0);
+    };
+    checkApplications();
+  }, [postId, supabase]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!title.trim() || !description.trim()) {
+      toast.error('タイトルと詳細を入力してください');
+      return;
+    }
+
+    if (title.length < 5) {
+      toast.error('タイトルは5文字以上で入力してください');
+      return;
+    }
+
+    if (description.length < 20) {
+      toast.error('詳細は20文字以上で入力してください');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const updateData: any = {
+        title,
+        description,
+        preferred_schedule: preferredSchedule || null,
+        status,
+      };
+
+      // 応募がなければ全項目更新可能
+      if (!hasApplications) {
+        updateData.type = type;
+        updateData.category_id = categoryId;
+        updateData.max_applicants = maxApplicants;
+        updateData.is_online = isOnline;
+        updateData.location = isOnline ? null : location;
+      }
+
+      const { error } = await (supabase as any)
+        .from('posts')
+        .update(updateData)
+        .eq('id', postId);
+
+      if (error) throw error;
+
+      toast.success('投稿を更新しました');
+      router.push(`/posts/${postId}`);
+    } catch (error) {
+      console.error('Update error:', error);
+      toast.error('更新に失敗しました');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('本当にこの投稿を削除しますか？この操作は取り消せません。')) {
+      return;
+    }
+
+    try {
+      const { error } = await (supabase as any)
+        .from('posts')
+        .delete()
+        .eq('id', postId);
+
+      if (error) throw error;
+
+      toast.success('投稿を削除しました');
+      router.push(ROUTES.EXPLORE);
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('削除に失敗しました');
+    }
+  };
+
+  if (authLoading || postLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Skeleton className="h-8 w-32 mb-6" />
+        <div className="space-y-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-16 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
+      {/* Header */}
+      <div className="mb-6">
+        <Link
+          href={`/posts/${postId}`}
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          戻る
+        </Link>
+        <h1 className="text-2xl font-bold">投稿を編集</h1>
+        {hasApplications && (
+          <p className="text-sm text-amber-600 mt-2">
+            ※ 応募があるため、一部の項目は変更できません
+          </p>
+        )}
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 投稿タイプ */}
+        <div className="space-y-2">
+          <label className="block font-medium">
+            投稿タイプ
+            {hasApplications && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            {(['teach', 'learn'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                disabled={hasApplications}
+                onClick={() => setType(t)}
+                className={`p-4 rounded-xl border-2 text-left transition-all ${
+                  type === t
+                    ? t === 'teach'
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-cyan-500 bg-cyan-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                } ${hasApplications ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                <span className="text-2xl mb-2 block">{POST_TYPES[t].emoji}</span>
+                <span className="font-semibold block">{POST_TYPES[t].label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* タイトル */}
+        <div className="space-y-2">
+          <label className="block font-medium">
+            タイトル <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="例: Pythonの基礎を教えます！"
+          />
+          <p className="text-xs text-gray-400">{title.length}/100文字（5文字以上）</p>
+        </div>
+
+        {/* 詳細 */}
+        <div className="space-y-2">
+          <label className="block font-medium">
+            詳細 <span className="text-red-500">*</span>
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={6}
+            className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="どんなことを教えたい/学びたいですか？具体的に書くとマッチングしやすくなります。"
+          />
+          <p className="text-xs text-gray-400">{description.length}/2000文字（20文字以上）</p>
+        </div>
+
+        {/* カテゴリ */}
+        <div className="space-y-2">
+          <label className="block font-medium">
+            カテゴリ
+            {hasApplications && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
+          </label>
+          <select
+            value={categoryId}
+            onChange={(e) => setCategoryId(Number(e.target.value))}
+            disabled={hasApplications}
+            className={`w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+              hasApplications ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''
+            }`}
+          >
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* 募集人数 */}
+        <div className="space-y-2">
+          <label className="block font-medium">
+            募集人数
+            {hasApplications && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
+          </label>
+          <select
+            value={maxApplicants}
+            onChange={(e) => setMaxApplicants(Number(e.target.value))}
+            disabled={hasApplications}
+            className={`w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+              hasApplications ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''
+            }`}
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+              <option key={n} value={n}>{n}人</option>
+            ))}
+          </select>
+        </div>
+
+        {/* 実施形式 */}
+        <div className="space-y-2">
+          <label className="block font-medium">
+            実施形式
+            {hasApplications && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
+          </label>
+          <div className="flex gap-4">
+            <button
+              type="button"
+              disabled={hasApplications}
+              onClick={() => setIsOnline(true)}
+              className={`flex-1 p-3 rounded-xl border-2 transition-all ${
+                isOnline
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              } ${hasApplications ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              <span className="block font-medium">🌐 オンライン</span>
+            </button>
+            <button
+              type="button"
+              disabled={hasApplications}
+              onClick={() => setIsOnline(false)}
+              className={`flex-1 p-3 rounded-xl border-2 transition-all ${
+                !isOnline
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              } ${hasApplications ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              <span className="block font-medium">📍 対面</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 場所（対面の場合） */}
+        {!isOnline && (
+          <div className="space-y-2">
+            <label className="block font-medium">場所</label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              disabled={hasApplications}
+              className={`w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
+                hasApplications ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''
+              }`}
+              placeholder="例: 東京都渋谷区"
+            />
+          </div>
+        )}
+
+        {/* 希望日程 */}
+        <div className="space-y-2">
+          <label className="block font-medium">希望日程</label>
+          <input
+            type="text"
+            value={preferredSchedule}
+            onChange={(e) => setPreferredSchedule(e.target.value)}
+            className="w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
+            placeholder="例: 平日夜、土日"
+          />
+        </div>
+
+        {/* ステータス */}
+        <div className="space-y-2">
+          <label className="block font-medium">募集ステータス</label>
+          <div className="flex gap-4">
+            <button
+              type="button"
+              onClick={() => setStatus('open')}
+              className={`flex-1 p-3 rounded-xl border-2 transition-all ${
+                status === 'open'
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <span className="block font-medium">🟢 募集中</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatus('closed')}
+              className={`flex-1 p-3 rounded-xl border-2 transition-all ${
+                status === 'closed'
+                  ? 'border-gray-500 bg-gray-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <span className="block font-medium">⚫ 締め切り</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 送信ボタン */}
+        <div className="flex gap-4 pt-4">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="flex-1 h-12 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isSubmitting ? '更新中...' : '更新する'}
+          </button>
+        </div>
+
+        {/* 削除ボタン */}
+        <div className="pt-6 border-t">
+          <button
+            type="button"
+            onClick={handleDelete}
+            className="w-full h-12 rounded-xl border-2 border-red-200 text-red-500 font-medium hover:bg-red-50"
+          >
+            この投稿を削除する
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
