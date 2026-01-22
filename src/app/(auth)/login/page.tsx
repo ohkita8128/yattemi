@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -16,7 +16,7 @@ import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import { getAuthErrorMessage } from '@/lib/utils/errors';
 import { ROUTES } from '@/lib/constants';
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') || ROUTES.HOME;
@@ -52,7 +52,7 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="border-0 shadow-large">
+    <Card className="border-0 shadow-lg">
       <CardHeader className="space-y-1 text-center">
         <CardTitle className="text-2xl font-bold">ログイン</CardTitle>
         <CardDescription>
@@ -112,7 +112,7 @@ export default function LoginPage() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">または</span>
+            <span className="bg-white px-2 text-gray-500">または</span>
           </div>
         </div>
 
@@ -121,7 +121,7 @@ export default function LoginPage() {
           <div className="space-y-2">
             <Label htmlFor="email">メールアドレス</Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
                 id="email"
                 type="email"
@@ -132,7 +132,7 @@ export default function LoginPage() {
               />
             </div>
             {errors.email && (
-              <p className="text-sm text-destructive">{errors.email.message}</p>
+              <p className="text-sm text-red-500">{errors.email.message}</p>
             )}
           </div>
 
@@ -141,13 +141,13 @@ export default function LoginPage() {
               <Label htmlFor="password">パスワード</Label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-orange-500 hover:underline"
               >
                 パスワードを忘れた？
               </Link>
             </div>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
                 id="password"
                 type={showPassword ? 'text' : 'password'}
@@ -159,7 +159,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
               >
                 {showPassword ? (
                   <EyeOff className="h-5 w-5" />
@@ -169,7 +169,7 @@ export default function LoginPage() {
               </button>
             </div>
             {errors.password && (
-              <p className="text-sm text-destructive">{errors.password.message}</p>
+              <p className="text-sm text-red-500">{errors.password.message}</p>
             )}
           </div>
 
@@ -182,13 +182,21 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
+        <p className="text-center text-sm text-gray-500">
           アカウントをお持ちでないですか？{' '}
-          <Link href={ROUTES.REGISTER} className="text-primary hover:underline font-medium">
+          <Link href={ROUTES.REGISTER} className="text-orange-500 hover:underline font-medium">
             新規登録
           </Link>
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-8">読み込み中...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

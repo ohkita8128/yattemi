@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { ArrowLeft } from 'lucide-react';
@@ -11,7 +12,7 @@ import { ROUTES } from '@/lib/constants';
 import type { PostFormData } from '@/lib/validations/post';
 import type { PostType } from '@/types';
 
-export default function NewPostPage() {
+function NewPostContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const defaultType = (searchParams.get('type') as PostType) || 'teach';
@@ -43,8 +44,8 @@ export default function NewPostPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-2xl mx-auto">
           <div className="animate-pulse space-y-4">
-            <div className="h-8 w-32 bg-muted rounded" />
-            <div className="h-64 bg-muted rounded-xl" />
+            <div className="h-8 w-32 bg-gray-200 rounded" />
+            <div className="h-64 bg-gray-200 rounded-xl" />
           </div>
         </div>
       </div>
@@ -54,10 +55,9 @@ export default function NewPostPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-2xl mx-auto">
-        {/* Back Link */}
         <Link
           href={ROUTES.EXPLORE}
-          className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
+          className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
           戻る
@@ -78,5 +78,13 @@ export default function NewPostPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function NewPostPage() {
+  return (
+    <Suspense fallback={<div className="container mx-auto px-4 py-8">読み込み中...</div>}>
+      <NewPostContent />
+    </Suspense>
   );
 }
