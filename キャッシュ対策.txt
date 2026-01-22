@@ -1,0 +1,6 @@
+# devサーバーを停止（Ctrl+C）
+# .nextフォルダを削除
+Remove-Item -Recurse -Force "$HOME\yatte-mi\.next"
+
+# 再起動
+npm run dev

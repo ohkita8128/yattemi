@@ -11,7 +11,6 @@ import { ROUTES, POST_TYPES } from '@/lib/constants';
 import { LevelSlider, LevelRangeSlider } from '@/components/ui/level-slider';
 import { TagInput } from '@/components/ui/tag-input';
 import { ScheduleSelector } from '@/components/ui/schedule-selector';
-import { getCategoryIcon } from '@/lib/category-icons';
 
 export default function NewPostPage() {
   const router = useRouter();
@@ -167,7 +166,7 @@ export default function NewPostPage() {
           >
             {categories.map((cat) => (
               <option key={cat.id} value={cat.id}>
-                {(() => { const Icon = getCategoryIcon(cat.slug); return <Icon className="h-4 w-4 inline mr-1" />; })()} {cat.name}
+                {cat.name}
               </option>
             ))}
           </select>
