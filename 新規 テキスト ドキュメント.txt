@@ -4,3 +4,53 @@
 Supabase: https://lbdrqjhifussacjgwnij.supabase.co
 完了: Phase 1, 2（認証・投稿）
 次: Phase 3（応募・マッチング）
+
+
+に次の君とのチャットでこれまでの主要なエラーを共有できるようにして5:34 PMYatteMi! エラー対策まとめ
+次のチャットに貼って共有してね：
+
+プロジェクト情報
+プロジェクト: YatteMi!
+リポジトリ: https://github.com/ohkita8128/yattemi
+本番URL: https://yattemi.vercel.app
+Supabase: https://lbdrqjhifussacjgwnij.supabase.co
+完了: Phase 1, 2, 3（認証・投稿・応募マッチング）
+
+主要エラーと解決策
+エラー原因解決策React.Children.only expected single elementRadixUI の asChild + 条件分岐Radix使わないシンプル版に置換（header.tsx等）approved が存在しない型は accepted なのにキーが approvedstatusConfig のキーを accepted に統一401 Unauthorized (応募)fetchでANON_KEY使用、RLS通らないsupabase.from().insert() を使うrow violates RLS policyRLSポリシー未設定SQL Editorでポリシー追加型エラー neverSupabase型定義が厳しいas any を追加useSearchParams エラーSuspense未使用コンポーネントを Suspense でラップCookieOptions declared but never read未使用のimportimportから削除options implicitly has any type型未指定cookiesToSet: { name: string; value: string; options?: any }[]
+
+コード修正パターン
+1. Supabaseクエリの型エラー回避
+typescript// NG
+await supabase.from('applications').insert({ post_id, applicant_id, message });
+
+// OK
+await (supabase as any).from('applications').insert({ post_id, applicant_id, message });
+2. useSearchParams対応
+typescript// NG
+export default function Page() {
+  const searchParams = useSearchParams();
+  // ...
+}
+
+// OK
+function PageContent() {
+  const searchParams = useSearchParams();
+  // ...
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={<div>読み込み中...</div>}>
+      <PageContent />
+    </Suspense>
+  );
+}
+3. RadixUI asChild問題回避
+typescript// NG - Button with asChild
+<Button asChild><Link href="/path">テキスト</Link></Button>
+
+// OK - 直接Linkを使用
+<Link href="/path" className="inline-flex items-center justify-center h-11 px-6 rounded-xl bg-orange-500 text-white font-medium">
+  テキスト
+</Link>
