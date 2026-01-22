@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { Heart, MapPin, Monitor, User } from 'lucide-react';
@@ -15,7 +15,7 @@ interface PostCardProps {
     description?: string;
     type: 'teach' | 'learn';
     is_online?: boolean;
-    location?: string;
+    location?: string | null;
     my_level?: number;
     target_level_min?: number;
     target_level_max?: number;

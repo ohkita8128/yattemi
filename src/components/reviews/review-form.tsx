@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -14,7 +14,6 @@ interface ReviewFormProps {
   /** 自分の役割 */
   myRole: ReviewerRole;
   onSuccess?: () => void;
-  onCancel?: () => void;
 }
 
 export function ReviewForm({
@@ -24,7 +23,6 @@ export function ReviewForm({
   revieweeAvatar,
   myRole,
   onSuccess,
-  onCancel,
 }: ReviewFormProps) {
   const [selectedBadges, setSelectedBadges] = useState<BadgeKey[]>([]);
   const [comment, setComment] = useState('');

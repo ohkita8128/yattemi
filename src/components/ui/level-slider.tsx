@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import { getLevelInfo, LEVELS } from '@/lib/levels';
+import { getLevelInfo } from '@/lib/levels';
 import { cn } from '@/lib/utils';
 
 interface LevelSliderProps {
