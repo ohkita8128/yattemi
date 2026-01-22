@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -8,20 +8,31 @@ import {
   ArrowLeft,
   MapPin,
   Users,
-  Clock,
   Eye,
   Calendar,
   Globe,
   Share2,
-  Flag,
+  Heart,
+  Tag,
+  MessageCircle,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PostTypeBadge } from '@/components/posts';
 import { CategoryBadge } from '@/components/common';
 import { ApplicationDialog } from '@/components/applications';
 import { usePost, useAuth } from '@/hooks';
+import { useLikes } from '@/hooks/use-likes';
 import { formatRelativeTime } from '@/lib/utils';
+import { getLevelInfo } from '@/lib/levels';
 import { ROUTES } from '@/lib/constants';
+
+const DAYS_LABEL: Record<string, string> = {
+  mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土', sun: '日',
+};
+
+const TIMES_LABEL: Record<string, string> = {
+  morning: '朝', afternoon: '昼', evening: '夜',
+};
 
 export default function PostDetailPage() {
   const params = useParams();
@@ -30,13 +41,14 @@ export default function PostDetailPage() {
 
   const { post, isLoading, error } = usePost(postId);
   const { user, isAuthenticated } = useAuth();
+  const { likesCount, isLiked, toggleLike } = useLikes(postId);
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
 
   const isOwner = user?.id === post?.user_id;
 
   const handleApply = () => {
     if (!isAuthenticated) {
-      router.push(`${ROUTES.LOGIN}?redirect=${ROUTES.POST_DETAIL(postId)}`);
+      router.push(ROUTES.LOGIN + '?redirect=' + ROUTES.POST_DETAIL(postId));
       return;
     }
     setIsApplyDialogOpen(true);
@@ -51,12 +63,20 @@ export default function PostDetailPage() {
     }
   };
 
+  const handleLike = async () => {
+    if (!user) {
+      router.push(ROUTES.LOGIN);
+      return;
+    }
+    await toggleLike();
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto space-y-6">
           <Skeleton className="h-8 w-32" />
-          <Skeleton className="h-12 w-3/4" />
+          <Skeleton className="h-20 w-full rounded-xl" />
           <Skeleton className="h-64 w-full rounded-xl" />
         </div>
       </div>
@@ -68,9 +88,7 @@ export default function PostDetailPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-3xl mx-auto text-center py-16">
           <h1 className="text-2xl font-bold mb-4">投稿が見つかりません</h1>
-          <p className="text-gray-500 mb-8">
-            この投稿は削除されたか、存在しません。
-          </p>
+          <p className="text-gray-500 mb-8">この投稿は削除されたか、存在しません。</p>
           <Link
             href={ROUTES.EXPLORE}
             className="inline-flex items-center justify-center h-10 px-6 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600"
@@ -81,6 +99,19 @@ export default function PostDetailPage() {
       </div>
     );
   }
+
+  const postAny = post as any;
+  const tags: string[] = Array.isArray(postAny.tags) ? postAny.tags : [];
+  const availableDays: string[] = Array.isArray(postAny.available_days) ? postAny.available_days : [];
+  const availableTimes: string[] = Array.isArray(postAny.available_times) ? postAny.available_times : [];
+  const specificDates: { date: string; start: string; end: string }[] = Array.isArray(postAny.specific_dates) ? postAny.specific_dates : [];
+
+  const levelInfo = getLevelInfo(post.my_level ?? 5);
+
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return (date.getMonth() + 1) + '/' + date.getDate() + '(' + ['日','月','火','水','木','金','土'][date.getDay()] + ')';
+  };
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -94,72 +125,175 @@ export default function PostDetailPage() {
           投稿一覧に戻る
         </Link>
 
-        {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-lg border p-6 md:p-8 mb-6">
-          {/* Header */}
-          <div className="flex flex-wrap items-center gap-3 mb-4">
-            <PostTypeBadge type={post.type} />
-            <CategoryBadge category={post.category} />
-            <span className="text-sm text-gray-500 flex items-center gap-1 ml-auto">
-              <Eye className="h-4 w-4" />
-              {post.view_count}回閲覧
-            </span>
+        {/* Main Card - 統合デザイン */}
+        <div className="bg-white rounded-2xl shadow-lg border overflow-hidden">
+          {/* 投稿者セクション（上部） */}
+          <div className="p-6 border-b bg-gradient-to-r from-orange-50 to-pink-50">
+            <div className="flex items-center gap-4">
+              <Link href={'/users/' + post.profile.username}>
+                <div className="h-14 w-14 rounded-full bg-white shadow-md flex items-center justify-center text-xl font-bold overflow-hidden">
+                  {post.profile.avatar_url ? (
+                    <img
+                      src={post.profile.avatar_url}
+                      alt={post.profile.display_name}
+                      className="h-14 w-14 object-cover"
+                    />
+                  ) : (
+                    <span className="text-orange-500">{post.profile.display_name[0]}</span>
+                  )}
+                </div>
+              </Link>
+              <div className="flex-1">
+                <Link href={'/users/' + post.profile.username} className="hover:underline">
+                  <p className="font-bold text-lg">{post.profile.display_name}</p>
+                </Link>
+                <p className="text-sm text-gray-500">@{post.profile.username}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-400">{formatRelativeTime(post.created_at)}</p>
+                <p className="text-xs text-gray-400 flex items-center gap-1 justify-end mt-1">
+                  <Eye className="h-3 w-3" />
+                  {post.view_count}
+                </p>
+              </div>
+            </div>
+            {post.profile.bio && (
+              <p className="mt-3 text-sm text-gray-600 line-clamp-2">{post.profile.bio}</p>
+            )}
           </div>
 
-          {/* Title */}
-          <h1 className="text-2xl md:text-3xl font-bold mb-6">{post.title}</h1>
-
-          {/* Description */}
-          <div className="mb-8">
-            <p className="whitespace-pre-wrap text-gray-600 leading-relaxed">
-              {post.description}
-            </p>
-          </div>
-
-          {/* Meta Info */}
-          <div className="grid gap-4 sm:grid-cols-2 mb-8">
-            <div className="flex items-center gap-3 text-sm">
-              {post.is_online ? (
-                <>
-                  <Globe className="h-5 w-5 text-green-500" />
-                  <span>オンライン対応</span>
-                </>
-              ) : (
-                <>
-                  <MapPin className="h-5 w-5 text-gray-400" />
-                  <span>{post.location || '場所未定'}</span>
-                </>
-              )}
+          {/* 投稿内容セクション */}
+          <div className="p-6 md:p-8">
+            {/* バッジ */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <PostTypeBadge type={post.type} />
+              <CategoryBadge category={post.category} />
+              <div className="flex items-center gap-1 ml-auto px-3 py-1 bg-gray-100 rounded-full">
+                <span className="text-lg">{levelInfo.emoji}</span>
+                <span className="text-sm font-medium">{levelInfo.name}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <Users className="h-5 w-5 text-gray-400" />
-              <span>{post.max_applicants}人募集</span>
-            </div>
-            {post.preferred_schedule && (
-              <div className="flex items-center gap-3 text-sm">
-                <Calendar className="h-5 w-5 text-gray-400" />
-                <span>{post.preferred_schedule}</span>
+
+            {/* タイトル */}
+            <h1 className="text-2xl md:text-3xl font-bold mb-4">{post.title}</h1>
+
+            {/* タグ */}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {tags.map((tag, i) => (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-orange-50 text-orange-600 rounded-full text-sm"
+                  >
+                    <Tag className="h-3 w-3" />
+                    {tag}
+                  </span>
+                ))}
               </div>
             )}
-            <div className="flex items-center gap-3 text-sm">
-              <Clock className="h-5 w-5 text-gray-400" />
-              <span>{formatRelativeTime(post.created_at)}</span>
+
+            {/* 説明 */}
+            <div className="mb-6">
+              <p className="whitespace-pre-wrap text-gray-700 leading-relaxed">
+                {post.description}
+              </p>
             </div>
+
+            {/* メタ情報 */}
+            <div className="grid gap-3 sm:grid-cols-2 mb-6 p-4 bg-gray-50 rounded-xl">
+              <div className="flex items-center gap-3 text-sm">
+                {post.is_online ? (
+                  <>
+                    <Globe className="h-5 w-5 text-green-500" />
+                    <span>オンライン対応</span>
+                  </>
+                ) : (
+                  <>
+                    <MapPin className="h-5 w-5 text-gray-400" />
+                    <span>{post.location || '場所未定'}</span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-3 text-sm">
+                <Users className="h-5 w-5 text-gray-400" />
+                <span>{post.max_applicants}人募集</span>
+              </div>
+            </div>
+
+            {/* 日程 */}
+            {(availableDays.length > 0 || availableTimes.length > 0 || specificDates.length > 0) && (
+              <div className="mb-6 p-4 bg-blue-50 rounded-xl">
+                <h3 className="font-medium mb-3 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-500" />
+                  希望日程
+                </h3>
+
+                {availableDays.length > 0 && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-gray-600">曜日:</span>
+                    <div className="flex gap-1">
+                      {availableDays.map((day) => (
+                        <span
+                          key={day}
+                          className={'px-2 py-1 rounded text-xs font-medium ' +
+                            (day === 'sat' ? 'bg-blue-100 text-blue-700' :
+                             day === 'sun' ? 'bg-red-100 text-red-700' :
+                             'bg-gray-100 text-gray-700')}
+                        >
+                          {DAYS_LABEL[day] || day}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {availableTimes.length > 0 && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm text-gray-600">時間帯:</span>
+                    <div className="flex gap-1">
+                      {availableTimes.map((time) => (
+                        <span
+                          key={time}
+                          className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium"
+                        >
+                          {TIMES_LABEL[time] || time}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {specificDates.length > 0 && (
+                  <div className="mt-3">
+                    <span className="text-sm text-gray-600 block mb-2">具体的な日時候補:</span>
+                    <div className="space-y-1">
+                      {specificDates.map((item, i) => (
+                        <div key={i} className="flex items-center gap-2 text-sm">
+                          <span className="text-green-600">📅</span>
+                          <span className="font-medium">{formatDate(item.date)}</span>
+                          <span className="text-gray-500">{item.start} 〜 {item.end}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-wrap gap-3">
+          {/* アクションバー（下部固定風） */}
+          <div className="p-4 border-t bg-gray-50 flex items-center gap-3">
             {isOwner ? (
               <>
                 <Link
-                  href={`/posts/${post.id}/edit`}
-                  className="inline-flex items-center justify-center h-10 px-6 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600"
+                  href={'/posts/' + post.id + '/edit'}
+                  className="flex-1 h-12 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 flex items-center justify-center"
                 >
                   編集する
                 </Link>
                 <Link
                   href="/applications"
-                  className="inline-flex items-center justify-center h-10 px-6 rounded-xl border-2 font-medium hover:bg-gray-50"
+                  className="flex-1 h-12 rounded-xl border-2 font-medium hover:bg-white flex items-center justify-center"
                 >
                   応募を見る
                 </Link>
@@ -167,49 +301,29 @@ export default function PostDetailPage() {
             ) : (
               <button
                 onClick={handleApply}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center h-10 px-6 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600"
+                className="flex-1 h-12 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 flex items-center justify-center gap-2"
               >
+                <MessageCircle className="h-5 w-5" />
                 応募する
               </button>
             )}
+
+            <button
+              onClick={handleLike}
+              className={'h-12 w-12 rounded-xl border-2 flex items-center justify-center transition-colors ' +
+                (isLiked ? 'bg-red-50 border-red-200 text-red-500' : 'hover:bg-gray-100')}
+            >
+              <Heart className={'h-5 w-5 ' + (isLiked ? 'fill-current' : '')} />
+            </button>
+            <span className="text-sm text-gray-500">{likesCount}</span>
+
             <button
               onClick={handleShare}
-              className="inline-flex items-center justify-center h-10 w-10 rounded-xl border-2 hover:bg-gray-50"
+              className="h-12 w-12 rounded-xl border-2 hover:bg-gray-100 flex items-center justify-center"
             >
-              <Share2 className="h-4 w-4" />
-            </button>
-            <button className="inline-flex items-center justify-center h-10 w-10 rounded-xl hover:bg-gray-50">
-              <Flag className="h-4 w-4" />
+              <Share2 className="h-5 w-5" />
             </button>
           </div>
-        </div>
-
-        {/* Author Card */}
-        <div className="bg-white rounded-2xl shadow-lg border p-6">
-          <h2 className="font-semibold mb-4">投稿者</h2>
-          <Link
-            href={`/profile/${post.profile.username}`}
-            className="flex items-center gap-4 hover:bg-gray-50 -m-2 p-2 rounded-xl transition-colors"
-          >
-            <div className="h-14 w-14 rounded-full bg-gray-200 flex items-center justify-center text-xl font-medium">
-              {post.profile.avatar_url ? (
-                <img
-                  src={post.profile.avatar_url}
-                  alt={post.profile.display_name}
-                  className="h-14 w-14 rounded-full object-cover"
-                />
-              ) : (
-                post.profile.display_name[0]
-              )}
-            </div>
-            <div>
-              <p className="font-semibold">{post.profile.display_name}</p>
-              <p className="text-sm text-gray-500">@{post.profile.username}</p>
-            </div>
-          </Link>
-          {post.profile.bio && (
-            <p className="mt-4 text-sm text-gray-500">{post.profile.bio}</p>
-          )}
         </div>
       </div>
 
@@ -219,9 +333,7 @@ export default function PostDetailPage() {
         postTitle={post.title}
         isOpen={isApplyDialogOpen}
         onClose={() => setIsApplyDialogOpen(false)}
-        onSuccess={() => {
-          // 成功時の処理
-        }}
+        onSuccess={() => {}}
       />
     </div>
   );
