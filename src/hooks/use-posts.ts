@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getClient } from '@/lib/supabase/client';
 import type { PostWithRelations, Category, PostType } from '@/types';
 
@@ -17,9 +17,10 @@ export function usePosts(options: UsePostsOptions = {}) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = getClient();
+  const supabaseRef = useRef(getClient());
 
   const fetchPosts = useCallback(async () => {
+    const supabase = supabaseRef.current;
     setIsLoading(true);
     setError(null);
 
@@ -65,7 +66,7 @@ export function usePosts(options: UsePostsOptions = {}) {
     } finally {
       setIsLoading(false);
     }
-  }, [supabase, options.type, options.categoryId, options.search, options.userId, options.limit]);
+  }, [options.type, options.categoryId, options.search, options.userId, options.limit]);
 
   useEffect(() => {
     fetchPosts();
@@ -79,10 +80,14 @@ export function usePost(postId: string) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const supabase = getClient();
+  const supabaseRef = useRef(getClient());
+  const hasIncrementedView = useRef(false);
 
   useEffect(() => {
+    if (!postId) return;
+
     const fetchPost = async () => {
+      const supabase = supabaseRef.current;
       setIsLoading(true);
       setError(null);
 
@@ -101,8 +106,11 @@ export function usePost(postId: string) {
 
         setPost(data as PostWithRelations);
 
-        // 閲覧数をインクリメント
-        await supabase.rpc('increment_view_count', { p_post_id: postId } as any);
+        // 閲覧数をインクリメント（1回だけ）
+        if (!hasIncrementedView.current) {
+          hasIncrementedView.current = true;
+          await supabase.rpc('increment_view_count', { p_post_id: postId } as any);
+        }
       } catch (err) {
         console.error('Error fetching post:', err);
         setError('投稿の取得に失敗しました');
@@ -111,10 +119,8 @@ export function usePost(postId: string) {
       }
     };
 
-    if (postId) {
-      fetchPost();
-    }
-  }, [supabase, postId]);
+    fetchPost();
+  }, [postId]);
 
   return { post, isLoading, error };
 }
@@ -123,10 +129,15 @@ export function useCategories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const supabase = getClient();
+  const supabaseRef = useRef(getClient());
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+
     const fetchCategories = async () => {
+      const supabase = supabaseRef.current;
+      
       const { data, error } = await supabase
         .from('categories')
         .select('*')
@@ -137,18 +148,20 @@ export function useCategories() {
       } else {
         setCategories(data as Category[]);
       }
+      
+      hasFetched.current = true;
       setIsLoading(false);
     };
 
     fetchCategories();
-  }, [supabase]);
+  }, []);
 
   return { categories, isLoading };
 }
 
 export function useCreatePost() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const supabase = getClient();
+  const supabaseRef = useRef(getClient());
 
   const createPost = async (data: {
     title: string;
@@ -164,13 +177,14 @@ export function useCreatePost() {
     targetLevelMin?: number;
     targetLevelMax?: number;
   }) => {
+    const supabase = supabaseRef.current;
     setIsSubmitting(true);
 
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('ログインしてください');
 
-      const { data: post, error } = await supabase
+      const { data: post, error } = await (supabase as any)
         .from('posts')
         .insert({
           user_id: userData.user.id,
@@ -200,4 +214,64 @@ export function useCreatePost() {
   };
 
   return { createPost, isSubmitting };
+}
+
+export function useUpdatePost() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const supabaseRef = useRef(getClient());
+
+  const updatePost = async (
+    postId: string,
+    data: {
+      title?: string;
+      description?: string;
+      type?: PostType;
+      categoryId?: number;
+      maxApplicants?: number;
+      location?: string;
+      isOnline?: boolean;
+      preferredSchedule?: string;
+      tags?: string[];
+      myLevel?: number;
+      targetLevelMin?: number;
+      targetLevelMax?: number;
+      status?: string;
+    }
+  ) => {
+    const supabase = supabaseRef.current;
+    setIsSubmitting(true);
+
+    try {
+      const updateData: any = {};
+      
+      if (data.title !== undefined) updateData.title = data.title;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.type !== undefined) updateData.type = data.type;
+      if (data.categoryId !== undefined) updateData.category_id = data.categoryId;
+      if (data.maxApplicants !== undefined) updateData.max_applicants = data.maxApplicants;
+      if (data.location !== undefined) updateData.location = data.location || null;
+      if (data.isOnline !== undefined) updateData.is_online = data.isOnline;
+      if (data.preferredSchedule !== undefined) updateData.preferred_schedule = data.preferredSchedule || null;
+      if (data.tags !== undefined) updateData.tags = data.tags;
+      if (data.myLevel !== undefined) updateData.my_level = data.myLevel;
+      if (data.targetLevelMin !== undefined) updateData.target_level_min = data.targetLevelMin;
+      if (data.targetLevelMax !== undefined) updateData.target_level_max = data.targetLevelMax;
+      if (data.status !== undefined) updateData.status = data.status;
+
+      const { data: post, error } = await (supabase as any)
+        .from('posts')
+        .update(updateData as any)
+        .eq('id', postId)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return post;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { updatePost, isSubmitting };
 }

@@ -16,10 +16,16 @@ interface PostCardProps {
     type: 'teach' | 'learn';
     is_online?: boolean;
     location?: string | null;
-    my_level?: number;
-    target_level_min?: number;
-    target_level_max?: number;
+    my_level?: number | null;
+    target_level_min?: number | null;
+    target_level_max?: number | null;
     created_at: string;
+    profile?: {
+      id: string;
+      username: string;
+      display_name: string;
+      avatar_url?: string | null;
+    };
     user?: {
       id: string;
       username: string;
@@ -90,7 +96,7 @@ export function PostCard({ post, showAuthor = true }: PostCardProps) {
             <span className="text-gray-500">
               {post.type === 'teach' ? '先輩レベル:' : '現在:'}
             </span>
-            <span className="font-medium">{getLevelLabel(post.my_level)}</span>
+            <span className="font-medium">{getLevelLabel(post.my_level ?? 5)}</span>
           </div>
         )}
 

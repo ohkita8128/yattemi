@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { getLevelInfo } from '@/lib/levels';
 import { cn } from '@/lib/utils';
@@ -88,6 +88,10 @@ export function LevelRangeSlider({
     }
   };
 
+  // 選択範囲のパーセンテージ計算
+  const minPercent = (minValue / 10) * 100;
+  const maxPercent = (maxValue / 10) * 100;
+
   return (
     <div className={cn('space-y-3', className)}>
       {label && (
@@ -106,40 +110,109 @@ export function LevelRangeSlider({
           <span className="font-medium">{maxInfo.name}</span>
         </div>
 
-        {/* Min スライダー */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>下限: {minInfo.emoji} {minInfo.name}</span>
-          </div>
+        {/* デュアルレンジスライダー */}
+        <div className="relative h-2 mx-2">
+          {/* ベースのトラック */}
+          <div className="absolute w-full h-2 bg-gray-200 rounded-lg" />
+          
+          {/* 選択範囲のハイライト */}
+          <div 
+            className="absolute h-2 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-lg"
+            style={{
+              left: `${minPercent}%`,
+              width: `${maxPercent - minPercent}%`
+            }}
+          />
+
+          {/* Min スライダー */}
           <input
             type="range"
             min={0}
             max={10}
             value={minValue}
             onChange={(e) => handleMinChange(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+            className="absolute w-full h-2 appearance-none bg-transparent pointer-events-none
+              [&::-webkit-slider-thumb]:pointer-events-auto
+              [&::-webkit-slider-thumb]:appearance-none
+              [&::-webkit-slider-thumb]:w-5
+              [&::-webkit-slider-thumb]:h-5
+              [&::-webkit-slider-thumb]:bg-cyan-500
+              [&::-webkit-slider-thumb]:border-2
+              [&::-webkit-slider-thumb]:border-white
+              [&::-webkit-slider-thumb]:rounded-full
+              [&::-webkit-slider-thumb]:shadow-md
+              [&::-webkit-slider-thumb]:cursor-pointer
+              [&::-webkit-slider-thumb]:hover:bg-cyan-600
+              [&::-moz-range-thumb]:pointer-events-auto
+              [&::-moz-range-thumb]:appearance-none
+              [&::-moz-range-thumb]:w-5
+              [&::-moz-range-thumb]:h-5
+              [&::-moz-range-thumb]:bg-cyan-500
+              [&::-moz-range-thumb]:border-2
+              [&::-moz-range-thumb]:border-white
+              [&::-moz-range-thumb]:rounded-full
+              [&::-moz-range-thumb]:shadow-md
+              [&::-moz-range-thumb]:cursor-pointer
+              [&::-moz-range-thumb]:hover:bg-cyan-600"
+            style={{ zIndex: minValue === maxValue ? 2 : 1 }}
           />
-        </div>
 
-        {/* Max スライダー */}
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-gray-500">
-            <span>上限: {maxInfo.emoji} {maxInfo.name}</span>
-          </div>
+          {/* Max スライダー */}
           <input
             type="range"
             min={0}
             max={10}
             value={maxValue}
             onChange={(e) => handleMaxChange(Number(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+            className="absolute w-full h-2 appearance-none bg-transparent pointer-events-none
+              [&::-webkit-slider-thumb]:pointer-events-auto
+              [&::-webkit-slider-thumb]:appearance-none
+              [&::-webkit-slider-thumb]:w-5
+              [&::-webkit-slider-thumb]:h-5
+              [&::-webkit-slider-thumb]:bg-purple-500
+              [&::-webkit-slider-thumb]:border-2
+              [&::-webkit-slider-thumb]:border-white
+              [&::-webkit-slider-thumb]:rounded-full
+              [&::-webkit-slider-thumb]:shadow-md
+              [&::-webkit-slider-thumb]:cursor-pointer
+              [&::-webkit-slider-thumb]:hover:bg-purple-600
+              [&::-moz-range-thumb]:pointer-events-auto
+              [&::-moz-range-thumb]:appearance-none
+              [&::-moz-range-thumb]:w-5
+              [&::-moz-range-thumb]:h-5
+              [&::-moz-range-thumb]:bg-purple-500
+              [&::-moz-range-thumb]:border-2
+              [&::-moz-range-thumb]:border-white
+              [&::-moz-range-thumb]:rounded-full
+              [&::-moz-range-thumb]:shadow-md
+              [&::-moz-range-thumb]:cursor-pointer
+              [&::-moz-range-thumb]:hover:bg-purple-600"
+            style={{ zIndex: 2 }}
           />
         </div>
 
-        {/* 両端のアイコン */}
-        <div className="flex justify-between text-lg px-1">
-          <span>🐣</span>
-          <span>🥷</span>
+        {/* 両端のアイコン + レベル表示 */}
+        <div className="flex justify-between text-sm px-1">
+          <div className="flex items-center gap-1">
+            <span>🐣</span>
+            <span className="text-xs text-gray-500">0</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-gray-500">10</span>
+            <span>🥷</span>
+          </div>
+        </div>
+
+        {/* 下限/上限ラベル */}
+        <div className="flex justify-between text-xs text-gray-500 px-1">
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 bg-cyan-500 rounded-full inline-block" />
+            下限: Lv.{minValue}
+          </span>
+          <span className="flex items-center gap-1">
+            上限: Lv.{maxValue}
+            <span className="w-3 h-3 bg-purple-500 rounded-full inline-block" />
+          </span>
         </div>
       </div>
     </div>

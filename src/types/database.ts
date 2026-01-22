@@ -1,4 +1,4 @@
-// =====================================================
+﻿// =====================================================
 // Database Types (Supabase Generated Style)
 // =====================================================
 
@@ -68,6 +68,9 @@ export interface Post {
   preferred_schedule: string | null;
   tags: string[];
   view_count: number;
+  my_level: number | null;
+  target_level_min: number | null;
+  target_level_max: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -218,6 +221,9 @@ export interface Database {
           matches_count: number;
           avg_rating: number | null;
           review_count: number;
+  my_level: number | null;
+  target_level_min: number | null;
+  target_level_max: number | null;
         };
       };
     };

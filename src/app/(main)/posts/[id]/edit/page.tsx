@@ -9,6 +9,7 @@ import { useAuth, usePost } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
 import { Skeleton } from '@/components/ui/skeleton';
+import { LevelSlider, LevelRangeSlider } from '@/components/ui/level-slider';
 import type { Category } from '@/types';
 
 export default function EditPostPage() {
@@ -30,6 +31,11 @@ export default function EditPostPage() {
   const [location, setLocation] = useState('');
   const [preferredSchedule, setPreferredSchedule] = useState('');
   const [status, setStatus] = useState<'open' | 'closed'>('open');
+  
+  // レベル関連
+  const [myLevel, setMyLevel] = useState(5);
+  const [targetLevelMin, setTargetLevelMin] = useState(0);
+  const [targetLevelMax, setTargetLevelMax] = useState(10);
   
   const [categories, setCategories] = useState<Category[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,6 +77,11 @@ export default function EditPostPage() {
       setLocation(post.location || '');
       setPreferredSchedule(post.preferred_schedule || '');
       setStatus(post.status === 'open' ? 'open' : 'closed');
+      
+      // レベル
+      setMyLevel(post.my_level ?? 5);
+      setTargetLevelMin(post.target_level_min ?? 0);
+      setTargetLevelMax(post.target_level_max ?? 10);
     }
   }, [post, user, router]);
 
@@ -113,6 +124,9 @@ export default function EditPostPage() {
         description,
         preferred_schedule: preferredSchedule || null,
         status,
+        my_level: myLevel,
+        target_level_min: targetLevelMin,
+        target_level_max: targetLevelMax,
       };
 
       // 応募がなければ全項目更新可能
@@ -274,6 +288,27 @@ export default function EditPostPage() {
               </option>
             ))}
           </select>
+        </div>
+
+        {/* レベル設定 */}
+        <div className="space-y-6 p-4 bg-gray-50 rounded-xl">
+          <h3 className="font-medium text-gray-700">レベル設定</h3>
+          
+          {/* 自分のレベル */}
+          <LevelSlider
+            value={myLevel}
+            onChange={setMyLevel}
+            label={type === 'teach' ? '自分のレベル（先輩として）' : '自分のレベル（学習者として）'}
+          />
+
+          {/* 対象レベル */}
+          <LevelRangeSlider
+            minValue={targetLevelMin}
+            maxValue={targetLevelMax}
+            onMinChange={setTargetLevelMin}
+            onMaxChange={setTargetLevelMax}
+            label={type === 'teach' ? '募集する後輩のレベル' : '希望する先輩のレベル'}
+          />
         </div>
 
         {/* 募集人数 */}
