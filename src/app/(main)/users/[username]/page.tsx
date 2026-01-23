@@ -1,10 +1,9 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { getClient } from '@/lib/supabase/client';
-import { ProfileImageViewer } from '@/components/profile/profile-image-viewer';
 import { PostCard } from '@/components/posts/post-card';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +14,7 @@ import {
   MessageCircle,
   ImageIcon,
   FileText,
+  User,
 } from 'lucide-react';
 
 type Profile = {
@@ -133,7 +133,7 @@ export default function UserProfilePage() {
 
       setProfile(profileData);
 
-      // プロフィール画像取得（カラム名修正: position）
+      // プロフィール画像取得
       const { data: images } = await (supabase as any)
         .from('profile_images')
         .select('*')
@@ -160,27 +160,31 @@ export default function UserProfilePage() {
         setPosts(postsData);
       }
 
-      // バッジ取得（受け取ったレビューからカウント）
-      const { data: reviews } = await (supabase as any)
-        .from('reviews')
-        .select('badges')
-        .eq('reviewee_id', profileData.id);
+      // バッジ取得（エラーハンドリング追加）
+      try {
+        const { data: reviews, error: reviewsError } = await (supabase as any)
+          .from('reviews')
+          .select('badges')
+          .eq('reviewee_id', profileData.id);
 
-      if (reviews) {
-        const badgeCounts: Record<string, number> = {};
-        reviews.forEach((review: any) => {
-          if (review.badges && Array.isArray(review.badges)) {
-            review.badges.forEach((badge: string) => {
-              badgeCounts[badge] = (badgeCounts[badge] || 0) + 1;
-            });
-          }
-        });
+        if (!reviewsError && reviews) {
+          const badgeCounts: Record<string, number> = {};
+          reviews.forEach((review: any) => {
+            if (review.badges && Array.isArray(review.badges)) {
+              review.badges.forEach((badge: string) => {
+                badgeCounts[badge] = (badgeCounts[badge] || 0) + 1;
+              });
+            }
+          });
 
-        const badgeArray = Object.entries(badgeCounts)
-          .map(([badge_type, count]) => ({ badge_type, count }))
-          .sort((a, b) => b.count - a.count);
+          const badgeArray = Object.entries(badgeCounts)
+            .map(([badge_type, count]) => ({ badge_type, count }))
+            .sort((a, b) => b.count - a.count);
 
-        setBadges(badgeArray);
+          setBadges(badgeArray);
+        }
+      } catch (e) {
+        console.log('Reviews table not available');
       }
 
       // フォロワー数
@@ -199,14 +203,14 @@ export default function UserProfilePage() {
 
       setFollowingCount(following || 0);
 
-      // フォロー状態
+      // フォロー状態（.single()を削除）
       if (user) {
         const { data: followData } = await (supabase as any)
           .from('follows')
           .select('id')
           .eq('follower_id', user.id)
           .eq('following_id', profileData.id)
-          .single();
+          .maybeSingle();
 
         setIsFollowing(!!followData);
       }
@@ -283,66 +287,77 @@ export default function UserProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-lg mx-auto">
-        {/* プロフィール画像スライダー */}
-        <ProfileImageViewer
-          images={profileImages}
-          avatarUrl={profile.avatar_url}
-          displayName={profile.display_name}
-        />
-
-        {/* プロフィール情報 */}
-        <div className="bg-white -mt-6 relative rounded-t-3xl px-4 pt-6 pb-4">
-          {/* 名前とアクション */}
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {profile.display_name || 'ユーザー'}
-              </h1>
-              <p className="text-gray-500">@{profile.username}</p>
+        {/* プロフィールヘッダー */}
+        <div className="bg-white px-4 pt-6 pb-4">
+          {/* アバター + 名前 + ボタン */}
+          <div className="flex items-start gap-4 mb-4">
+            {/* アバター（丸） */}
+            <div className="h-20 w-20 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+              {profile.avatar_url ? (
+                <img
+                  src={profile.avatar_url}
+                  alt={profile.display_name || 'ユーザー'}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <User className="h-10 w-10 text-orange-400" />
+              )}
             </div>
-            
-            {/* アクションボタン */}
-            {isOwnProfile ? (
-              <Link href="/profile/edit">
-                <Button variant="outline" size="sm">
-                  <Settings className="h-4 w-4 mr-1" />
-                  編集
-                </Button>
-              </Link>
-            ) : (
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleFollow}
-                  disabled={followLoading}
-                  variant={isFollowing ? 'outline' : 'default'}
-                  size="sm"
-                >
-                  {isFollowing ? 'フォロー中' : 'フォロー'}
-                </Button>
-                <Button variant="outline" size="icon" className="h-9 w-9">
-                  <MessageCircle className="h-4 w-4" />
-                </Button>
+
+            {/* 名前とアクション */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h1 className="text-xl font-bold text-gray-900 truncate">
+                    {profile.display_name || 'ユーザー'}
+                  </h1>
+                  <p className="text-gray-500 text-sm">@{profile.username}</p>
+                </div>
+                
+                {/* アクションボタン */}
+                {isOwnProfile ? (
+                  <Link href="/profile/edit">
+                    <Button variant="outline" size="sm">
+                      <Settings className="h-4 w-4 mr-1" />
+                      編集
+                    </Button>
+                  </Link>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={handleFollow}
+                      disabled={followLoading}
+                      variant={isFollowing ? 'outline' : 'default'}
+                      size="sm"
+                    >
+                      {isFollowing ? 'フォロー中' : 'フォロー'}
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-9 w-9">
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
-            )}
+
+              {/* 学校情報 */}
+              {(profile.university || profile.department || profile.faculty) && (
+                <div className="flex items-center gap-1 text-gray-600 text-sm mt-2">
+                  <GraduationCap className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <span className="truncate">
+                    {profile.university}
+                    {(profile.department || profile.faculty) && ` ${profile.department || profile.faculty}`}
+                  </span>
+                </div>
+              )}
+
+              {profile.grade && (
+                <div className="flex items-center gap-1 text-gray-600 text-sm mt-1">
+                  <Calendar className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <span>{GRADE_LABELS[profile.grade] || profile.grade}</span>
+                </div>
+              )}
+            </div>
           </div>
-
-          {/* 学校情報 */}
-          {(profile.university || profile.department || profile.faculty) && (
-            <div className="flex items-center gap-2 text-gray-600 text-sm mb-2">
-              <GraduationCap className="h-4 w-4 text-gray-400" />
-              <span>
-                {profile.university}
-                {(profile.department || profile.faculty) && ` ${profile.department || profile.faculty}`}
-              </span>
-            </div>
-          )}
-
-          {profile.grade && (
-            <div className="flex items-center gap-2 text-gray-600 text-sm mb-3">
-              <Calendar className="h-4 w-4 text-gray-400" />
-              <span>{GRADE_LABELS[profile.grade] || profile.grade}</span>
-            </div>
-          )}
 
           {/* 自己紹介 */}
           {profile.bio && (
