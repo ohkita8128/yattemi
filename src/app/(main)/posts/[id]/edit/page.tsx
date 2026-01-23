@@ -14,7 +14,6 @@ import { TagInput } from '@/components/ui/tag-input';
 import { ScheduleSelector } from '@/components/ui/schedule-selector';
 import type { Category } from '@/types';
 import { updatePost } from './actions';
-import { error } from 'console';
 
 export default function EditPostPage() {
   const params = useParams();
@@ -133,7 +132,6 @@ export default function EditPostPage() {
 
     setIsSubmitting(true);
     try {
-      const supabase = supabaseRef.current;
       const updateData: any = {
         title,
         description,
