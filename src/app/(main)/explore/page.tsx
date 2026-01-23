@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, X, SlidersHorizontal, Calendar, Clock, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, X, SlidersHorizontal, Calendar, Clock, MapPin, ChevronLeft, ChevronRight, User } from 'lucide-react';
 import { PostCard, PostCardSkeleton } from '@/components/posts';
 import { usePosts, useCategories, useDebounce } from '@/hooks';
 import { useAuth } from '@/hooks';
@@ -31,7 +31,6 @@ const LOCATION_OPTIONS = [
   { value: 'offline', label: '📍 対面' },
 ];
 
-// 日付をYYYY-MM-DD形式に変換（ローカルタイムゾーン）
 const toDateString = (date: Date): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -39,7 +38,6 @@ const toDateString = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
-// 日付フォーマット
 const formatDateShort = (dateStr: string): string => {
   const [year, month, day] = dateStr.split('-').map(Number);
   const date = new Date(year!, month! - 1, day);
@@ -47,36 +45,26 @@ const formatDateShort = (dateStr: string): string => {
   return `${month}/${day}(${dayOfWeek})`;
 };
 
-// 今日の日付を取得
-const getTodayDate = (): string => {
-  return toDateString(new Date());
-};
+const getTodayDate = (): string => toDateString(new Date());
 
-// 明日の日付を取得
 const getTomorrowDate = (): string => {
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
   return toDateString(tomorrow);
 };
 
-// 今週末の日付を取得（土日）
 const getWeekendDates = (): string[] => {
   const today = new Date();
   const dates: string[] = [];
-  
   const dayOfWeek = today.getDay();
-  
   if (dayOfWeek === 0) {
-    // 今日が日曜
     dates.push(toDateString(today));
   } else if (dayOfWeek === 6) {
-    // 今日が土曜
     dates.push(toDateString(today));
     const sunday = new Date(today);
     sunday.setDate(today.getDate() + 1);
     dates.push(toDateString(sunday));
   } else {
-    // 平日：次の土日
     const saturday = new Date(today);
     saturday.setDate(today.getDate() + (6 - dayOfWeek));
     const sunday = new Date(saturday);
@@ -84,17 +72,14 @@ const getWeekendDates = (): string[] => {
     dates.push(toDateString(saturday));
     dates.push(toDateString(sunday));
   }
-  
   return dates;
 };
 
-// 今日の曜日を取得
 const getTodayDayKey = (): string => {
   const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   return dayKeys[new Date().getDay()]!;
 };
 
-// 明日の曜日を取得
 const getTomorrowDayKey = (): string => {
   const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
   const tomorrow = new Date();
@@ -102,10 +87,8 @@ const getTomorrowDayKey = (): string => {
   return dayKeys[tomorrow.getDay()]!;
 };
 
-// 今週末（土日）を取得
 const getWeekendDayKeys = () => ['sat', 'sun'];
 
-// 日付から曜日キーを取得
 const getDayKeyFromDate = (dateStr: string): string => {
   const [year, month, day] = dateStr.split('-').map(Number);
   const date = new Date(year!, month! - 1, day);
@@ -122,8 +105,6 @@ function ExploreContent() {
   const initialType = (searchParams.get('type') as 'teach' | 'learn' | 'all') || 'all';
   const initialCategory = searchParams.get('category');
   const initialSearch = searchParams.get('q') || '';
-  const initialLevelMin = searchParams.get('levelMin');
-  const initialLevelMax = searchParams.get('levelMax');
 
   const [type, setType] = useState<'teach' | 'learn' | 'all'>(initialType);
   const [categoryId, setCategoryId] = useState<number | null>(
@@ -131,9 +112,14 @@ function ExploreContent() {
   );
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [showFilters, setShowFilters] = useState(false);
-  const [levelMin, setLevelMin] = useState<number>(initialLevelMin ? Number(initialLevelMin) : 0);
-  const [levelMax, setLevelMax] = useState<number>(initialLevelMax ? Number(initialLevelMax) : 10);
   const [appliedPostIds, setAppliedPostIds] = useState<Set<string>>(new Set());
+
+  // 投稿者レベルフィルタ（デュアルスライダー）
+  const [posterLevelMin, setPosterLevelMin] = useState<number>(0);
+  const [posterLevelMax, setPosterLevelMax] = useState<number>(10);
+  
+  // 自分のレベルフィルタ（応募条件マッチ）
+  const [myLevelFilter, setMyLevelFilter] = useState<number | null>(null);
 
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
@@ -248,8 +234,17 @@ function ExploreContent() {
   };
 
   const filteredPosts = posts.filter((post) => {
+    // 投稿者レベルフィルタ
     const postLevel = post.my_level ?? 5;
-    if (postLevel < levelMin || postLevel > levelMax) return false;
+    if (postLevel < posterLevelMin || postLevel > posterLevelMax) return false;
+    
+    // 自分のレベルフィルタ（応募条件に合うか）
+    if (myLevelFilter !== null) {
+      const targetMin = (post as any).target_level_min ?? 0;
+      const targetMax = (post as any).target_level_max ?? 10;
+      if (myLevelFilter < targetMin || myLevelFilter > targetMax) return false;
+    }
+    
     if (locationFilter === 'online' && post.is_online === false) return false;
     if (locationFilter === 'offline' && post.is_online === true) return false;
     if (selectedDays.length > 0 || targetDates.length > 0) {
@@ -275,18 +270,20 @@ function ExploreContent() {
     if (type !== 'all') params.set('type', type);
     if (categoryId) params.set('category', String(categoryId));
     if (searchQuery) params.set('q', searchQuery);
-    if (levelMin > 0) params.set('levelMin', String(levelMin));
-    if (levelMax < 10) params.set('levelMax', String(levelMax));
+    if (posterLevelMin > 0) params.set('posterLevelMin', String(posterLevelMin));
+    if (posterLevelMax < 10) params.set('posterLevelMax', String(posterLevelMax));
+    if (myLevelFilter !== null) params.set('myLevel', String(myLevelFilter));
     const newUrl = params.toString() ? `?${params.toString()}` : '/explore';
     router.replace(newUrl, { scroll: false });
-  }, [type, categoryId, searchQuery, levelMin, levelMax, router]);
+  }, [type, categoryId, searchQuery, posterLevelMin, posterLevelMax, myLevelFilter, router]);
 
   const clearFilters = () => {
     setType('all');
     setCategoryId(null);
     setSearchQuery('');
-    setLevelMin(0);
-    setLevelMax(10);
+    setPosterLevelMin(0);
+    setPosterLevelMax(10);
+    setMyLevelFilter(null);
     setSelectedDays([]);
     setSelectedTimes([]);
     setLocationFilter('all');
@@ -295,10 +292,11 @@ function ExploreContent() {
     setShowDatePicker(false);
   };
 
-  const hasActiveFilters = type !== 'all' || categoryId !== null || searchQuery !== '' || levelMin > 0 || levelMax < 10 || selectedDays.length > 0 || selectedTimes.length > 0 || locationFilter !== 'all';
+  const hasActiveFilters = type !== 'all' || categoryId !== null || searchQuery !== '' || posterLevelMin > 0 || posterLevelMax < 10 || myLevelFilter !== null || selectedDays.length > 0 || selectedTimes.length > 0 || locationFilter !== 'all';
 
-  const minInfo = getLevelInfo(levelMin);
-  const maxInfo = getLevelInfo(levelMax);
+  const posterMinInfo = getLevelInfo(posterLevelMin);
+  const posterMaxInfo = getLevelInfo(posterLevelMax);
+  const myLevelInfo = myLevelFilter !== null ? getLevelInfo(myLevelFilter) : null;
   const calendarDays = generateCalendarDays();
 
   return (
@@ -543,33 +541,89 @@ function ExploreContent() {
             </div>
           </div>
 
+          {/* 投稿者のレベル（デュアルスライダー） */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">レベル範囲</label>
+            <label className="block text-sm font-medium text-gray-700 mb-3">🎓 投稿者のレベル</label>
             <div className="flex items-center justify-center gap-3 mb-4 py-2 bg-gray-50 rounded-lg">
-              <span className="text-xl">{minInfo.emoji}</span>
-              <span className="font-medium">{minInfo.name}</span>
+              <span className="text-xl">{posterMinInfo.emoji}</span>
+              <span className="font-medium text-sm">{posterMinInfo.name}</span>
               <span className="text-gray-400">〜</span>
-              <span className="text-xl">{maxInfo.emoji}</span>
-              <span className="font-medium">{maxInfo.name}</span>
+              <span className="text-xl">{posterMaxInfo.emoji}</span>
+              <span className="font-medium text-sm">{posterMaxInfo.name}</span>
             </div>
-            <div className="space-y-4 px-2">
-              <div>
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>下限: Lv.{levelMin}</span>
-                </div>
-                <input type="range" min={0} max={10} value={levelMin} onChange={(e) => { const val = Number(e.target.value); if (val <= levelMax) setLevelMin(val); }} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-cyan-500" />
-              </div>
-              <div>
-                <div className="flex justify-between text-xs text-gray-500 mb-1">
-                  <span>上限: Lv.{levelMax}</span>
-                </div>
-                <input type="range" min={0} max={10} value={levelMax} onChange={(e) => { const val = Number(e.target.value); if (val >= levelMin) setLevelMax(val); }} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500" />
-              </div>
-              <div className="flex justify-between text-sm">
-                <span>🐣 Lv.0</span>
-                <span>Lv.10 🥷</span>
-              </div>
+            <div className="relative px-2 h-12">
+              {/* 背景のトラック */}
+              <div className="absolute top-1/2 -translate-y-1/2 left-2 right-2 h-2 bg-gray-200 rounded-full" />
+              {/* アクティブ範囲 */}
+              <div 
+                className="absolute top-1/2 -translate-y-1/2 h-2 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"
+                style={{
+                  left: `calc(${(posterLevelMin / 10) * 100}% + 8px)`,
+                  right: `calc(${((10 - posterLevelMax) / 10) * 100}% + 8px)`,
+                }}
+              />
+              {/* 下限スライダー */}
+              <input
+                type="range"
+                min={0}
+                max={10}
+                value={posterLevelMin}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (val <= posterLevelMax) setPosterLevelMin(val);
+                }}
+                className="absolute top-1/2 -translate-y-1/2 w-full h-2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-cyan-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer"
+              />
+              {/* 上限スライダー */}
+              <input
+                type="range"
+                min={0}
+                max={10}
+                value={posterLevelMax}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  if (val >= posterLevelMin) setPosterLevelMax(val);
+                }}
+                className="absolute top-1/2 -translate-y-1/2 w-full h-2 appearance-none bg-transparent pointer-events-none [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-purple-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:cursor-pointer"
+              />
             </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-1 px-2">
+              <span>🐣 Lv.0</span>
+              <span>Lv.10 🥷</span>
+            </div>
+          </div>
+
+          {/* 自分のレベル（応募条件マッチ） */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              <User className="h-4 w-4 inline mr-2" />
+              自分のレベルで応募できる投稿を探す
+            </label>
+            <div className="flex items-center gap-4">
+              <span className="text-gray-600">私は</span>
+              <select
+                value={myLevelFilter ?? ''}
+                onChange={(e) => setMyLevelFilter(e.target.value === '' ? null : Number(e.target.value))}
+                className="h-10 px-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+              >
+                <option value="">指定なし</option>
+                {[...Array(11)].map((_, i) => {
+                  const info = getLevelInfo(i);
+                  return (
+                    <option key={i} value={i}>
+                      Lv.{i} {info.emoji} {info.name}
+                    </option>
+                  );
+                })}
+              </select>
+              <span className="text-gray-600">です</span>
+              {myLevelInfo && (
+                <span className="ml-2 text-2xl">{myLevelInfo.emoji}</span>
+              )}
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              ※ 募集条件に自分のレベルが含まれる投稿だけを表示します
+            </p>
           </div>
 
           {hasActiveFilters && (
@@ -589,7 +643,8 @@ function ExploreContent() {
           {selectedDays.length > 0 && targetDates.length === 0 && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{selectedDays.map(d => DAYS.find(day => day.value === d)?.label).join('・')}</span>}
           {selectedTimes.length > 0 && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{selectedTimes.map(t => TIMES.find(time => time.value === t)?.label).join('・')}</span>}
           {categoryId && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{categories.find((c) => c.id === categoryId)?.name}</span>}
-          {(levelMin > 0 || levelMax < 10) && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">Lv.{levelMin}〜{levelMax}</span>}
+          {(posterLevelMin > 0 || posterLevelMax < 10) && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">投稿者 Lv.{posterLevelMin}〜{posterLevelMax}</span>}
+          {myLevelFilter !== null && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">自分 Lv.{myLevelFilter}</span>}
           {searchQuery && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">「{searchQuery}」</span>}
           <button onClick={clearFilters} className="px-3 py-1 text-gray-500 hover:text-gray-700 text-sm">クリア</button>
         </div>
