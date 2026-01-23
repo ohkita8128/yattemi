@@ -191,7 +191,7 @@ export default function AccountSettingsPage() {
           <div className="space-y-2">
             <Label htmlFor="newEmail">新しいメールアドレス</Label>
             <Input
-              id="newEmail"
+              id="newEmail" name="new-email-field-xyz"
               type="email"
               autoComplete="off"
               placeholder="new@example.com"
@@ -204,7 +204,7 @@ export default function AccountSettingsPage() {
             <Label htmlFor="emailCurrentPassword">現在のパスワード</Label>
             <div className="relative">
               <Input
-                id="emailCurrentPassword"
+                id="emailCurrentPassword" name="email-pw-field-xyz"
                 autoComplete="current-password"
                 type={showEmailPassword ? 'text' : 'password'}
                 placeholder="••••••••"
@@ -248,7 +248,7 @@ export default function AccountSettingsPage() {
             <Label htmlFor="currentPassword">現在のパスワード</Label>
             <div className="relative">
               <Input
-                id="currentPassword"
+                id="currentPassword" name="curr-pw-field-xyz"
                 autoComplete="current-password"
                 type={showCurrentPassword ? 'text' : 'password'}
                 placeholder="••••••••"
@@ -270,7 +270,7 @@ export default function AccountSettingsPage() {
             <Label htmlFor="newPassword">新しいパスワード</Label>
             <div className="relative">
               <Input
-                id="newPassword"
+                id="newPassword" name="new-pw-field-xyz"
                 autoComplete="new-password"
                 type={showNewPassword ? 'text' : 'password'}
                 placeholder="••••••••"
@@ -332,7 +332,7 @@ export default function AccountSettingsPage() {
             <Label htmlFor="confirmPassword">新しいパスワード（確認）</Label>
             <div className="relative">
               <Input
-                id="confirmPassword"
+                id="confirmPassword" name="confirm-pw-field-xyz"
                 autoComplete="new-password"
                 type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="••••••••"
