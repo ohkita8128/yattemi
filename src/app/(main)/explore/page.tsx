@@ -1,15 +1,19 @@
 ﻿'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, X, SlidersHorizontal } from 'lucide-react';
 import { PostCard, PostCardSkeleton } from '@/components/posts';
 import { usePosts, useCategories, useDebounce } from '@/hooks';
+import { useAuth } from '@/hooks';
 import { getLevelInfo } from '@/lib/levels';
+import { getClient } from '@/lib/supabase/client';
 
 function ExploreContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
+  const supabaseRef = useRef(getClient());
 
   const initialType = (searchParams.get('type') as 'teach' | 'learn' | 'all') || 'all';
   const initialCategory = searchParams.get('category');
@@ -25,6 +29,7 @@ function ExploreContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [levelMin, setLevelMin] = useState<number>(initialLevelMin ? Number(initialLevelMin) : 0);
   const [levelMax, setLevelMax] = useState<number>(initialLevelMax ? Number(initialLevelMax) : 10);
+  const [appliedPostIds, setAppliedPostIds] = useState<Set<string>>(new Set());
 
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { categories } = useCategories();
@@ -34,6 +39,28 @@ function ExploreContent() {
     categoryId: categoryId || undefined,
     search: debouncedSearch || undefined,
   });
+
+  // 応募済み投稿IDを取得
+  useEffect(() => {
+    const fetchAppliedPosts = async () => {
+      if (!user) {
+        setAppliedPostIds(new Set());
+        return;
+      }
+
+      const supabase = supabaseRef.current;
+      const { data } = await (supabase as any)
+        .from('applications')
+        .select('post_id')
+        .eq('applicant_id', user.id);
+
+      if (data) {
+        setAppliedPostIds(new Set(data.map((a: any) => a.post_id)));
+      }
+    };
+
+    fetchAppliedPosts();
+  }, [user]);
 
   // レベルフィルタリング（クライアント側）
   const filteredPosts = posts.filter((post) => {
@@ -292,7 +319,11 @@ function ExploreContent() {
           <p className="text-sm text-gray-500 mb-4">{filteredPosts.length}件の投稿</p>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredPosts.map((post) => (
-              <PostCard key={post.id} post={post} />
+              <PostCard
+                key={post.id}
+                post={post}
+                isApplied={appliedPostIds.has(post.id)}
+              />
             ))}
           </div>
         </>

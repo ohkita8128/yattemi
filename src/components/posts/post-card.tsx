@@ -20,10 +20,11 @@ interface PostCardProps {
     target_level_min?: number | null;
     target_level_max?: number | null;
     created_at: string;
+    status?: string;
     profile?: {
       id: string;
-      username: string;
-      display_name: string;
+      username: string | null;
+      display_name: string | null;
       avatar_url?: string | null;
     };
     user?: {
@@ -32,20 +33,30 @@ interface PostCardProps {
       display_name: string;
       avatar_url?: string | null;
     };
+    profiles?: {
+      id: string;
+      username: string | null;
+      display_name: string | null;
+      avatar_url?: string | null;
+    };
     category?: {
       name: string;
       color: string;
     };
   };
   showAuthor?: boolean;
+  isApplied?: boolean;
 }
 
-export function PostCard({ post, showAuthor = true }: PostCardProps) {
+export function PostCard({ post, showAuthor = true, isApplied = false }: PostCardProps) {
   const { user } = useAuth();
   const { likesCount, isLiked, toggleLike, isLoading } = useLikes(post.id);
 
   // profile または user から投稿者情報を取得
-  const author = post.profile || post.user;
+  const author = post.profile || post.user || post.profiles;
+
+  // 締め切り判定
+  const isClosed = post.status === 'closed';
 
   const handleLikeClick = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -57,7 +68,10 @@ export function PostCard({ post, showAuthor = true }: PostCardProps) {
   return (
     <Link
       href={'/posts/' + post.id}
-      className="block bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow"
+      className={cn(
+        "block bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow",
+        isClosed && "opacity-60"
+      )}
     >
       <div className="p-5">
         {/* 投稿者（上部に表示） */}
@@ -67,12 +81,12 @@ export function PostCard({ post, showAuthor = true }: PostCardProps) {
               {author.avatar_url ? (
                 <img
                   src={author.avatar_url}
-                  alt={author.display_name}
+                  alt={author.display_name || 'ユーザー'}
                   className="h-10 w-10 object-cover"
                 />
               ) : (
                 <span className="text-orange-600 font-medium">
-                  {author.display_name[0]}
+                  {(author.display_name || 'U')[0]}
                 </span>
               )}
             </div>
@@ -86,8 +100,22 @@ export function PostCard({ post, showAuthor = true }: PostCardProps) {
           </div>
         )}
 
-        {/* ヘッダー: タイプ + カテゴリ */}
-        <div className="flex items-center gap-2 mb-3">
+        {/* ヘッダー: ステータス + タイプ + カテゴリ */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+          {/* 締め切り表示 */}
+          {isClosed && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
+              締め切り
+            </span>
+          )}
+
+          {/* 応募済み表示（締め切りでない場合のみ） */}
+          {isApplied && !isClosed && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+              ✓ 応募済み
+            </span>
+          )}
+
           <span className={'px-2 py-0.5 rounded-full text-xs font-medium ' +
             (post.type === 'teach'
               ? 'bg-purple-100 text-purple-700'

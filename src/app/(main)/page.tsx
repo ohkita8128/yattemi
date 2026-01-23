@@ -51,13 +51,14 @@ type Post = {
   my_level: number | null;
   views: number;
   created_at: string;
-  profiles: {
+  status?: string;
+  profile?: {
     id: string;
-    username: string | null;
-    display_name: string | null;
-    avatar_url: string | null;
-    university: string | null;
-  } | null;
+    username: string;
+    display_name: string;
+    avatar_url?: string | null;
+    university?: string | null;
+  };
   categories: {
     id: number;
     name: string;
@@ -71,6 +72,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [recentPosts, setRecentPosts] = useState<Post[]>([]);
   const [followingPosts, setFollowingPosts] = useState<Post[]>([]);
+  const [appliedPostIds, setAppliedPostIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -92,7 +94,7 @@ export default function HomePage() {
           .limit(6);
 
         if (recent) {
-          setRecentPosts(recent);
+          setRecentPosts(recent.map((p: any) => ({ ...p, profile: p.profiles })));
         }
 
         // フォロー中のユーザーの投稿を取得
@@ -116,8 +118,18 @@ export default function HomePage() {
             .limit(6);
 
           if (followPosts) {
-            setFollowingPosts(followPosts);
+            setFollowingPosts(followPosts.map((p: any) => ({ ...p, profile: p.profiles })));
           }
+        }
+
+        // 応募済み投稿IDを取得
+        const { data: applications } = await (supabase as any)
+          .from('applications')
+          .select('post_id')
+          .eq('applicant_id', user.id);
+
+        if (applications) {
+          setAppliedPostIds(new Set(applications.map((a: any) => a.post_id)));
         }
       }
 
@@ -174,7 +186,11 @@ export default function HomePage() {
             {recentPosts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recentPosts.map(post => (
-                  <PostCard key={post.id} post={post} />
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    isApplied={appliedPostIds.has(post.id)}
+                  />
                 ))}
               </div>
             ) : (
@@ -198,7 +214,11 @@ export default function HomePage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {followingPosts.map(post => (
-                  <PostCard key={post.id} post={post} />
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    isApplied={appliedPostIds.has(post.id)}
+                  />
                 ))}
               </div>
             </section>

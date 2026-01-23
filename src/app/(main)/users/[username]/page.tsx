@@ -387,7 +387,7 @@ export default function UserProfilePage() {
             {posts.length > 0 ? (
               <div className="space-y-3">
                 {posts.map((post) => (
-                  <PostCard key={post.id} post={{...post, description: post.description ?? undefined}} />
+                  <PostCard key={post.id} post={{...post, description: post.description ?? undefined, profile: post.profiles ?? undefined, profiles: undefined}} />
                 ))}
               </div>
             ) : (
