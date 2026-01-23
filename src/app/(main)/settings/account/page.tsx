@@ -1,10 +1,9 @@
-﻿'use client';
+'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Mail, Lock, ArrowLeft, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
@@ -27,6 +26,69 @@ const checkPasswordStrength = (password: string) => {
     isStrong: passed >= 3 && checks.length,
   };
 };
+
+// 自動入力を防ぐInputコンポーネント
+function SecureInput({
+  id,
+  type = 'text',
+  placeholder,
+  value,
+  onChange,
+  showToggle = false,
+  show = false,
+  onToggle,
+}: {
+  id: string;
+  type?: 'text' | 'password' | 'email';
+  placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
+  showToggle?: boolean;
+  show?: boolean;
+  onToggle?: () => void;
+}) {
+  const [isReadOnly, setIsReadOnly] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFocus = () => {
+    setIsReadOnly(false);
+    // 少し遅延させてからフォーカス
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
+  };
+
+  const inputType = type === 'password' ? (show ? 'text' : 'password') : type;
+
+  return (
+    <div className="relative">
+      <input
+        ref={inputRef}
+        id={id}
+        name={`secure-${id}-${Date.now()}`}
+        type={inputType}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        readOnly={isReadOnly}
+        onFocus={handleFocus}
+        autoComplete="off"
+        data-lpignore="true"
+        data-form-type="other"
+        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
+      />
+      {showToggle && onToggle && (
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        >
+          {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function AccountSettingsPage() {
   const { user } = useAuth();
@@ -190,36 +252,27 @@ export default function AccountSettingsPage() {
         <form onSubmit={handleEmailChange} autoComplete="off" className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="newEmail">新しいメールアドレス</Label>
-            <Input
-              id="newEmail" name="new-email-field-xyz"
+            <SecureInput
+              id="newEmail"
               type="email"
-              autoComplete="off"
               placeholder="new@example.com"
               value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
+              onChange={setNewEmail}
             />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="emailCurrentPassword">現在のパスワード</Label>
-            <div className="relative">
-              <Input
-                id="emailCurrentPassword" name="email-pw-field-xyz"
-                autoComplete="current-password"
-                type={showEmailPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={emailCurrentPassword}
-                onChange={(e) => setEmailCurrentPassword(e.target.value)}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowEmailPassword(!showEmailPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showEmailPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
+            <SecureInput
+              id="emailCurrentPassword"
+              type="password"
+              placeholder="••••••••"
+              value={emailCurrentPassword}
+              onChange={setEmailCurrentPassword}
+              showToggle
+              show={showEmailPassword}
+              onToggle={() => setShowEmailPassword(!showEmailPassword)}
+            />
           </div>
 
           <Button type="submit" disabled={isEmailLoading} className="w-full sm:w-auto">
@@ -246,46 +299,30 @@ export default function AccountSettingsPage() {
         <form onSubmit={handlePasswordChange} autoComplete="off" className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="currentPassword">現在のパスワード</Label>
-            <div className="relative">
-              <Input
-                id="currentPassword" name="curr-pw-field-xyz"
-                autoComplete="current-password"
-                type={showCurrentPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
+            <SecureInput
+              id="currentPassword"
+              type="password"
+              placeholder="••••••••"
+              value={currentPassword}
+              onChange={setCurrentPassword}
+              showToggle
+              show={showCurrentPassword}
+              onToggle={() => setShowCurrentPassword(!showCurrentPassword)}
+            />
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="newPassword">新しいパスワード</Label>
-            <div className="relative">
-              <Input
-                id="newPassword" name="new-pw-field-xyz"
-                autoComplete="new-password"
-                type={showNewPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
+            <SecureInput
+              id="newPassword"
+              type="password"
+              placeholder="••••••••"
+              value={newPassword}
+              onChange={setNewPassword}
+              showToggle
+              show={showNewPassword}
+              onToggle={() => setShowNewPassword(!showNewPassword)}
+            />
             
             {/* パスワード強度インジケーター */}
             {newPassword && (
@@ -330,24 +367,16 @@ export default function AccountSettingsPage() {
 
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">新しいパスワード（確認）</Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword" name="confirm-pw-field-xyz"
-                autoComplete="new-password"
-                type={showConfirmPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
+            <SecureInput
+              id="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              showToggle
+              show={showConfirmPassword}
+              onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
+            />
             {confirmPassword && newPassword !== confirmPassword && (
               <p className="text-xs text-red-500 flex items-center gap-1">
                 <XCircle className="h-3 w-3" />
