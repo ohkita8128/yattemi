@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, X, ImagePlus } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, usePost } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
@@ -41,6 +41,10 @@ export default function EditPostPage() {
 
   // タグ
   const [tags, setTags] = useState<string[]>([]);
+
+  // 画像
+  const [images, setImages] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   // 日程関連
   const [availableDays, setAvailableDays] = useState<string[]>([]);
@@ -94,6 +98,7 @@ export default function EditPostPage() {
       setAvailableDays((post as any).available_days || []);
       setAvailableTimes((post as any).available_times || []);
       setSpecificDates((post as any).specific_dates || []);
+      setImages((post as any).images || []);
     }
   }, [post, user, router]);
 
@@ -111,8 +116,62 @@ export default function EditPostPage() {
     };
     checkApprovedMatch();
   }, [postId]);
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (images.length + files.length > 4) {
+      toast.error('画像は4枚までです');
+      return;
+    }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    setUploadingImages(true);
+    const supabase = supabaseRef.current;
+    const newImages: string[] = [];
+
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error('ファイルサイズは5MB以下にしてください');
+          continue;
+        }
+        if (!file.type.startsWith('image/')) {
+          toast.error('画像ファイルのみアップロードできます');
+          continue;
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(fileName);
+
+        newImages.push(publicUrl);
+      }
+
+      setImages([...images, ...newImages]);
+    } catch (error) {
+      console.error('Upload error:', error);
+    } finally {
+      setUploadingImages(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!title.trim() || !description.trim()) {
@@ -140,6 +199,7 @@ export default function EditPostPage() {
         target_level_min: targetLevelMin,
         target_level_max: targetLevelMax,
         tags,
+        images,
       };
 
       if (!hasApprovedMatch) {
@@ -312,6 +372,45 @@ export default function EditPostPage() {
             onChange={setTags}
             maxTags={5}
           />
+        </div>
+
+        {/* 画像 */}
+        <div className="space-y-2">
+          <label className="block font-medium">画像（最大4枚）</label>
+          <div className="grid grid-cols-2 gap-3">
+            {images.map((url, index) => (
+              <div key={index} className="relative aspect-video rounded-xl overflow-hidden bg-gray-100">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            {images.length < 4 && (
+              <label className="aspect-video rounded-xl border-2 border-dashed border-gray-300 hover:border-orange-400 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50 hover:bg-orange-50">
+                {uploadingImages ? (
+                  <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
+                ) : (
+                  <>
+                    <ImagePlus className="h-8 w-8 text-gray-400" />
+                    <span className="text-sm text-gray-500 mt-2">追加</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  disabled={uploadingImages}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
         </div>
 
         {/* 募集人数（ステッパー） */}
