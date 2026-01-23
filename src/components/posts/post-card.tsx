@@ -296,27 +296,25 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
 
         {/* 画像 */}
         {post.images && post.images.length > 0 && (
-          <div className={`mt-3 grid gap-1 rounded-xl overflow-hidden ${
-            post.images.length === 1 ? 'grid-cols-1' : 
-            post.images.length === 2 ? 'grid-cols-2' : 
-            post.images.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
-          }`}>
-            {post.images.slice(0, 4).map((url, index) => (
-              <div 
-                key={index} 
-                className={`relative bg-gray-100 ${
-                  post.images!.length === 1 ? 'aspect-video' :
-                  post.images!.length === 3 && index === 0 ? 'aspect-square row-span-2' :
-                  'aspect-square'
-                }`}
-              >
-                <img 
-                  src={url} 
-                  alt="" 
-                  className="w-full h-full object-cover"
-                />
+          <div className="mt-3 rounded-xl overflow-hidden max-h-[180px]">
+            {post.images.length === 1 ? (
+              <img src={post.images[0]} alt="" className="w-full h-full max-h-[180px] object-cover" />
+            ) : (
+              <div className={`grid gap-0.5 h-[180px] ${
+                post.images.length === 2 ? 'grid-cols-2' : 'grid-cols-2'
+              }`}>
+                {post.images.slice(0, 4).map((url, index) => (
+                  <div
+                    key={index}
+                    className={`relative overflow-hidden ${
+                      post.images!.length === 3 && index === 0 ? 'row-span-2' : ''
+                    }`}
+                  >
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
