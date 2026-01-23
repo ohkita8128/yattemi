@@ -800,7 +800,15 @@ function ExploreContent() {
             {filteredPosts.map((post) => (<PostCard key={post.id} post={post} isApplied={appliedPostIds.has(post.id)} />))}
           </div>
           {/* 無限スクロールトリガー */}
-          <div ref={loadMoreRef} className="py-8 flex justify-center">
+          <div ref={loadMoreRef} className="py-8 flex flex-col items-center gap-4">
+            {hasMore && !isLoadingMore && (
+              <button
+                onClick={loadMore}
+                className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
+              >
+                もっと見る
+              </button>
+            )}
             {isLoadingMore && (
               <div className="flex items-center gap-2 text-gray-500">
                 <div className="animate-spin h-5 w-5 border-2 border-orange-500 border-t-transparent rounded-full" />
