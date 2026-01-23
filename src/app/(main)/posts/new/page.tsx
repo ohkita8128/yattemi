@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Loader2, ChevronDown, ChevronUp, X, ImagePlus } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, useCategories } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
@@ -42,6 +42,10 @@ export default function NewPostPage() {
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [specificDates, setSpecificDates] = useState<{ date: string; start: string; end: string }[]>([]);
 
+  // 画像
+  const [images, setImages] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+
   // UI状態
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -51,6 +55,62 @@ export default function NewPostPage() {
       router.push(ROUTES.LOGIN);
     }
   }, [authLoading, isAuthenticated, router]);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (images.length + files.length > 4) {
+      toast.error('画像は4枚までです');
+      return;
+    }
+
+    setUploadingImages(true);
+    const newImages: string[] = [];
+
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error('ファイルサイズは5MB以下にしてください');
+          continue;
+        }
+        if (!file.type.startsWith('image/')) {
+          toast.error('画像ファイルのみアップロードできます');
+          continue;
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          toast.error('画像のアップロードに失敗しました');
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(fileName);
+
+        newImages.push(publicUrl);
+      }
+
+      setImages([...images, ...newImages]);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('画像のアップロードに失敗しました');
+    } finally {
+      setUploadingImages(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setImages(images.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +152,7 @@ export default function NewPostPage() {
           available_days: availableDays,
           available_times: availableTimes,
           specific_dates: specificDates,
+          images,
         })
         .select()
         .single();
@@ -206,6 +267,45 @@ export default function NewPostPage() {
             maxTags={5}
             placeholder="タグを追加（例: 初心者歓迎）"
           />
+        </div>
+
+        {/* 画像 */}
+        <div className="space-y-2">
+          <label className="block font-medium">画像（最大4枚）</label>
+          <div className="grid grid-cols-2 gap-3">
+            {images.map((url, index) => (
+              <div key={index} className="relative aspect-video rounded-xl overflow-hidden bg-gray-100">
+                <img src={url} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            {images.length < 4 && (
+              <label className="aspect-video rounded-xl border-2 border-dashed border-gray-300 hover:border-orange-400 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50 hover:bg-orange-50">
+                {uploadingImages ? (
+                  <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
+                ) : (
+                  <>
+                    <ImagePlus className="h-8 w-8 text-gray-400" />
+                    <span className="text-sm text-gray-500 mt-2">追加</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleImageUpload}
+                  disabled={uploadingImages}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
         </div>
 
         {/* 実施形式 */}
