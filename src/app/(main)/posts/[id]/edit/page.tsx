@@ -154,10 +154,7 @@ export default function EditPostPage() {
         updateData.specific_dates = specificDates;
       }
 
-      const { error } = await (supabase as any)
-        .from('posts')
-        .update(updateData)
-        .eq('id', postId);
+      const { error } = await (supabase as any).from('posts').update(updateData).eq('id', postId).single();
 
       if (error) throw error;
 
