@@ -187,7 +187,7 @@ export default function AccountSettingsPage() {
           </div>
         </div>
 
-        <form onSubmit={handleEmailChange} className="space-y-4">
+        <form onSubmit={handleEmailChange} autoComplete="off" className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="newEmail">新しいメールアドレス</Label>
             <Input
@@ -243,7 +243,7 @@ export default function AccountSettingsPage() {
           </div>
         </div>
 
-        <form onSubmit={handlePasswordChange} className="space-y-4">
+        <form onSubmit={handlePasswordChange} autoComplete="off" className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="currentPassword">現在のパスワード</Label>
             <div className="relative">

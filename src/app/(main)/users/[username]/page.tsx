@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
@@ -108,7 +108,7 @@ export default function UserProfilePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<TabType>('gallery');
+  const [activeTab, setActiveTab] = useState<TabType>('posts');
   const [showAllBadges, setShowAllBadges] = useState(false);
 
   useEffect(() => {
@@ -424,9 +424,9 @@ export default function UserProfilePage() {
         <div className="bg-white border-b sticky top-16 z-10">
           <div className="flex">
             <button
-              onClick={() => setActiveTab('gallery')}
+              onClick={() => setActiveTab('posts')}
               className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition ${
-                activeTab === 'gallery'
+                activeTab === 'posts'
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
@@ -435,9 +435,9 @@ export default function UserProfilePage() {
               ギャラリー
             </button>
             <button
-              onClick={() => setActiveTab('posts')}
+              onClick={() => setActiveTab('gallery')}
               className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition ${
-                activeTab === 'posts'
+                activeTab === 'gallery'
                   ? 'border-orange-500 text-orange-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
@@ -456,7 +456,7 @@ export default function UserProfilePage() {
         {/* タブコンテンツ */}
         <div className="bg-white min-h-[300px]">
           {/* ギャラリータブ */}
-          {activeTab === 'gallery' && (
+          {activeTab === 'posts' && (
             <div className="p-4">
               {profileImages.length > 0 ? (
                 <div className="grid grid-cols-3 gap-1">
@@ -490,7 +490,7 @@ export default function UserProfilePage() {
           )}
 
           {/* 募集タブ */}
-          {activeTab === 'posts' && (
+          {activeTab === 'gallery' && (
             <div className="p-4">
               {posts.length > 0 ? (
                 <div className="space-y-3">
