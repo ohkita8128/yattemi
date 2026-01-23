@@ -113,6 +113,8 @@ export default function EditPostPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('postId:', postId);
+    console.log('params:', params);
 
     if (!title.trim() || !description.trim()) {
       toast.error('タイトルと詳細を入力してください');
