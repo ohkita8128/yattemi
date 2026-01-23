@@ -27,7 +27,7 @@ export const postSchema = z.object({
     .max(10, '募集人数は10人以内です')
     .default(1),
   location: z.string().max(100, '場所は100文字以内で入力してください').optional(),
-  isOnline: z.boolean().default(true),
+  isOnline: z.boolean().nullable().default(null),
   // 旧フィールド（後方互換のため残す）
   preferredSchedule: z
     .string()

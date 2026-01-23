@@ -45,7 +45,7 @@ export function PostForm({
     defaultValues: {
       type: defaultType,
       maxApplicants: 1,
-      isOnline: true,
+      isOnline: null,
       tags: [],
       myLevel: 5,
       targetLevelMin: 0,
@@ -209,13 +209,24 @@ export function PostForm({
       {/* Online/Offline */}
       <div className="space-y-2">
         <Label>実施形式</Label>
-        <div className="flex gap-4">
+        <div className="grid grid-cols-3 gap-3">
+          <button
+            type="button"
+            onClick={() => setValue('isOnline', null)}
+            className={`p-3 rounded-xl border-2 transition-all ${
+              isOnline === null
+                ? 'border-orange-500 bg-orange-50'
+                : 'border-gray-200 hover:border-gray-300'
+            }`}
+          >
+            <span className="block font-medium">🤝 どちらでも</span>
+          </button>
           <button
             type="button"
             onClick={() => setValue('isOnline', true)}
-            className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-              isOnline
-                ? 'border-primary bg-primary-50'
+            className={`p-3 rounded-xl border-2 transition-all ${
+              isOnline === true
+                ? 'border-orange-500 bg-orange-50'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -224,9 +235,9 @@ export function PostForm({
           <button
             type="button"
             onClick={() => setValue('isOnline', false)}
-            className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-              !isOnline
-                ? 'border-primary bg-primary-50'
+            className={`p-3 rounded-xl border-2 transition-all ${
+              isOnline === false
+                ? 'border-orange-500 bg-orange-50'
                 : 'border-gray-200 hover:border-gray-300'
             }`}
           >
@@ -236,7 +247,7 @@ export function PostForm({
       </div>
 
       {/* Location (if offline) */}
-      {!isOnline && (
+      {isOnline === false && (
         <div className="space-y-2">
           <Label htmlFor="location">場所</Label>
           <Input
