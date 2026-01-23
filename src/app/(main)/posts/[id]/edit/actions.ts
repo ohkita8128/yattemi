@@ -8,8 +8,6 @@ const supabase = createClient(
 );
 
 export async function updatePost(postId: string, userId: string, data: any) {
-  console.log('=== Server Action updatePost (RPC版) ===');
-  
   // 所有者確認
   const { data: post } = await supabase
     .from('posts')
@@ -21,27 +19,10 @@ export async function updatePost(postId: string, userId: string, data: any) {
     return { error: '権限がありません' };
   }
 
-  // RPCでUPDATE
-  const { error } = await supabase.rpc('update_post', {
-    p_post_id: postId,
-    p_title: data.title,
-    p_description: data.description,
-    p_status: data.status,
-    p_my_level: data.my_level,
-    p_target_level_min: data.target_level_min,
-    p_target_level_max: data.target_level_max,
-    p_tags: data.tags,
-    p_type: data.type,
-    p_category_id: data.category_id,
-    p_max_applicants: data.max_applicants,
-    p_is_online: data.is_online,
-    p_location: data.location,
-    p_available_days: data.available_days,
-    p_available_times: data.available_times,
-    p_specific_dates: data.specific_dates
-  });
-
-  console.log('rpc error:', error);
+  const { error } = await supabase
+    .from('posts')
+    .update(data)
+    .eq('id', postId);
 
   if (error) {
     return { error: error.message };
