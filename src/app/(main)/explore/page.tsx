@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, X, SlidersHorizontal, Calendar, Clock, MapPin } from 'lucide-react';
+import { Search, X, SlidersHorizontal, Calendar, Clock, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PostCard, PostCardSkeleton } from '@/components/posts';
 import { usePosts, useCategories, useDebounce } from '@/hooks';
 import { useAuth } from '@/hooks';
@@ -31,6 +31,50 @@ const LOCATION_OPTIONS = [
   { value: 'offline', label: '📍 対面' },
 ];
 
+// 日付フォーマット
+const formatDateShort = (dateStr: string): string => {
+  const date = new Date(dateStr);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
+  return `${month}/${day}(${dayOfWeek})`;
+};
+
+// 今日の日付を取得 (YYYY-MM-DD)
+const getTodayDate = (): string => {
+  return new Date().toISOString().split('T')[0]!;
+};
+
+// 明日の日付を取得
+const getTomorrowDate = (): string => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().split('T')[0]!;
+};
+
+// 今週末の日付を取得（土日）
+const getWeekendDates = (): string[] => {
+  const today = new Date();
+  const dates: string[] = [];
+  
+  const dayOfWeek = today.getDay();
+  const daysUntilSaturday = (6 - dayOfWeek + 7) % 7 || 7;
+  const saturday = new Date(today);
+  saturday.setDate(today.getDate() + (dayOfWeek === 6 ? 0 : daysUntilSaturday));
+  
+  const sunday = new Date(saturday);
+  sunday.setDate(saturday.getDate() + 1);
+  
+  if (dayOfWeek === 0) {
+    dates.push(today.toISOString().split('T')[0]!);
+  } else {
+    dates.push(saturday.toISOString().split('T')[0]!);
+    dates.push(sunday.toISOString().split('T')[0]!);
+  }
+  
+  return dates;
+};
+
 // 今日の曜日を取得
 const getTodayDayKey = (): string => {
   const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -47,6 +91,12 @@ const getTomorrowDayKey = (): string => {
 
 // 今週末（土日）を取得
 const getWeekendDayKeys = () => ['sat', 'sun'];
+
+// 日付から曜日キーを取得
+const getDayKeyFromDate = (dateStr: string): string => {
+  const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  return dayKeys[new Date(dateStr).getDay()]!;
+};
 
 function ExploreContent() {
   const searchParams = useSearchParams();
@@ -75,6 +125,9 @@ function ExploreContent() {
   const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
   const [locationFilter, setLocationFilter] = useState<'all' | 'online' | 'offline'>('all');
   const [quickDateFilter, setQuickDateFilter] = useState<'today' | 'tomorrow' | 'weekend' | null>(null);
+  const [targetDates, setTargetDates] = useState<string[]>([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { categories } = useCategories();
@@ -108,29 +161,75 @@ function ExploreContent() {
 
   // クイック日程フィルタの処理
   const handleQuickDateFilter = (filter: 'today' | 'tomorrow' | 'weekend') => {
+    setShowDatePicker(false);
     if (quickDateFilter === filter) {
-      // 同じボタンをもう一度押したらクリア
       setQuickDateFilter(null);
       setSelectedDays([]);
+      setTargetDates([]);
     } else {
       setQuickDateFilter(filter);
       switch (filter) {
         case 'today':
           setSelectedDays([getTodayDayKey()]);
+          setTargetDates([getTodayDate()]);
           break;
         case 'tomorrow':
           setSelectedDays([getTomorrowDayKey()]);
+          setTargetDates([getTomorrowDate()]);
           break;
         case 'weekend':
           setSelectedDays(getWeekendDayKeys());
+          setTargetDates(getWeekendDates());
           break;
       }
     }
   };
 
+  // カレンダーで日付選択
+  const handleDateSelect = (dateStr: string) => {
+    setQuickDateFilter(null);
+    if (targetDates.includes(dateStr)) {
+      const newDates = targetDates.filter(d => d !== dateStr);
+      setTargetDates(newDates);
+      setSelectedDays(newDates.map(d => getDayKeyFromDate(d)));
+    } else {
+      const newDates = [...targetDates, dateStr];
+      setTargetDates(newDates);
+      setSelectedDays(newDates.map(d => getDayKeyFromDate(d)));
+    }
+  };
+
+  // カレンダー生成
+  const generateCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    const days: (Date | null)[] = [];
+    
+    for (let i = 0; i < firstDay.getDay(); i++) {
+      days.push(null);
+    }
+    
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(new Date(year, month, i));
+    }
+
+    return days;
+  };
+
+  const isDateSelectable = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date >= today;
+  };
+
   // 曜日トグル
   const toggleDay = (day: string) => {
-    setQuickDateFilter(null); // クイックフィルタを解除
+    setQuickDateFilter(null);
+    setTargetDates([]);
+    setShowDatePicker(false);
     if (selectedDays.includes(day)) {
       setSelectedDays(selectedDays.filter(d => d !== day));
     } else {
@@ -149,23 +248,29 @@ function ExploreContent() {
 
   // フィルタリング（クライアント側）
   const filteredPosts = posts.filter((post) => {
-    // レベルフィルタ
     const postLevel = post.my_level ?? 5;
     if (postLevel < levelMin || postLevel > levelMax) return false;
 
-    // オンライン/対面フィルタ
-    if (locationFilter === 'online' && !post.is_online) return false;
-    if (locationFilter === 'offline' && post.is_online) return false;
+    if (locationFilter === 'online' && post.is_online === false) return false;
+    if (locationFilter === 'offline' && post.is_online === true) return false;
 
-    // 曜日フィルタ
-    if (selectedDays.length > 0) {
+    if (selectedDays.length > 0 || targetDates.length > 0) {
       const postDays = (post as any).available_days || [];
-      const hasMatchingDay = selectedDays.some(day => postDays.includes(day));
-      // 曜日が設定されてない投稿も表示（フィルタに含めない選択もあり）
-      if (postDays.length > 0 && !hasMatchingDay) return false;
+      const postSpecificDates = (post as any).specific_dates || [];
+      
+      const hasMatchingDay = selectedDays.length > 0 && 
+        selectedDays.some(day => postDays.includes(day));
+      
+      const hasMatchingDate = targetDates.length > 0 &&
+        postSpecificDates.some((sd: any) => targetDates.includes(sd.date));
+      
+      if (postDays.length === 0 && postSpecificDates.length === 0) {
+        // 設定がない投稿はパス
+      } else if (!hasMatchingDay && !hasMatchingDate) {
+        return false;
+      }
     }
 
-    // 時間帯フィルタ
     if (selectedTimes.length > 0) {
       const postTimes = (post as any).available_times || [];
       const hasMatchingTime = selectedTimes.some(time => postTimes.includes(time));
@@ -198,6 +303,8 @@ function ExploreContent() {
     setSelectedTimes([]);
     setLocationFilter('all');
     setQuickDateFilter(null);
+    setTargetDates([]);
+    setShowDatePicker(false);
   };
 
   const hasActiveFilters =
@@ -212,6 +319,7 @@ function ExploreContent() {
 
   const minInfo = getLevelInfo(levelMin);
   const maxInfo = getLevelInfo(levelMax);
+  const calendarDays = generateCalendarDays();
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -253,7 +361,109 @@ function ExploreContent() {
         >
           🎉 今週末
         </button>
+        <button
+          onClick={() => {
+            setShowDatePicker(!showDatePicker);
+            if (!showDatePicker) {
+              setQuickDateFilter(null);
+            }
+          }}
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            showDatePicker || (targetDates.length > 0 && !quickDateFilter)
+              ? 'bg-orange-500 text-white'
+              : 'bg-gray-100 hover:bg-gray-200'
+          }`}
+        >
+          🗓️ 日付を選ぶ
+        </button>
       </div>
+
+      {/* カレンダーピッカー */}
+      {showDatePicker && (
+        <div className="bg-white rounded-xl border p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <button
+              type="button"
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+              className="p-1 hover:bg-gray-100 rounded"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <span className="font-medium">
+              {currentMonth.getFullYear()}年{currentMonth.getMonth() + 1}月
+            </span>
+            <button
+              type="button"
+              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+              className="p-1 hover:bg-gray-100 rounded"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 mb-2">
+            {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
+              <div
+                key={d}
+                className={`text-center text-xs font-medium py-1 ${
+                  i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'
+                }`}
+              >
+                {d}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1">
+            {calendarDays.map((date, i) => (
+              <div key={i} className="aspect-square">
+                {date ? (
+                  <button
+                    type="button"
+                    onClick={() => isDateSelectable(date) && handleDateSelect(date.toISOString().split('T')[0]!)}
+                    disabled={!isDateSelectable(date)}
+                    className={`w-full h-full rounded-lg text-sm font-medium transition-all ${
+                      targetDates.includes(date.toISOString().split('T')[0]!)
+                        ? 'bg-orange-500 text-white'
+                        : !isDateSelectable(date)
+                        ? 'text-gray-300 cursor-not-allowed'
+                        : date.getDay() === 0
+                        ? 'text-red-500 hover:bg-red-50'
+                        : date.getDay() === 6
+                        ? 'text-blue-500 hover:bg-blue-50'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {date.getDate()}
+                  </button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+
+          {targetDates.length > 0 && (
+            <div className="mt-3 pt-3 border-t">
+              <p className="text-sm text-gray-500 mb-2">選択中の日付:</p>
+              <div className="flex flex-wrap gap-2">
+                {targetDates.sort().map(d => (
+                  <span
+                    key={d}
+                    className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm flex items-center gap-1"
+                  >
+                    {formatDateShort(d)}
+                    <button
+                      onClick={() => handleDateSelect(d)}
+                      className="hover:text-orange-900"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 検索バー */}
       <div className="flex gap-3 mb-6">
@@ -500,7 +710,12 @@ function ExploreContent() {
               {locationFilter === 'online' ? '🌐 オンライン' : '📍 対面'}
             </span>
           )}
-          {selectedDays.length > 0 && (
+          {targetDates.length > 0 && (
+            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+              {targetDates.map(d => formatDateShort(d)).join(', ')}
+            </span>
+          )}
+          {selectedDays.length > 0 && targetDates.length === 0 && (
             <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
               {selectedDays.map(d => DAYS.find(day => day.value === d)?.label).join('・')}
             </span>
