@@ -115,6 +115,7 @@ export default function EditPostPage() {
     e.preventDefault();
     console.log('postId:', postId);
     console.log('params:', params);
+    console.log('updateData will be:', { title, description, status, my_level: myLevel, target_level_min: targetLevelMin, target_level_max: targetLevelMax, tags });
 
     if (!title.trim() || !description.trim()) {
       toast.error('タイトルと詳細を入力してください');
