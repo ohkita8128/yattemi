@@ -39,6 +39,7 @@ interface PostCardProps {
     target_level_max?: number | null;
     available_days?: string[] | null;
     available_times?: string[] | null;
+    tags?: string[] | null;
     created_at: string;
     status?: string;
     profile?: {
@@ -102,7 +103,6 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
   // レベル表示を整形（絵文字のみ）
   const formatLevel = () => {
     if (post.type === 'teach') {
-      // 教えたい: 自分のレベル → 対象レベル
       if (post.my_level != null && post.target_level_min != null) {
         return `${getLevelEmoji(post.my_level)}→${getLevelEmoji(post.target_level_min)}`;
       }
@@ -110,7 +110,6 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
         return getLevelEmoji(post.my_level);
       }
     } else {
-      // 学びたい: 自分のレベル
       if (post.my_level != null) {
         return getLevelEmoji(post.my_level);
       }
@@ -141,30 +140,15 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
     <Link
       href={'/posts/' + post.id}
       className={cn(
-        "block bg-white rounded-xl border hover:bg-gray-50 transition-colors relative",
+        "block bg-white rounded-xl border hover:bg-gray-50 transition-colors",
         isClosed && "opacity-60"
       )}
     >
-      <div className="p-4">
-        {/* バッジ（締め切り / 応募済み） */}
-        {(isClosed || isApplied) && (
-          <div className="absolute top-3 right-3 z-10">
-            {isClosed ? (
-              <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-500 text-white">
-                締め切り
-              </span>
-            ) : isApplied ? (
-              <span className="px-2 py-0.5 rounded text-xs font-bold bg-green-500 text-white">
-                ✓ 応募済み
-              </span>
-            ) : null}
-          </div>
-        )}
-
-        {/* ヘッダー: アバター + 名前 + 時間 */}
-        {showAuthor && author && (
-          <div className="flex items-start gap-3">
-            {/* アバター */}
+      {/* ヘッダー */}
+      {showAuthor && author && (
+        <div className="p-4 pb-3 border-b">
+          {/* 1行目: アバター + 名前 + 時間 */}
+          <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
               {author.avatar_url ? (
                 <img
@@ -178,171 +162,169 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
                 </span>
               )}
             </div>
-
-            {/* コンテンツエリア */}
             <div className="flex-1 min-w-0">
-              {/* 名前 + ユーザー名 + 時間 */}
               <div className="flex items-center gap-1 text-sm">
                 <span className="font-semibold truncate">{author.display_name}</span>
                 <span className="text-gray-400 truncate">@{author.username}</span>
-                <span className="text-gray-300">·</span>
-                <span className="text-gray-400 text-xs flex-shrink-0">
-                  {formatRelativeTime(post.created_at)}
-                </span>
-              </div>
-
-              {/* タイプ + カテゴリ */}
-              <div className="flex items-center gap-2 mt-1 flex-wrap">
-                <span
-                  className={cn(
-                    'px-2 py-0.5 rounded-full text-xs font-medium',
-                    post.type === 'teach'
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'bg-cyan-100 text-cyan-700'
-                  )}
-                >
-                  {post.type === 'teach' ? '🎓 教えたい' : '📚 学びたい'}
-                </span>
-
-                {post.category && (
-                  <span
-                    className="px-2 py-0.5 rounded-full text-xs"
-                    style={{
-                      backgroundColor: post.category.color + '20',
-                      color: post.category.color,
-                    }}
-                  >
-                    {post.category.name}
-                  </span>
-                )}
-              </div>
-
-              {/* タイトル */}
-              <h3 className="font-semibold text-base mt-2 line-clamp-2">
-                {post.title}
-              </h3>
-
-              {/* 説明 */}
-              {post.description && (
-                <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                  {post.description}
-                </p>
-              )}
-
-              {/* メタ情報 + いいね */}
-              <div className="flex items-center justify-between mt-3">
-                {/* 左側: レベル、日程、形式 */}
-                <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-                  {level && (
-                    <span className="font-medium">{level}</span>
-                  )}
-                  {schedule && (
-                    <span>📅 {schedule}</span>
-                  )}
-                  <span className="flex items-center gap-0.5">
-                    <StyleIcon className="h-3 w-3" />
-                    {style.text}
-                  </span>
-                </div>
-
-                {/* 右側: いいね */}
-                <button
-                  onClick={handleLikeClick}
-                  disabled={!user || isLoading}
-                  className={cn(
-                    'flex items-center gap-1 text-xs transition-colors',
-                    isLiked
-                      ? 'text-red-500'
-                      : 'text-gray-400 hover:text-red-400',
-                    !user && 'cursor-not-allowed opacity-50'
-                  )}
-                >
-                  <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
-                  <span>{likesCount}</span>
-                </button>
               </div>
             </div>
+            <span className="text-gray-400 text-xs flex-shrink-0">
+              {formatRelativeTime(post.created_at)}
+            </span>
           </div>
-        )}
 
-        {/* showAuthor = false の場合（シンプル版） */}
-        {!showAuthor && (
-          <div>
-            {/* タイプ + カテゴリ + 時間 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span
-                  className={cn(
-                    'px-2 py-0.5 rounded-full text-xs font-medium',
-                    post.type === 'teach'
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'bg-cyan-100 text-cyan-700'
-                  )}
-                >
-                  {post.type === 'teach' ? '🎓 教えたい' : '📚 学びたい'}
-                </span>
+          {/* 2行目: タイプ + カテゴリ + 締め切り/応募済み */}
+          <div className="flex items-center gap-2 mt-2 flex-wrap">
+            <span
+              className={cn(
+                'px-2 py-0.5 rounded-full text-xs font-medium',
+                post.type === 'teach'
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'bg-cyan-100 text-cyan-700'
+              )}
+            >
+              {post.type === 'teach' ? '🎓 教えたい' : '📚 学びたい'}
+            </span>
 
-                {post.category && (
-                  <span
-                    className="px-2 py-0.5 rounded-full text-xs"
-                    style={{
-                      backgroundColor: post.category.color + '20',
-                      color: post.category.color,
-                    }}
-                  >
-                    {post.category.name}
-                  </span>
-                )}
-              </div>
-              <span className="text-gray-400 text-xs">
-                {formatRelativeTime(post.created_at)}
+            {post.category && (
+              <span
+                className="px-2 py-0.5 rounded-full text-xs"
+                style={{
+                  backgroundColor: post.category.color + '20',
+                  color: post.category.color,
+                }}
+              >
+                {post.category.name}
               </span>
-            </div>
-
-            {/* タイトル */}
-            <h3 className="font-semibold text-base mt-2 line-clamp-2">
-              {post.title}
-            </h3>
-
-            {/* 説明 */}
-            {post.description && (
-              <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                {post.description}
-              </p>
             )}
 
-            {/* メタ情報 + いいね */}
-            <div className="flex items-center justify-between mt-3">
-              <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-                {level && (
-                  <span className="font-medium">{level}</span>
-                )}
-                {schedule && (
-                  <span>📅 {schedule}</span>
-                )}
-                <span className="flex items-center gap-0.5">
-                  <StyleIcon className="h-3 w-3" />
-                  {style.text}
-                </span>
-              </div>
+            {isClosed && (
+              <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-red-500 text-white">
+                締め切り
+              </span>
+            )}
 
-              <button
-                onClick={handleLikeClick}
-                disabled={!user || isLoading}
+            {isApplied && !isClosed && (
+              <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-green-500 text-white">
+                ✓ 応募済み
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* showAuthor = false の場合のヘッダー */}
+      {!showAuthor && (
+        <div className="p-4 pb-3 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span
                 className={cn(
-                  'flex items-center gap-1 text-xs transition-colors',
-                  isLiked
-                    ? 'text-red-500'
-                    : 'text-gray-400 hover:text-red-400',
-                  !user && 'cursor-not-allowed opacity-50'
+                  'px-2 py-0.5 rounded-full text-xs font-medium',
+                  post.type === 'teach'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'bg-cyan-100 text-cyan-700'
                 )}
               >
-                <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
-                <span>{likesCount}</span>
-              </button>
+                {post.type === 'teach' ? '🎓 教えたい' : '📚 学びたい'}
+              </span>
+
+              {post.category && (
+                <span
+                  className="px-2 py-0.5 rounded-full text-xs"
+                  style={{
+                    backgroundColor: post.category.color + '20',
+                    color: post.category.color,
+                  }}
+                >
+                  {post.category.name}
+                </span>
+              )}
+
+              {isClosed && (
+                <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-red-500 text-white">
+                  締め切り
+                </span>
+              )}
+
+              {isApplied && !isClosed && (
+                <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-green-500 text-white">
+                  ✓ 応募済み
+                </span>
+              )}
             </div>
+            <span className="text-gray-400 text-xs">
+              {formatRelativeTime(post.created_at)}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* 本文 */}
+      <div className="p-4 pt-3">
+        {/* タイトル */}
+        <h3 className="font-semibold text-base line-clamp-2">
+          {post.title}
+        </h3>
+
+        {/* 説明 */}
+        {post.description && (
+          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+            {post.description}
+          </p>
+        )}
+
+        {/* タグ */}
+        {post.tags && post.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {post.tags.slice(0, 5).map((tag, index) => (
+              <span
+                key={index}
+                className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-md"
+              >
+                {tag}
+              </span>
+            ))}
+            {post.tags.length > 5 && (
+              <span className="text-xs text-gray-400">
+                +{post.tags.length - 5}
+              </span>
+            )}
           </div>
         )}
+
+        {/* メタ情報 + いいね */}
+        <div className="flex items-center justify-between mt-3 pt-3 border-t">
+          {/* 左側: レベル、日程、形式 */}
+          <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+            {level && (
+              <span className="font-medium">{level}</span>
+            )}
+            {schedule && (
+              <span>📅 {schedule}</span>
+            )}
+            <span className="flex items-center gap-0.5">
+              <StyleIcon className="h-3 w-3" />
+              {style.text}
+            </span>
+          </div>
+
+          {/* 右側: いいね */}
+          <button
+            onClick={handleLikeClick}
+            disabled={!user || isLoading}
+            className={cn(
+              'flex items-center gap-1 text-xs transition-colors',
+              isLiked
+                ? 'text-red-500'
+                : 'text-gray-400 hover:text-red-400',
+              !user && 'cursor-not-allowed opacity-50'
+            )}
+          >
+            <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
+            <span>{likesCount}</span>
+          </button>
+        </div>
       </div>
     </Link>
   );
