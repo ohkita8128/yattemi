@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -94,20 +94,13 @@ export default function ProfileEditPage() {
 
     setIsUploadingAvatar(true);
     const supabase = supabaseRef.current;
+    const oldAvatarUrl = avatarUrl; // 古いURLを保存
 
     try {
       const fileExt = avatarFile.name.split('.').pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
-      // 古いアバターを削除
-      if (avatarUrl) {
-        const oldPath = avatarUrl.split('/avatars/')[1];
-        if (oldPath) {
-          await supabase.storage.from('avatars').remove([oldPath]);
-        }
-      }
-
-      // アップロード
+      // 先に新しいアバターをアップロード
       const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, avatarFile, {
@@ -117,16 +110,29 @@ export default function ProfileEditPage() {
 
       if (uploadError) throw uploadError;
 
-      // 公開URLを取得
+      // 公開URLを取得（キャッシュバスティング用のクエリパラメータ付き）
       const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
-      return urlData.publicUrl;
+      const newUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+      // アップロード成功後に古いアバターを削除
+      if (oldAvatarUrl) {
+        const oldPath = oldAvatarUrl.split('/avatars/')[1]?.split('?')[0]; // クエリパラメータを除去
+        if (oldPath) {
+          await supabase.storage.from('avatars').remove([oldPath]).catch(() => {
+            // 削除失敗しても新しい画像は使える
+            console.warn('Failed to delete old avatar, but continuing...');
+          });
+        }
+      }
+
+      return newUrl;
     } catch (err) {
       console.error('Avatar upload error:', err);
       toast.error('画像のアップロードに失敗しました');
-      return avatarUrl;
+      return avatarUrl; // 失敗時は元のURLを維持
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -138,7 +144,7 @@ export default function ProfileEditPage() {
     const supabase = supabaseRef.current;
 
     try {
-      const oldPath = avatarUrl.split('/avatars/')[1];
+      const oldPath = avatarUrl.split('/avatars/')[1]?.split('?')[0]; // クエリパラメータを除去
       if (oldPath) {
         await supabase.storage.from('avatars').remove([oldPath]);
       }
@@ -216,8 +222,16 @@ export default function ProfileEditPage() {
       }
 
       toast.success('プロフィールを更新しました');
-      if (refreshProfile) await refreshProfile();
-      router.push(`/users/${username}`);
+      
+      // refreshProfile を待ってから遷移
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+      
+      // 少し待ってから遷移（状態更新を確実に）
+      setTimeout(() => {
+        router.push(`/users/${username}`);
+      }, 100);
     } catch (err) {
       console.error('Profile update error:', err);
       toast.error('更新に失敗しました');

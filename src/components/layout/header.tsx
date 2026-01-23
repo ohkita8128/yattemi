@@ -184,7 +184,7 @@ export function Header() {
                     </Link>
                     <div className="border-t my-1" />
                     <Link
-                      href={ROUTES.PROFILE_EDIT}
+                      href="/settings"
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
                     >
@@ -309,6 +309,14 @@ export function Header() {
                   >
                     <Rocket className="h-5 w-5 text-cyan-500" />
                     チャレンジ
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={closeMobileNav}
+                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
+                  >
+                    <Settings className="h-5 w-5 text-gray-500" />
+                    設定
                   </Link>
                 </div>
                 <div className="border-t pt-4 mt-4">
