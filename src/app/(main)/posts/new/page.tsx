@@ -26,7 +26,7 @@ export default function NewPostPage() {
 
   // 詳細設定
   const [maxApplicants, setMaxApplicants] = useState(1);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState<boolean | null>(null);
   const [location, setLocation] = useState('');
 
   // レベル
@@ -70,11 +70,6 @@ export default function NewPostPage() {
       return;
     }
 
-    if (description.length < 20) {
-      toast.error('詳細は20文字以上で入力してください');
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
@@ -88,7 +83,7 @@ export default function NewPostPage() {
           category_id: categoryId,
           max_applicants: maxApplicants,
           is_online: isOnline,
-          location: isOnline ? null : location,
+          location: isOnline === false ? location : null,
           status: 'open',
           my_level: myLevel,
           target_level_min: targetLevelMin,
@@ -113,7 +108,7 @@ export default function NewPostPage() {
     }
   };
 
-    return (
+  return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       {/* ヘッダー */}
       <div className="mb-6">
@@ -199,7 +194,7 @@ export default function NewPostPage() {
             className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
             placeholder="どんなことを教えたい/学びたいですか？&#10;具体的に書くとマッチングしやすくなります。"
           />
-          <p className="text-xs text-gray-400">{description.length}/2000文字（20文字以上）</p>
+          <p className="text-xs text-gray-400">{description.length}/2000文字</p>
         </div>
 
         {/* タグ */}
@@ -216,12 +211,23 @@ export default function NewPostPage() {
         {/* 実施形式 */}
         <div className="space-y-2">
           <label className="block font-medium">実施形式</label>
-          <div className="flex gap-4">
+          <div className="grid grid-cols-3 gap-3">
+            <button
+              type="button"
+              onClick={() => setIsOnline(null)}
+              className={`p-3 rounded-xl border-2 transition-all ${
+                isOnline === null
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <span className="block font-medium">🤝 どちらでも</span>
+            </button>
             <button
               type="button"
               onClick={() => setIsOnline(true)}
-              className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-                isOnline
+              className={`p-3 rounded-xl border-2 transition-all ${
+                isOnline === true
                   ? 'border-orange-500 bg-orange-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
@@ -231,8 +237,8 @@ export default function NewPostPage() {
             <button
               type="button"
               onClick={() => setIsOnline(false)}
-              className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-                !isOnline
+              className={`p-3 rounded-xl border-2 transition-all ${
+                isOnline === false
                   ? 'border-orange-500 bg-orange-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
@@ -243,7 +249,7 @@ export default function NewPostPage() {
         </div>
 
         {/* 場所（対面の場合） */}
-        {!isOnline && (
+        {isOnline === false && (
           <div className="space-y-2">
             <label className="block font-medium">場所</label>
             <input
@@ -286,18 +292,35 @@ export default function NewPostPage() {
 
           {showAdvanced && (
             <div className="p-4 space-y-6 border-t">
-              {/* 募集人数 */}
+              {/* 募集人数 - ステッパー */}
               <div className="space-y-2">
                 <label className="block font-medium">募集人数</label>
-                <select
-                  value={maxApplicants}
-                  onChange={(e) => setMaxApplicants(Number(e.target.value))}
-                  className="w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
-                >
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                    <option key={n} value={n}>{n}人</option>
-                  ))}
-                </select>
+                <div className="flex items-center justify-center gap-4 p-4 bg-gray-50 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (maxApplicants > 1) setMaxApplicants(maxApplicants - 1);
+                    }}
+                    disabled={maxApplicants <= 1}
+                    className="w-12 h-12 rounded-xl border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-2xl font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-600"
+                  >
+                    −
+                  </button>
+                  <div className="w-24 text-center">
+                    <span className="text-3xl font-bold text-gray-800">{maxApplicants}</span>
+                    <span className="text-lg text-gray-500 ml-1">人</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (maxApplicants < 10) setMaxApplicants(maxApplicants + 1);
+                    }}
+                    disabled={maxApplicants >= 10}
+                    className="w-12 h-12 rounded-xl border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-2xl font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-600"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
 
               {/* レベル設定 */}
