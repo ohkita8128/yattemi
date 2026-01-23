@@ -1,33 +1,20 @@
-// レベル定義
-export const LEVELS = [
-  { min: 0, max: 1, name: '見習い', emoji: '🐣' },
-  { min: 2, max: 3, name: '初心者', emoji: '🌱' },
-  { min: 4, max: 5, name: '中級者', emoji: '📚' },
-  { min: 6, max: 7, name: '一人前', emoji: '🚶' },
-  { min: 8, max: 9, name: '職人', emoji: '🔨' },
-  { min: 10, max: 10, name: '達人', emoji: '🥷' },
-] as const;
-
-// レベル値からレベル情報を取得
-export function getLevelInfo(level: number) {
-  const info = LEVELS.find(l => level >= l.min && level <= l.max);
-  return info || LEVELS[0];
+﻿// レベル情報を取得
+export function getLevelInfo(level: number): { name: string; emoji: string } {
+  if (level <= 1) return { name: '見習い', emoji: '🐣' };
+  if (level <= 3) return { name: '初心者', emoji: '🌱' };
+  if (level <= 5) return { name: '中級者', emoji: '📚' };
+  if (level <= 7) return { name: '一人前', emoji: '🚶' };
+  if (level <= 9) return { name: '職人', emoji: '🔨' };
+  return { name: '達人', emoji: '🥷' };
 }
 
-// レベル表示用のラベル
-export function getLevelLabel(level: number) {
+// レベルからラベルを取得
+export function getLevelLabel(level: number): string {
   const info = getLevelInfo(level);
-  return `${info.emoji} ${info.name}`;
+  return info.emoji + ' ' + info.name;
 }
 
-// レベル範囲の表示
-export function getLevelRangeLabel(min: number, max: number) {
-  const minInfo = getLevelInfo(min);
-  const maxInfo = getLevelInfo(max);
-  
-  if (minInfo.name === maxInfo.name) {
-    return `${minInfo.emoji} ${minInfo.name}`;
-  }
-  
-  return `${minInfo.emoji}${minInfo.name} 〜 ${maxInfo.emoji}${maxInfo.name}`;
+// レベルから絵文字のみを取得
+export function getLevelEmoji(level: number): string {
+  return getLevelInfo(level).emoji;
 }
