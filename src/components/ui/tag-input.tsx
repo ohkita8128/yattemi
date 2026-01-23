@@ -90,24 +90,7 @@ export function TagInput({
     setInput('');
     setShowSuggestions(false);
 
-    // DBにタグを追加（存在しなければ）& usage_countを増やす
-    const supabase = supabaseRef.current;
-    const { data: existing } = await (supabase as any)
-      .from('tags')
-      .select('id, usage_count')
-      .eq('name', trimmed)
-      .single();
-
-    if (existing) {
-      await (supabase as any)
-        .from('tags')
-        .update({ usage_count: existing.usage_count + 1 })
-        .eq('id', existing.id);
-    } else {
-      await (supabase as any)
-        .from('tags')
-        .insert({ name: trimmed, usage_count: 1, is_official: false });
-    }
+    // 新規タグはDBに追加（usage_countはトリガーで自動更新）\n    const supabase = supabaseRef.current;\n    await (supabase as any)\n      .from('tags')\n      .upsert({ name: trimmed, is_official: false }, { onConflict: 'name', ignoreDuplicates: true });
   };
 
   const removeTag = (tagToRemove: string) => {
