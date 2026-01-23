@@ -9,7 +9,7 @@ export const postSchema = z.object({
   description: z
     .string()
     .min(1, '内容を入力してください')
-    .min(10, '内容は10文字以上で入力してください')
+    .min(1, '内容を入力してください')
     .max(2000, '内容は2000文字以内で入力してください'),
   type: z.enum(['teach', 'learn'], {
     required_error: 'タイプを選択してください',

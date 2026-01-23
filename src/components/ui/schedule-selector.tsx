@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import { Plus, X, Calendar, Clock } from 'lucide-react';
+import { Plus, X, Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ScheduleSelectorProps {
   availableDays: string[];
@@ -37,9 +37,10 @@ export function ScheduleSelector({
   onDatesChange,
 }: ScheduleSelectorProps) {
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [newDate, setNewDate] = useState('');
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [newStart, setNewStart] = useState('14:00');
   const [newEnd, setNewEnd] = useState('17:00');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const toggleDay = (day: string) => {
     if (availableDays.includes(day)) {
@@ -58,9 +59,9 @@ export function ScheduleSelector({
   };
 
   const addSpecificDate = () => {
-    if (newDate && newStart && newEnd) {
-      onDatesChange([...specificDates, { date: newDate, start: newStart, end: newEnd }]);
-      setNewDate('');
+    if (selectedDate && newStart && newEnd) {
+      onDatesChange([...specificDates, { date: selectedDate, start: newStart, end: newEnd }]);
+      setSelectedDate(null);
       setShowDatePicker(false);
     }
   };
@@ -77,17 +78,59 @@ export function ScheduleSelector({
     return `${month}/${day}(${dayOfWeek})`;
   };
 
-  // 今日から2週間分の日付を生成
-  const getDateOptions = () => {
-    const dates = [];
+  // カレンダー生成
+  const generateCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
     const today = new Date();
-    for (let i = 0; i < 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      dates.push(date.toISOString().split('T')[0]);
+    today.setHours(0, 0, 0, 0);
+
+    const days: (Date | null)[] = [];
+    
+    // 月初の曜日まで空白を追加（日曜始まり）
+    for (let i = 0; i < firstDay.getDay(); i++) {
+      days.push(null);
     }
-    return dates;
+    
+    // 日付を追加
+    for (let i = 1; i <= lastDay.getDate(); i++) {
+      days.push(new Date(year, month, i));
+    }
+
+    return days;
   };
+
+  const isDateSelectable = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date >= today;
+  };
+
+  const isDateSelected = (date: Date) => {
+    return selectedDate === date.toISOString().split('T')[0];
+  };
+
+  const isDateAlreadyAdded = (date: Date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    return specificDates.some(d => d.date === dateStr);
+  };
+
+  const handleDateClick = (date: Date) => {
+    if (!isDateSelectable(date) || isDateAlreadyAdded(date)) return;
+    setSelectedDate(date.toISOString().split('T')[0]!);
+  };
+
+  const prevMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  const calendarDays = generateCalendarDays();
 
   return (
     <div className="space-y-6">
@@ -105,7 +148,7 @@ export function ScheduleSelector({
               onClick={() => toggleDay(day.value)}
               className={`w-10 h-10 rounded-full font-medium text-sm transition-all ${
                 availableDays.includes(day.value)
-                  ? day.value === 'sat' 
+                  ? day.value === 'sat'
                     ? 'bg-blue-500 text-white'
                     : day.value === 'sun'
                     ? 'bg-red-500 text-white'
@@ -180,56 +223,120 @@ export function ScheduleSelector({
 
         {/* 日時追加フォーム */}
         {showDatePicker ? (
-          <div className="p-4 bg-gray-50 rounded-xl space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs text-gray-500 mb-1">日付</label>
-                <select
-                  value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  className="w-full h-10 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+          <div className="p-4 bg-gray-50 rounded-xl space-y-4">
+            {/* カレンダー */}
+            <div className="bg-white rounded-lg p-3 border">
+              {/* ヘッダー */}
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  type="button"
+                  onClick={prevMonth}
+                  className="p-1 hover:bg-gray-100 rounded"
                 >
-                  <option value="">選択してください</option>
-                  {getDateOptions().map(date => (
-                    <option key={date} value={date}>
-                      {formatDate(date!)}
-                    </option>
-                  ))}
-                </select>
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <span className="font-medium">
+                  {currentMonth.getFullYear()}年{currentMonth.getMonth() + 1}月
+                </span>
+                <button
+                  type="button"
+                  onClick={nextMonth}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">開始</label>
-                  <input
-                    type="time"
-                    value={newStart}
-                    onChange={(e) => setNewStart(e.target.value)}
-                    className="w-full h-10 px-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">終了</label>
-                  <input
-                    type="time"
-                    value={newEnd}
-                    onChange={(e) => setNewEnd(e.target.value)}
-                    className="w-full h-10 px-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                </div>
+
+              {/* 曜日ヘッダー */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
+                  <div
+                    key={d}
+                    className={`text-center text-xs font-medium py-1 ${
+                      i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'
+                    }`}
+                  >
+                    {d}
+                  </div>
+                ))}
+              </div>
+
+              {/* 日付 */}
+              <div className="grid grid-cols-7 gap-1">
+                {calendarDays.map((date, i) => (
+                  <div key={i} className="aspect-square">
+                    {date ? (
+                      <button
+                        type="button"
+                        onClick={() => handleDateClick(date)}
+                        disabled={!isDateSelectable(date) || isDateAlreadyAdded(date)}
+                        className={`w-full h-full rounded-lg text-sm font-medium transition-all ${
+                          isDateSelected(date)
+                            ? 'bg-orange-500 text-white'
+                            : isDateAlreadyAdded(date)
+                            ? 'bg-green-100 text-green-600 cursor-not-allowed'
+                            : !isDateSelectable(date)
+                            ? 'text-gray-300 cursor-not-allowed'
+                            : date.getDay() === 0
+                            ? 'text-red-500 hover:bg-red-50'
+                            : date.getDay() === 6
+                            ? 'text-blue-500 hover:bg-blue-50'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {date.getDate()}
+                      </button>
+                    ) : null}
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* 時間選択 */}
+            {selectedDate && (
+              <div className="bg-white rounded-lg p-3 border">
+                <p className="text-sm font-medium mb-2">
+                  📅 {formatDate(selectedDate)} の時間
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">開始</label>
+                    <input
+                      type="time"
+                      value={newStart}
+                      onChange={(e) => setNewStart(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                  <span className="mt-5">〜</span>
+                  <div className="flex-1">
+                    <label className="block text-xs text-gray-500 mb-1">終了</label>
+                    <input
+                      type="time"
+                      value={newEnd}
+                      onChange={(e) => setNewEnd(e.target.value)}
+                      className="w-full h-10 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={addSpecificDate}
-                disabled={!newDate}
+                disabled={!selectedDate}
                 className="flex-1 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 追加
               </button>
               <button
                 type="button"
-                onClick={() => setShowDatePicker(false)}
+                onClick={() => {
+                  setShowDatePicker(false);
+                  setSelectedDate(null);
+                }}
                 className="px-4 py-2 bg-gray-200 rounded-lg font-medium hover:bg-gray-300"
               >
                 キャンセル
