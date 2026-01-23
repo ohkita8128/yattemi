@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
@@ -10,6 +10,8 @@ import { getClient } from '@/lib/supabase/client';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LevelSlider, LevelRangeSlider } from '@/components/ui/level-slider';
+import { TagInput } from '@/components/ui/tag-input';
+import { ScheduleSelector } from '@/components/ui/schedule-selector';
 import type { Category } from '@/types';
 
 export default function EditPostPage() {
@@ -19,7 +21,7 @@ export default function EditPostPage() {
 
   const { post, isLoading: postLoading } = usePost(postId);
   const { user, isAuthenticated, isLoading: authLoading } = useAuth();
-  const supabase = getClient();
+  const supabaseRef = useRef(getClient());
 
   // フォームの状態
   const [title, setTitle] = useState('');
@@ -27,23 +29,31 @@ export default function EditPostPage() {
   const [type, setType] = useState<'teach' | 'learn'>('teach');
   const [categoryId, setCategoryId] = useState<number>(1);
   const [maxApplicants, setMaxApplicants] = useState(1);
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState<boolean | null>(null);
   const [location, setLocation] = useState('');
-  const [preferredSchedule, setPreferredSchedule] = useState('');
   const [status, setStatus] = useState<'open' | 'closed'>('open');
-  
+
   // レベル関連
   const [myLevel, setMyLevel] = useState(5);
   const [targetLevelMin, setTargetLevelMin] = useState(0);
   const [targetLevelMax, setTargetLevelMax] = useState(10);
-  
+
+  // タグ
+  const [tags, setTags] = useState<string[]>([]);
+
+  // 日程関連
+  const [availableDays, setAvailableDays] = useState<string[]>([]);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [specificDates, setSpecificDates] = useState<{ date: string; start: string; end: string }[]>([]);
+
   const [categories, setCategories] = useState<Category[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hasApplications, setHasApplications] = useState(false);
+  const [hasApprovedMatch, setHasApprovedMatch] = useState(false);
 
   // カテゴリ取得
   useEffect(() => {
     const fetchCategories = async () => {
+      const supabase = supabaseRef.current;
       const { data } = await (supabase as any)
         .from('categories')
         .select('*')
@@ -51,7 +61,7 @@ export default function EditPostPage() {
       if (data) setCategories(data);
     };
     fetchCategories();
-  }, [supabase]);
+  }, []);
 
   // 認証チェック
   useEffect(() => {
@@ -75,33 +85,35 @@ export default function EditPostPage() {
       setMaxApplicants(post.max_applicants);
       setIsOnline(post.is_online);
       setLocation(post.location || '');
-      setPreferredSchedule(post.preferred_schedule || '');
       setStatus(post.status === 'open' ? 'open' : 'closed');
-      
-      // レベル
       setMyLevel(post.my_level ?? 5);
       setTargetLevelMin(post.target_level_min ?? 0);
       setTargetLevelMax(post.target_level_max ?? 10);
+      setTags((post as any).tags || []);
+      setAvailableDays((post as any).available_days || []);
+      setAvailableTimes((post as any).available_times || []);
+      setSpecificDates((post as any).specific_dates || []);
     }
   }, [post, user, router]);
 
-  // 応募があるかチェック
+  // 承認済みマッチングがあるかチェック
   useEffect(() => {
-    const checkApplications = async () => {
+    const checkApprovedMatch = async () => {
       if (!postId) return;
+      const supabase = supabaseRef.current;
       const { data } = await (supabase as any)
-        .from('applications')
+        .from('matches')
         .select('id')
         .eq('post_id', postId)
         .limit(1);
-      setHasApplications(data && data.length > 0);
+      setHasApprovedMatch(data && data.length > 0);
     };
-    checkApplications();
-  }, [postId, supabase]);
+    checkApprovedMatch();
+  }, [postId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim() || !description.trim()) {
       toast.error('タイトルと詳細を入力してください');
       return;
@@ -112,30 +124,34 @@ export default function EditPostPage() {
       return;
     }
 
-    if (description.length < 20) {
-      toast.error('詳細は20文字以上で入力してください');
+    if (description.length < 10) {
+      toast.error('詳細は10文字以上で入力してください');
       return;
     }
 
     setIsSubmitting(true);
     try {
+      const supabase = supabaseRef.current;
       const updateData: any = {
         title,
         description,
-        preferred_schedule: preferredSchedule || null,
         status,
         my_level: myLevel,
         target_level_min: targetLevelMin,
         target_level_max: targetLevelMax,
+        tags,
       };
 
-      // 応募がなければ全項目更新可能
-      if (!hasApplications) {
+      // 承認済みマッチングがなければ全項目更新可能
+      if (!hasApprovedMatch) {
         updateData.type = type;
         updateData.category_id = categoryId;
         updateData.max_applicants = maxApplicants;
         updateData.is_online = isOnline;
-        updateData.location = isOnline ? null : location;
+        updateData.location = isOnline === false ? location : null;
+        updateData.available_days = availableDays;
+        updateData.available_times = availableTimes;
+        updateData.specific_dates = specificDates;
       }
 
       const { error } = await (supabase as any)
@@ -161,6 +177,7 @@ export default function EditPostPage() {
     }
 
     try {
+      const supabase = supabaseRef.current;
       const { error } = await (supabase as any)
         .from('posts')
         .delete()
@@ -189,6 +206,8 @@ export default function EditPostPage() {
     );
   }
 
+  const isLocked = hasApprovedMatch;
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       {/* Header */}
@@ -201,9 +220,9 @@ export default function EditPostPage() {
           戻る
         </Link>
         <h1 className="text-2xl font-bold">投稿を編集</h1>
-        {hasApplications && (
+        {isLocked && (
           <p className="text-sm text-amber-600 mt-2">
-            ※ 応募があるため、一部の項目は変更できません
+            ※ マッチング成立済みのため、一部の項目は変更できません
           </p>
         )}
       </div>
@@ -214,14 +233,14 @@ export default function EditPostPage() {
         <div className="space-y-2">
           <label className="block font-medium">
             投稿タイプ
-            {hasApplications && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
+            {isLocked && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
           </label>
           <div className="grid grid-cols-2 gap-4">
             {(['teach', 'learn'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
-                disabled={hasApplications}
+                disabled={isLocked}
                 onClick={() => setType(t)}
                 className={`p-4 rounded-xl border-2 text-left transition-all ${
                   type === t
@@ -229,7 +248,7 @@ export default function EditPostPage() {
                       ? 'border-purple-500 bg-purple-50'
                       : 'border-cyan-500 bg-cyan-50'
                     : 'border-gray-200 hover:border-gray-300'
-                } ${hasApplications ? 'opacity-60 cursor-not-allowed' : ''}`}
+                } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
               >
                 <span className="text-2xl mb-2 block">{POST_TYPES[t].emoji}</span>
                 <span className="font-semibold block">{POST_TYPES[t].label}</span>
@@ -265,21 +284,21 @@ export default function EditPostPage() {
             className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
             placeholder="どんなことを教えたい/学びたいですか？具体的に書くとマッチングしやすくなります。"
           />
-          <p className="text-xs text-gray-400">{description.length}/2000文字（20文字以上）</p>
+          <p className="text-xs text-gray-400">{description.length}/2000文字（10文字以上）</p>
         </div>
 
         {/* カテゴリ */}
         <div className="space-y-2">
           <label className="block font-medium">
             カテゴリ
-            {hasApplications && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
+            {isLocked && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
           </label>
           <select
             value={categoryId}
             onChange={(e) => setCategoryId(Number(e.target.value))}
-            disabled={hasApplications}
+            disabled={isLocked}
             className={`w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-              hasApplications ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''
+              isLocked ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''
             }`}
           >
             {categories.map((cat) => (
@@ -290,107 +309,149 @@ export default function EditPostPage() {
           </select>
         </div>
 
-        {/* レベル設定 */}
-        <div className="space-y-6 p-4 bg-gray-50 rounded-xl">
-          <h3 className="font-medium text-gray-700">レベル設定</h3>
-          
-          {/* 自分のレベル */}
-          <LevelSlider
-            value={myLevel}
-            onChange={setMyLevel}
-            label={type === 'teach' ? '自分のレベル（先輩として）' : '自分のレベル（学習者として）'}
-          />
-
-          {/* 対象レベル */}
-          <LevelRangeSlider
-            minValue={targetLevelMin}
-            maxValue={targetLevelMax}
-            onMinChange={setTargetLevelMin}
-            onMaxChange={setTargetLevelMax}
-            label={type === 'teach' ? '募集する後輩のレベル' : '希望する先輩のレベル'}
+        {/* タグ */}
+        <div className="space-y-2">
+          <label className="block font-medium">タグ</label>
+          <TagInput
+            value={tags}
+            onChange={setTags}
+            maxTags={5}
           />
         </div>
 
-        {/* 募集人数 */}
+        {/* 募集人数（ステッパー） */}
         <div className="space-y-2">
           <label className="block font-medium">
             募集人数
-            {hasApplications && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
+            {isLocked && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
           </label>
-          <select
-            value={maxApplicants}
-            onChange={(e) => setMaxApplicants(Number(e.target.value))}
-            disabled={hasApplications}
-            className={`w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-              hasApplications ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''
-            }`}
-          >
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-              <option key={n} value={n}>{n}人</option>
-            ))}
-          </select>
+          <div className="flex items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLocked && maxApplicants > 1) setMaxApplicants(maxApplicants - 1);
+              }}
+              disabled={isLocked || maxApplicants <= 1}
+              className="w-12 h-12 rounded-xl border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-2xl font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-600"
+            >
+              −
+            </button>
+            <div className="w-20 text-center">
+              <span className="text-3xl font-bold text-gray-800">{maxApplicants}</span>
+              <span className="text-lg text-gray-500 ml-1">人</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (!isLocked && maxApplicants < 10) setMaxApplicants(maxApplicants + 1);
+              }}
+              disabled={isLocked || maxApplicants >= 10}
+              className="w-12 h-12 rounded-xl border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-2xl font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-600"
+            >
+              +
+            </button>
+          </div>
         </div>
 
-        {/* 実施形式 */}
+        {/* 実施形式（どちらでもOK対応） */}
         <div className="space-y-2">
           <label className="block font-medium">
             実施形式
-            {hasApplications && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
+            {isLocked && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
           </label>
-          <div className="flex gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <button
               type="button"
-              disabled={hasApplications}
+              disabled={isLocked}
               onClick={() => setIsOnline(true)}
-              className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-                isOnline
+              className={`p-3 rounded-xl border-2 transition-all ${
+                isOnline === true
                   ? 'border-orange-500 bg-orange-50'
                   : 'border-gray-200 hover:border-gray-300'
-              } ${hasApplications ? 'opacity-60 cursor-not-allowed' : ''}`}
+              } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
               <span className="block font-medium">🌐 オンライン</span>
             </button>
             <button
               type="button"
-              disabled={hasApplications}
+              disabled={isLocked}
               onClick={() => setIsOnline(false)}
-              className={`flex-1 p-3 rounded-xl border-2 transition-all ${
-                !isOnline
+              className={`p-3 rounded-xl border-2 transition-all ${
+                isOnline === false
                   ? 'border-orange-500 bg-orange-50'
                   : 'border-gray-200 hover:border-gray-300'
-              } ${hasApplications ? 'opacity-60 cursor-not-allowed' : ''}`}
+              } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
             >
               <span className="block font-medium">📍 対面</span>
+            </button>
+            <button
+              type="button"
+              disabled={isLocked}
+              onClick={() => setIsOnline(null)}
+              className={`p-3 rounded-xl border-2 transition-all ${
+                isOnline === null
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              } ${isLocked ? 'opacity-60 cursor-not-allowed' : ''}`}
+            >
+              <span className="block font-medium">🤝 どちらでも</span>
             </button>
           </div>
         </div>
 
         {/* 場所（対面の場合） */}
-        {!isOnline && (
+        {isOnline === false && (
           <div className="space-y-2">
             <label className="block font-medium">場所</label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              disabled={hasApplications}
+              disabled={isLocked}
               className={`w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                hasApplications ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''
+                isLocked ? 'opacity-60 cursor-not-allowed bg-gray-50' : ''
               }`}
               placeholder="例: 東京都渋谷区"
             />
           </div>
         )}
 
-        {/* 希望日程 */}
+        {/* 日程選択 */}
         <div className="space-y-2">
-          <label className="block font-medium">希望日程</label>
-          <input
-            type="text"
-            value={preferredSchedule}
-            onChange={(e) => setPreferredSchedule(e.target.value)}
-            className="w-full h-12 px-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
-            placeholder="例: 平日夜、土日"
+          <label className="block font-medium">
+            希望日程
+            {isLocked && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
+          </label>
+          {isLocked ? (
+            <div className="p-4 bg-gray-50 rounded-xl text-gray-500 text-sm">
+              マッチング成立後は日程を変更できません
+            </div>
+          ) : (
+            <ScheduleSelector
+              availableDays={availableDays}
+              availableTimes={availableTimes}
+              specificDates={specificDates}
+              onDaysChange={setAvailableDays}
+              onTimesChange={setAvailableTimes}
+              onDatesChange={setSpecificDates}
+            />
+          )}
+        </div>
+
+        {/* レベル設定 */}
+        <div className="space-y-6 p-4 bg-gray-50 rounded-xl">
+          <h3 className="font-medium text-gray-700">レベル設定</h3>
+          <LevelSlider
+            value={myLevel}
+            onChange={setMyLevel}
+            label={type === 'teach' ? '自分のレベル（先輩として）' : '自分のレベル（学習者として）'}
+          />
+          <LevelRangeSlider
+            minValue={targetLevelMin}
+            maxValue={targetLevelMax}
+            onMinChange={setTargetLevelMin}
+            onMaxChange={setTargetLevelMax}
+            label={type === 'teach' ? '募集する後輩のレベル' : '希望する先輩のレベル'}
           />
         </div>
 
