@@ -51,6 +51,10 @@ export const postSchema = z.object({
     .array(z.string().max(20, 'タグは20文字以内で入力してください'))
     .max(5, 'タグは5つまでです')
     .default([]),
+  images: z
+    .array(z.string().url('無効なURL形式です'))
+    .max(4, '画像は4枚までです')
+    .default([]),
   // レベル関連
   myLevel: z
     .number()

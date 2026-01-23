@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { Heart, MapPin, Monitor, Video } from 'lucide-react';
@@ -40,6 +40,7 @@ interface PostCardProps {
     available_days?: string[] | null;
     available_times?: string[] | null;
     tags?: string[] | null;
+    images?: string[] | null;
     created_at: string;
     status?: string;
     profile?: {
@@ -290,6 +291,32 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
                 +{post.tags.length - 5}
               </span>
             )}
+          </div>
+        )}
+
+        {/* 画像 */}
+        {post.images && post.images.length > 0 && (
+          <div className={`mt-3 grid gap-1 rounded-xl overflow-hidden ${
+            post.images.length === 1 ? 'grid-cols-1' : 
+            post.images.length === 2 ? 'grid-cols-2' : 
+            post.images.length === 3 ? 'grid-cols-2' : 'grid-cols-2'
+          }`}>
+            {post.images.slice(0, 4).map((url, index) => (
+              <div 
+                key={index} 
+                className={`relative bg-gray-100 ${
+                  post.images!.length === 1 ? 'aspect-video' :
+                  post.images!.length === 3 && index === 0 ? 'aspect-square row-span-2' :
+                  'aspect-square'
+                }`}
+              >
+                <img 
+                  src={url} 
+                  alt="" 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ))}
           </div>
         )}
 

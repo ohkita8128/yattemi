@@ -1,5 +1,9 @@
 ﻿'use client';
 
+import { useState } from 'react';
+import { X, ImagePlus, Loader2 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -56,6 +60,68 @@ export function PostForm({
       ...defaultValues,
     },
   });
+
+  const [images, setImages] = useState<string[]>(defaultValues?.images || []);
+  const [uploadingImages, setUploadingImages] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    if (images.length + files.length > 4) {
+      alert('画像は4枚までです');
+      return;
+    }
+
+    setUploadingImages(true);
+    const supabase = createClient();
+    const newImages: string[] = [];
+
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > 5 * 1024 * 1024) {
+          alert('ファイルサイズは5MB以下にしてください');
+          continue;
+        }
+        if (!file.type.startsWith('image/')) {
+          alert('画像ファイルのみアップロードできます');
+          continue;
+        }
+
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('post-images')
+          .upload(fileName, file);
+
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          continue;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('post-images')
+          .getPublicUrl(fileName);
+
+        newImages.push(publicUrl);
+      }
+
+      const updatedImages = [...images, ...newImages];
+      setImages(updatedImages);
+      setValue('images', updatedImages);
+    } catch (error) {
+      console.error('Upload error:', error);
+    } finally {
+      setUploadingImages(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const updatedImages = images.filter((_, i) => i !== index);
+    setImages(updatedImages);
+    setValue('images', updatedImages);
+  };
 
   const selectedType = watch('type');
   const isOnline = watch('isOnline');
@@ -130,6 +196,45 @@ export function PostForm({
         {errors.description && (
           <p className="text-sm text-destructive">{errors.description.message}</p>
         )}
+      </div>
+
+      {/* Images */}
+      <div className="space-y-2">
+        <Label>画像（最大4枚）</Label>
+        <div className="grid grid-cols-2 gap-3">
+          {images.map((url, index) => (
+            <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
+              <img src={url} alt="" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removeImage(index)}
+                className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          {images.length < 4 && (
+            <label className="aspect-video rounded-lg border-2 border-dashed border-gray-300 hover:border-orange-400 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50 hover:bg-orange-50">
+              {uploadingImages ? (
+                <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
+              ) : (
+                <>
+                  <ImagePlus className="h-8 w-8 text-gray-400" />
+                  <span className="text-sm text-gray-500 mt-2">追加</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                disabled={uploadingImages}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
       </div>
 
       {/* Category */}
