@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { X, ImagePlus, Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { compressPostImage } from '@/lib/image-compression';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -87,12 +88,12 @@ export function PostForm({
           continue;
         }
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+        const compressedFile = await compressPostImage(file);
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
 
         const { error: uploadError } = await supabase.storage
           .from('post-images')
-          .upload(fileName, file);
+          .upload(fileName, compressedFile);
 
         if (uploadError) {
           console.error('Upload error:', uploadError);

@@ -1,7 +1,8 @@
-'use client';
+﻿'use client';
 
 import { useState, useRef, useEffect } from 'react';
 import { getClient } from '@/lib/supabase/client';
+import { compressGalleryImage } from '@/lib/image-compression';
 
 export type ProfileImage = {
   id: string;
@@ -47,13 +48,13 @@ export function useProfileImages(userId: string | null) {
 
     try {
       // ファイルをStorageにアップロード
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}/${Date.now()}.${fileExt}`;
+      const compressedFile = await compressGalleryImage(file);
+      const fileName = `${userId}/${Date.now()}.jpg`;
 
       // profile-images バケットにアップロード試行
       const { error: uploadError } = await supabase.storage
         .from('profile-images')
-        .upload(fileName, file);
+        .upload(fileName, compressedFile);
 
       let publicUrl: string;
 

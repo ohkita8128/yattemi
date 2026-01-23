@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, X, ImagePlus } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth, usePost } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
+import { compressPostImage } from '@/lib/image-compression';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LevelSlider, LevelRangeSlider } from '@/components/ui/level-slider';
@@ -139,12 +140,12 @@ export default function EditPostPage() {
           continue;
         }
 
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExt}`;
+          const compressedFile = await compressPostImage(file);
+          const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
 
         const { error: uploadError } = await supabase.storage
           .from('post-images')
-          .upload(fileName, file);
+          .upload(fileName, compressedFile);
 
         if (uploadError) {
           console.error('Upload error:', uploadError);

@@ -16,6 +16,7 @@ import {
 import Link from 'next/link';
 import { useAuth } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
+import { compressAvatar } from '@/lib/image-compression';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileImageGallery } from '@/components/profile/profile-image-gallery';
 
@@ -90,20 +91,23 @@ export default function ProfileEditPage() {
   };
 
   const uploadAvatar = async (): Promise<string | null> => {
-    if (!avatarFile || !user) return avatarUrl;
+      if (!avatarFile || !user) return avatarUrl;
+      
+      // 画像を圧縮
+      const compressedFile = await compressAvatar(avatarFile);
 
     setIsUploadingAvatar(true);
     const supabase = supabaseRef.current;
     const oldAvatarUrl = avatarUrl; // 古いURLを保存
 
     try {
-      const fileExt = avatarFile.name.split('.').pop();
+      const fileExt = 'jpg'; // 圧縮後は常にjpg
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
 
       // 先に新しいアバターをアップロード
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, avatarFile, {
+        .upload(fileName, compressedFile, {
           cacheControl: '3600',
           upsert: true,
         });
@@ -323,7 +327,7 @@ export default function ProfileEditPage() {
           <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF（最大5MB）</p>
         </div>
         
-        {/* プロフィール写真（複数枚） */}
+        {/* ギャラリー（複数枚） */}
         {user && (
           <div className="p-6 bg-gray-50 rounded-xl">
             <ProfileImageGallery userId={user.id} maxImages={9} />

@@ -65,7 +65,7 @@ export function ProfileImageGallery({ userId, maxImages = 9 }: Props) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <label className="text-sm font-medium">
-          プロフィール写真（最大{maxImages}枚）
+          ギャラリー（最大{maxImages}枚）
         </label>
         <span className="text-sm text-gray-500">
           {images.length} / {maxImages}
@@ -86,7 +86,7 @@ export function ProfileImageGallery({ userId, maxImages = 9 }: Props) {
           >
             <img
               src={image.url}
-              alt={`プロフィール写真 ${index + 1}`}
+              alt={`ギャラリー ${index + 1}`}
               className="w-full h-full object-cover"
             />
             

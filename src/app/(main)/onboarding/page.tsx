@@ -1,8 +1,9 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getClient } from '@/lib/supabase/client';
+import { compressAvatar } from '@/lib/image-compression';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -111,12 +112,12 @@ export default function OnboardingPage() {
 
       // アバターをアップロード
       if (avatarFile) {
-        const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+        const compressedFile = await compressAvatar(avatarFile);
+        const fileName = `${user.id}-${Date.now()}.jpg`;
         
         const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(fileName, avatarFile);
+          .upload(fileName, compressedFile);
 
         if (!uploadError) {
           const { data: { publicUrl } } = supabase.storage
@@ -255,7 +256,7 @@ export default function OnboardingPage() {
           {currentStep === 2 && (
             <div className="space-y-4">
               <div className="flex flex-col items-center">
-                <Label className="mb-2">プロフィール写真</Label>
+                <Label className="mb-2">アイコン</Label>
                 <div
                   onClick={() => fileInputRef.current?.click()}
                   className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition overflow-hidden border-2 border-dashed border-gray-300"

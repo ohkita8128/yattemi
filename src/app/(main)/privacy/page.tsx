@@ -1,4 +1,4 @@
-// src/app/(main)/privacy/page.tsx
+﻿// src/app/(main)/privacy/page.tsx
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
@@ -26,7 +26,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pl-6 space-y-1">
             <li>メールアドレス（必須）</li>
             <li>ユーザー名・表示名（必須）</li>
-            <li>プロフィール写真（任意）</li>
+            <li>プロフィール画像（任意）</li>
             <li>自己紹介文（任意）</li>
             <li>大学名・学部・学年（任意）</li>
             <li>生年月日・性別（任意）</li>
@@ -61,7 +61,7 @@ export default function PrivacyPage() {
           <p>以下の情報は、本サービス上で他のユーザーに公開されます。</p>
           <ul className="list-disc pl-6 space-y-1">
             <li>ユーザー名・表示名</li>
-            <li>プロフィール写真</li>
+            <li>プロフィール画像</li>
             <li>自己紹介文</li>
             <li>大学名・学部・学年（登録した場合）</li>
             <li>SNSアカウント情報（登録した場合）</li>
