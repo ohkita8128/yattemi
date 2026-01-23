@@ -28,6 +28,14 @@ const TIMES = [
   { value: 'evening', label: '夜', sub: '18:00-24:00', emoji: '🌙' },
 ];
 
+// 日付をYYYY-MM-DD形式に変換（ローカルタイムゾーン）
+const toDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export function ScheduleSelector({
   availableDays,
   availableTimes,
@@ -71,11 +79,12 @@ export function ScheduleSelector({
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const month = date.getMonth() + 1;
-    const day = date.getDate();
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year!, month! - 1, day);
+    const m = date.getMonth() + 1;
+    const d = date.getDate();
     const dayOfWeek = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
-    return `${month}/${day}(${dayOfWeek})`;
+    return `${m}/${d}(${dayOfWeek})`;
   };
 
   // カレンダー生成
@@ -84,17 +93,13 @@ export function ScheduleSelector({
     const month = currentMonth.getMonth();
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
 
     const days: (Date | null)[] = [];
     
-    // 月初の曜日まで空白を追加（日曜始まり）
     for (let i = 0; i < firstDay.getDay(); i++) {
       days.push(null);
     }
     
-    // 日付を追加
     for (let i = 1; i <= lastDay.getDate(); i++) {
       days.push(new Date(year, month, i));
     }
@@ -108,26 +113,14 @@ export function ScheduleSelector({
     return date >= today;
   };
 
-  const isDateSelected = (date: Date) => {
-    return selectedDate === date.toISOString().split('T')[0];
-  };
-
   const isDateAlreadyAdded = (date: Date) => {
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = toDateString(date);
     return specificDates.some(d => d.date === dateStr);
   };
 
   const handleDateClick = (date: Date) => {
     if (!isDateSelectable(date) || isDateAlreadyAdded(date)) return;
-    setSelectedDate(date.toISOString().split('T')[0]!);
-  };
-
-  const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+    setSelectedDate(toDateString(date));
   };
 
   const calendarDays = generateCalendarDays();
@@ -224,35 +217,33 @@ export function ScheduleSelector({
         {/* 日時追加フォーム */}
         {showDatePicker ? (
           <div className="p-4 bg-gray-50 rounded-xl space-y-4">
-            {/* カレンダー */}
-            <div className="bg-white rounded-lg p-3 border">
-              {/* ヘッダー */}
-              <div className="flex items-center justify-between mb-3">
+            {/* コンパクトカレンダー */}
+            <div className="bg-white rounded-lg p-3 border max-w-[280px]">
+              <div className="flex items-center justify-between mb-2">
                 <button
                   type="button"
-                  onClick={prevMonth}
+                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
                   className="p-1 hover:bg-gray-100 rounded"
                 >
-                  <ChevronLeft className="h-5 w-5" />
+                  <ChevronLeft className="h-4 w-4" />
                 </button>
-                <span className="font-medium">
+                <span className="font-medium text-sm">
                   {currentMonth.getFullYear()}年{currentMonth.getMonth() + 1}月
                 </span>
                 <button
                   type="button"
-                  onClick={nextMonth}
+                  onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
                   className="p-1 hover:bg-gray-100 rounded"
                 >
-                  <ChevronRight className="h-5 w-5" />
+                  <ChevronRight className="h-4 w-4" />
                 </button>
               </div>
 
-              {/* 曜日ヘッダー */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
+              <div className="grid grid-cols-7 gap-0.5 mb-1">
                 {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
                   <div
                     key={d}
-                    className={`text-center text-xs font-medium py-1 ${
+                    className={`text-center text-xs py-1 ${
                       i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'
                     }`}
                   >
@@ -261,40 +252,46 @@ export function ScheduleSelector({
                 ))}
               </div>
 
-              {/* 日付 */}
-              <div className="grid grid-cols-7 gap-1">
-                {calendarDays.map((date, i) => (
-                  <div key={i} className="aspect-square">
-                    {date ? (
-                      <button
-                        type="button"
-                        onClick={() => handleDateClick(date)}
-                        disabled={!isDateSelectable(date) || isDateAlreadyAdded(date)}
-                        className={`w-full h-full rounded-lg text-sm font-medium transition-all ${
-                          isDateSelected(date)
-                            ? 'bg-orange-500 text-white'
-                            : isDateAlreadyAdded(date)
-                            ? 'bg-green-100 text-green-600 cursor-not-allowed'
-                            : !isDateSelectable(date)
-                            ? 'text-gray-300 cursor-not-allowed'
-                            : date.getDay() === 0
-                            ? 'text-red-500 hover:bg-red-50'
-                            : date.getDay() === 6
-                            ? 'text-blue-500 hover:bg-blue-50'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {date.getDate()}
-                      </button>
-                    ) : null}
-                  </div>
-                ))}
+              <div className="grid grid-cols-7 gap-0.5">
+                {calendarDays.map((date, i) => {
+                  const dateStr = date ? toDateString(date) : '';
+                  const isSelected = date ? selectedDate === dateStr : false;
+                  const isSelectable = date ? isDateSelectable(date) : false;
+                  const isAdded = date ? isDateAlreadyAdded(date) : false;
+                  
+                  return (
+                    <div key={i} className="aspect-square flex items-center justify-center">
+                      {date ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDateClick(date)}
+                          disabled={!isSelectable || isAdded}
+                          className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${
+                            isSelected
+                              ? 'bg-orange-500 text-white'
+                              : isAdded
+                              ? 'bg-green-100 text-green-600 cursor-not-allowed'
+                              : !isSelectable
+                              ? 'text-gray-300 cursor-not-allowed'
+                              : date.getDay() === 0
+                              ? 'text-red-500 hover:bg-red-50'
+                              : date.getDay() === 6
+                              ? 'text-blue-500 hover:bg-blue-50'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {date.getDate()}
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             {/* 時間選択 */}
             {selectedDate && (
-              <div className="bg-white rounded-lg p-3 border">
+              <div className="bg-white rounded-lg p-3 border max-w-[280px]">
                 <p className="text-sm font-medium mb-2">
                   📅 {formatDate(selectedDate)} の時間
                 </p>
@@ -305,29 +302,29 @@ export function ScheduleSelector({
                       type="time"
                       value={newStart}
                       onChange={(e) => setNewStart(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full h-9 px-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
-                  <span className="mt-5">〜</span>
+                  <span className="mt-5 text-gray-400">〜</span>
                   <div className="flex-1">
                     <label className="block text-xs text-gray-500 mb-1">終了</label>
                     <input
                       type="time"
                       value={newEnd}
                       onChange={(e) => setNewEnd(e.target.value)}
-                      className="w-full h-10 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      className="w-full h-9 px-2 text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
                     />
                   </div>
                 </div>
               </div>
             )}
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 max-w-[280px]">
               <button
                 type="button"
                 onClick={addSpecificDate}
                 disabled={!selectedDate}
-                className="flex-1 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 py-2 bg-orange-500 text-white rounded-lg font-medium hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 追加
               </button>
@@ -337,7 +334,7 @@ export function ScheduleSelector({
                   setShowDatePicker(false);
                   setSelectedDate(null);
                 }}
-                className="px-4 py-2 bg-gray-200 rounded-lg font-medium hover:bg-gray-300"
+                className="px-4 py-2 bg-gray-200 rounded-lg font-medium hover:bg-gray-300 text-sm"
               >
                 キャンセル
               </button>
