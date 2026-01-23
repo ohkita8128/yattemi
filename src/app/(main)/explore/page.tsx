@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, X, SlidersHorizontal, Calendar, Clock, MapPin, ChevronLeft, ChevronRight, User } from 'lucide-react';
+import { Search, X, SlidersHorizontal, Calendar, Clock, MapPin, ChevronLeft, ChevronRight, User, Tag } from 'lucide-react';
 import { PostCard, PostCardSkeleton } from '@/components/posts';
 import { usePosts, useCategories, useDebounce } from '@/hooks';
 import { useAuth } from '@/hooks';
@@ -30,6 +30,8 @@ const LOCATION_OPTIONS = [
   { value: 'online', label: '🌐 オンライン' },
   { value: 'offline', label: '📍 対面' },
 ];
+
+const POPULAR_TAGS = ['初心者歓迎', 'オンラインOK', '対面希望', '単発OK', '経験者向け'];
 
 const toDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -117,8 +119,6 @@ function ExploreContent() {
   // 投稿者レベルフィルタ（デュアルスライダー）
   const [posterLevelMin, setPosterLevelMin] = useState<number>(0);
   const [posterLevelMax, setPosterLevelMax] = useState<number>(10);
-  
-  // 自分のレベルフィルタ（応募条件マッチ）
   const [myLevelFilter, setMyLevelFilter] = useState<number | null>(null);
 
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
@@ -128,6 +128,9 @@ function ExploreContent() {
   const [targetDates, setTargetDates] = useState<string[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { categories } = useCategories();
@@ -233,20 +236,33 @@ function ExploreContent() {
     }
   };
 
+  const addTag = (tag: string) => {
+    const trimmed = tag.trim();
+    if (trimmed && !selectedTags.includes(trimmed)) {
+      setSelectedTags([...selectedTags, trimmed]);
+    }
+    setTagInput('');
+  };
+
+  const removeTag = (tag: string) => {
+    setSelectedTags(selectedTags.filter(t => t !== tag));
+  };
+
   const filteredPosts = posts.filter((post) => {
     // 投稿者レベルフィルタ
     const postLevel = post.my_level ?? 5;
     if (postLevel < posterLevelMin || postLevel > posterLevelMax) return false;
-    
+
     // 自分のレベルフィルタ（応募条件に合うか）
     if (myLevelFilter !== null) {
       const targetMin = (post as any).target_level_min ?? 0;
       const targetMax = (post as any).target_level_max ?? 10;
       if (myLevelFilter < targetMin || myLevelFilter > targetMax) return false;
     }
-    
+
     if (locationFilter === 'online' && post.is_online === false) return false;
     if (locationFilter === 'offline' && post.is_online === true) return false;
+
     if (selectedDays.length > 0 || targetDates.length > 0) {
       const postDays = (post as any).available_days || [];
       const postSpecificDates = (post as any).specific_dates || [];
@@ -257,11 +273,19 @@ function ExploreContent() {
         return false;
       }
     }
+
     if (selectedTimes.length > 0) {
       const postTimes = (post as any).available_times || [];
       const hasMatchingTime = selectedTimes.some(time => postTimes.includes(time));
       if (postTimes.length > 0 && !hasMatchingTime) return false;
     }
+
+    if (selectedTags.length > 0) {
+      const postTags = (post as any).tags || [];
+      const hasMatchingTag = selectedTags.some(tag => postTags.includes(tag));
+      if (!hasMatchingTag) return false;
+    }
+
     return true;
   });
 
@@ -273,9 +297,10 @@ function ExploreContent() {
     if (posterLevelMin > 0) params.set('posterLevelMin', String(posterLevelMin));
     if (posterLevelMax < 10) params.set('posterLevelMax', String(posterLevelMax));
     if (myLevelFilter !== null) params.set('myLevel', String(myLevelFilter));
+    if (selectedTags.length > 0) params.set('tags', selectedTags.join(','));
     const newUrl = params.toString() ? `?${params.toString()}` : '/explore';
     router.replace(newUrl, { scroll: false });
-  }, [type, categoryId, searchQuery, posterLevelMin, posterLevelMax, myLevelFilter, router]);
+  }, [type, categoryId, searchQuery, posterLevelMin, posterLevelMax, myLevelFilter, selectedTags, router]);
 
   const clearFilters = () => {
     setType('all');
@@ -290,9 +315,11 @@ function ExploreContent() {
     setQuickDateFilter(null);
     setTargetDates([]);
     setShowDatePicker(false);
+    setSelectedTags([]);
+    setTagInput('');
   };
 
-  const hasActiveFilters = type !== 'all' || categoryId !== null || searchQuery !== '' || posterLevelMin > 0 || posterLevelMax < 10 || myLevelFilter !== null || selectedDays.length > 0 || selectedTimes.length > 0 || locationFilter !== 'all';
+  const hasActiveFilters = type !== 'all' || categoryId !== null || searchQuery !== '' || posterLevelMin > 0 || posterLevelMax < 10 || myLevelFilter !== null || selectedDays.length > 0 || selectedTimes.length > 0 || locationFilter !== 'all' || selectedTags.length > 0;
 
   const posterMinInfo = getLevelInfo(posterLevelMin);
   const posterMaxInfo = getLevelInfo(posterLevelMax);
@@ -541,7 +568,62 @@ function ExploreContent() {
             </div>
           </div>
 
-          {/* 投稿者のレベル（デュアルスライダー） */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              <Tag className="h-4 w-4 inline mr-2" />
+              タグで絞り込み
+            </label>
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && tagInput.trim()) {
+                    e.preventDefault();
+                    addTag(tagInput);
+                  }
+                }}
+                placeholder="タグを入力してEnter..."
+                className="flex-1 h-10 px-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+              <button
+                type="button"
+                onClick={() => addTag(tagInput)}
+                className="px-4 h-10 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+              >
+                追加
+              </button>
+            </div>
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {selectedTags.map(tag => (
+                  <span key={tag} className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm flex items-center gap-1">
+                    #{tag}
+                    <button onClick={() => removeTag(tag)} className="hover:text-orange-900">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div>
+              <p className="text-xs text-gray-500 mb-2">よく使われるタグ:</p>
+              <div className="flex flex-wrap gap-2">
+                {POPULAR_TAGS.map(tag => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => addTag(tag)}
+                    className={`px-3 py-1 rounded-full text-sm transition-colors ${selectedTags.includes(tag) ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  >
+                    #{tag}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">🎓 投稿者のレベル</label>
             <div className="flex items-center justify-center gap-3 mb-4 py-2 bg-gray-50 rounded-lg">
@@ -555,7 +637,7 @@ function ExploreContent() {
               {/* 背景のトラック */}
               <div className="absolute top-1/2 -translate-y-1/2 left-2 right-2 h-2 bg-gray-200 rounded-full" />
               {/* アクティブ範囲 */}
-              <div 
+              <div
                 className="absolute top-1/2 -translate-y-1/2 h-2 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"
                 style={{
                   left: `calc(${(posterLevelMin / 10) * 100}% + 8px)`,
@@ -643,6 +725,7 @@ function ExploreContent() {
           {selectedDays.length > 0 && targetDates.length === 0 && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{selectedDays.map(d => DAYS.find(day => day.value === d)?.label).join('・')}</span>}
           {selectedTimes.length > 0 && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{selectedTimes.map(t => TIMES.find(time => time.value === t)?.label).join('・')}</span>}
           {categoryId && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{categories.find((c) => c.id === categoryId)?.name}</span>}
+          {selectedTags.length > 0 && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{selectedTags.map(t => `#${t}`).join(' ')}</span>}
           {(posterLevelMin > 0 || posterLevelMax < 10) && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">投稿者 Lv.{posterLevelMin}〜{posterLevelMax}</span>}
           {myLevelFilter !== null && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">自分 Lv.{myLevelFilter}</span>}
           {searchQuery && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">「{searchQuery}」</span>}
