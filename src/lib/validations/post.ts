@@ -1,4 +1,4 @@
-import { z } from 'zod';
+﻿import { z } from 'zod';
 
 export const postSchema = z.object({
   title: z
@@ -28,10 +28,25 @@ export const postSchema = z.object({
     .default(1),
   location: z.string().max(100, '場所は100文字以内で入力してください').optional(),
   isOnline: z.boolean().default(true),
+  // 旧フィールド（後方互換のため残す）
   preferredSchedule: z
     .string()
     .max(200, '希望日程は200文字以内で入力してください')
     .optional(),
+  // 新しいスケジュールフィールド
+  availableDays: z
+    .array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']))
+    .default([]),
+  availableTimes: z
+    .array(z.enum(['morning', 'afternoon', 'evening']))
+    .default([]),
+  specificDates: z
+    .array(z.object({
+      date: z.string(),
+      start: z.string(),
+      end: z.string(),
+    }))
+    .default([]),
   tags: z
     .array(z.string().max(20, 'タグは20文字以内で入力してください'))
     .max(5, 'タグは5つまでです')

@@ -137,7 +137,7 @@ export function useCategories() {
 
     const fetchCategories = async () => {
       const supabase = supabaseRef.current;
-      
+
       const { data, error } = await supabase
         .from('categories')
         .select('*')
@@ -148,7 +148,7 @@ export function useCategories() {
       } else {
         setCategories(data as Category[]);
       }
-      
+
       hasFetched.current = true;
       setIsLoading(false);
     };
@@ -176,6 +176,9 @@ export function useCreatePost() {
     myLevel?: number;
     targetLevelMin?: number;
     targetLevelMax?: number;
+    availableDays?: string[];
+    availableTimes?: string[];
+    specificDates?: { date: string; start: string; end: string }[];
   }) => {
     const supabase = supabaseRef.current;
     setIsSubmitting(true);
@@ -201,6 +204,9 @@ export function useCreatePost() {
           my_level: data.myLevel ?? 5,
           target_level_min: data.targetLevelMin ?? 0,
           target_level_max: data.targetLevelMax ?? 10,
+          available_days: data.availableDays ?? [],
+          available_times: data.availableTimes ?? [],
+          specific_dates: data.specificDates ?? [],
         } as any)
         .select()
         .single();
@@ -236,6 +242,9 @@ export function useUpdatePost() {
       targetLevelMin?: number;
       targetLevelMax?: number;
       status?: string;
+      availableDays?: string[];
+      availableTimes?: string[];
+      specificDates?: { date: string; start: string; end: string }[];
     }
   ) => {
     const supabase = supabaseRef.current;
@@ -243,7 +252,7 @@ export function useUpdatePost() {
 
     try {
       const updateData: any = {};
-      
+
       if (data.title !== undefined) updateData.title = data.title;
       if (data.description !== undefined) updateData.description = data.description;
       if (data.type !== undefined) updateData.type = data.type;
@@ -257,6 +266,9 @@ export function useUpdatePost() {
       if (data.targetLevelMin !== undefined) updateData.target_level_min = data.targetLevelMin;
       if (data.targetLevelMax !== undefined) updateData.target_level_max = data.targetLevelMax;
       if (data.status !== undefined) updateData.status = data.status;
+      if (data.availableDays !== undefined) updateData.available_days = data.availableDays;
+      if (data.availableTimes !== undefined) updateData.available_times = data.availableTimes;
+      if (data.specificDates !== undefined) updateData.specific_dates = data.specificDates;
 
       const { data: post, error } = await (supabase as any)
         .from('posts')

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +14,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { LevelSlider, LevelRangeSlider } from '@/components/ui/level-slider';
+import { ScheduleSelector } from '@/components/ui/schedule-selector';
 import { postSchema, type PostFormData } from '@/lib/validations/post';
 import { POST_TYPES } from '@/lib/constants';
 import type { Category, PostType } from '@/types';
@@ -49,6 +50,9 @@ export function PostForm({
       myLevel: 5,
       targetLevelMin: 0,
       targetLevelMax: 10,
+      availableDays: [],
+      availableTimes: [],
+      specificDates: [],
       ...defaultValues,
     },
   });
@@ -58,6 +62,9 @@ export function PostForm({
   const myLevel = watch('myLevel') ?? 5;
   const targetLevelMin = watch('targetLevelMin') ?? 0;
   const targetLevelMax = watch('targetLevelMax') ?? 10;
+  const availableDays = watch('availableDays') ?? [];
+  const availableTimes = watch('availableTimes') ?? [];
+  const specificDates = watch('specificDates') ?? [];
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -166,6 +173,19 @@ export function PostForm({
         />
       </div>
 
+      {/* Schedule Selector */}
+      <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
+        <Label>希望日程</Label>
+        <ScheduleSelector
+          availableDays={availableDays}
+          availableTimes={availableTimes}
+          specificDates={specificDates}
+          onDaysChange={(days) => setValue('availableDays', days as any)}
+          onTimesChange={(times) => setValue('availableTimes', times as any)}
+          onDatesChange={(dates) => setValue('specificDates', dates)}
+        />
+      </div>
+
       {/* Max Applicants */}
       <div className="space-y-2">
         <Label htmlFor="maxApplicants">募集人数</Label>
@@ -226,16 +246,6 @@ export function PostForm({
           />
         </div>
       )}
-
-      {/* Preferred Schedule */}
-      <div className="space-y-2">
-        <Label htmlFor="preferredSchedule">希望日程（任意）</Label>
-        <Input
-          id="preferredSchedule"
-          placeholder="例: 平日夜、土日"
-          {...register('preferredSchedule')}
-        />
-      </div>
 
       {/* Submit */}
       <Button type="submit" className="w-full" size="lg" isLoading={isSubmitting}>

@@ -2,12 +2,51 @@
 
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { Search, X, SlidersHorizontal } from 'lucide-react';
+import { Search, X, SlidersHorizontal, Calendar, Clock, MapPin } from 'lucide-react';
 import { PostCard, PostCardSkeleton } from '@/components/posts';
 import { usePosts, useCategories, useDebounce } from '@/hooks';
 import { useAuth } from '@/hooks';
 import { getLevelInfo } from '@/lib/levels';
 import { getClient } from '@/lib/supabase/client';
+
+const DAYS = [
+  { value: 'mon', label: '月' },
+  { value: 'tue', label: '火' },
+  { value: 'wed', label: '水' },
+  { value: 'thu', label: '木' },
+  { value: 'fri', label: '金' },
+  { value: 'sat', label: '土' },
+  { value: 'sun', label: '日' },
+];
+
+const TIMES = [
+  { value: 'morning', label: '朝', emoji: '🌅' },
+  { value: 'afternoon', label: '昼', emoji: '☀️' },
+  { value: 'evening', label: '夜', emoji: '🌙' },
+];
+
+const LOCATION_OPTIONS = [
+  { value: 'all', label: 'すべて' },
+  { value: 'online', label: '🌐 オンライン' },
+  { value: 'offline', label: '📍 対面' },
+];
+
+// 今日の曜日を取得
+const getTodayDayKey = (): string => {
+  const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  return dayKeys[new Date().getDay()]!;
+};
+
+// 明日の曜日を取得
+const getTomorrowDayKey = (): string => {
+  const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return dayKeys[tomorrow.getDay()]!;
+};
+
+// 今週末（土日）を取得
+const getWeekendDayKeys = () => ['sat', 'sun'];
 
 function ExploreContent() {
   const searchParams = useSearchParams();
@@ -31,9 +70,14 @@ function ExploreContent() {
   const [levelMax, setLevelMax] = useState<number>(initialLevelMax ? Number(initialLevelMax) : 10);
   const [appliedPostIds, setAppliedPostIds] = useState<Set<string>>(new Set());
 
+  // 新しいフィルタ
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [selectedTimes, setSelectedTimes] = useState<string[]>([]);
+  const [locationFilter, setLocationFilter] = useState<'all' | 'online' | 'offline'>('all');
+  const [quickDateFilter, setQuickDateFilter] = useState<'today' | 'tomorrow' | 'weekend' | null>(null);
+
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { categories } = useCategories();
-  console.log('Categories:', categories);
   const { posts, isLoading } = usePosts({
     type: type === 'all' ? undefined : type,
     categoryId: categoryId || undefined,
@@ -62,10 +106,73 @@ function ExploreContent() {
     fetchAppliedPosts();
   }, [user]);
 
-  // レベルフィルタリング（クライアント側）
+  // クイック日程フィルタの処理
+  const handleQuickDateFilter = (filter: 'today' | 'tomorrow' | 'weekend') => {
+    if (quickDateFilter === filter) {
+      // 同じボタンをもう一度押したらクリア
+      setQuickDateFilter(null);
+      setSelectedDays([]);
+    } else {
+      setQuickDateFilter(filter);
+      switch (filter) {
+        case 'today':
+          setSelectedDays([getTodayDayKey()]);
+          break;
+        case 'tomorrow':
+          setSelectedDays([getTomorrowDayKey()]);
+          break;
+        case 'weekend':
+          setSelectedDays(getWeekendDayKeys());
+          break;
+      }
+    }
+  };
+
+  // 曜日トグル
+  const toggleDay = (day: string) => {
+    setQuickDateFilter(null); // クイックフィルタを解除
+    if (selectedDays.includes(day)) {
+      setSelectedDays(selectedDays.filter(d => d !== day));
+    } else {
+      setSelectedDays([...selectedDays, day]);
+    }
+  };
+
+  // 時間帯トグル
+  const toggleTime = (time: string) => {
+    if (selectedTimes.includes(time)) {
+      setSelectedTimes(selectedTimes.filter(t => t !== time));
+    } else {
+      setSelectedTimes([...selectedTimes, time]);
+    }
+  };
+
+  // フィルタリング（クライアント側）
   const filteredPosts = posts.filter((post) => {
+    // レベルフィルタ
     const postLevel = post.my_level ?? 5;
-    return postLevel >= levelMin && postLevel <= levelMax;
+    if (postLevel < levelMin || postLevel > levelMax) return false;
+
+    // オンライン/対面フィルタ
+    if (locationFilter === 'online' && !post.is_online) return false;
+    if (locationFilter === 'offline' && post.is_online) return false;
+
+    // 曜日フィルタ
+    if (selectedDays.length > 0) {
+      const postDays = (post as any).available_days || [];
+      const hasMatchingDay = selectedDays.some(day => postDays.includes(day));
+      // 曜日が設定されてない投稿も表示（フィルタに含めない選択もあり）
+      if (postDays.length > 0 && !hasMatchingDay) return false;
+    }
+
+    // 時間帯フィルタ
+    if (selectedTimes.length > 0) {
+      const postTimes = (post as any).available_times || [];
+      const hasMatchingTime = selectedTimes.some(time => postTimes.includes(time));
+      if (postTimes.length > 0 && !hasMatchingTime) return false;
+    }
+
+    return true;
   });
 
   // URLパラメータを更新
@@ -87,10 +194,21 @@ function ExploreContent() {
     setSearchQuery('');
     setLevelMin(0);
     setLevelMax(10);
+    setSelectedDays([]);
+    setSelectedTimes([]);
+    setLocationFilter('all');
+    setQuickDateFilter(null);
   };
 
   const hasActiveFilters =
-    type !== 'all' || categoryId !== null || searchQuery !== '' || levelMin > 0 || levelMax < 10;
+    type !== 'all' ||
+    categoryId !== null ||
+    searchQuery !== '' ||
+    levelMin > 0 ||
+    levelMax < 10 ||
+    selectedDays.length > 0 ||
+    selectedTimes.length > 0 ||
+    locationFilter !== 'all';
 
   const minInfo = getLevelInfo(levelMin);
   const maxInfo = getLevelInfo(levelMax);
@@ -101,6 +219,40 @@ function ExploreContent() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-2">投稿を探す</h1>
         <p className="text-gray-500">スキルを教えたい人・学びたい人を見つけよう</p>
+      </div>
+
+      {/* クイック日程フィルタ */}
+      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
+        <button
+          onClick={() => handleQuickDateFilter('today')}
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            quickDateFilter === 'today'
+              ? 'bg-orange-500 text-white'
+              : 'bg-gray-100 hover:bg-gray-200'
+          }`}
+        >
+          📅 今日
+        </button>
+        <button
+          onClick={() => handleQuickDateFilter('tomorrow')}
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            quickDateFilter === 'tomorrow'
+              ? 'bg-orange-500 text-white'
+              : 'bg-gray-100 hover:bg-gray-200'
+          }`}
+        >
+          📅 明日
+        </button>
+        <button
+          onClick={() => handleQuickDateFilter('weekend')}
+          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+            quickDateFilter === 'weekend'
+              ? 'bg-orange-500 text-white'
+              : 'bg-gray-100 hover:bg-gray-200'
+          }`}
+        >
+          🎉 今週末
+        </button>
       </div>
 
       {/* 検索バー */}
@@ -156,6 +308,82 @@ function ExploreContent() {
                 >
                   <span className="mr-1">{option.emoji}</span>
                   {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* オンライン/対面 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              <MapPin className="h-4 w-4 inline mr-2" />
+              実施形式
+            </label>
+            <div className="flex gap-2">
+              {LOCATION_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setLocationFilter(option.value as any)}
+                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
+                    locationFilter === option.value
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 曜日 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              <Calendar className="h-4 w-4 inline mr-2" />
+              希望曜日
+            </label>
+            <div className="flex gap-2">
+              {DAYS.map(day => (
+                <button
+                  key={day.value}
+                  type="button"
+                  onClick={() => toggleDay(day.value)}
+                  className={`w-10 h-10 rounded-full font-medium text-sm transition-all ${
+                    selectedDays.includes(day.value)
+                      ? day.value === 'sat'
+                        ? 'bg-blue-500 text-white'
+                        : day.value === 'sun'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-orange-500 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {day.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 時間帯 */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              <Clock className="h-4 w-4 inline mr-2" />
+              希望時間帯
+            </label>
+            <div className="flex gap-2">
+              {TIMES.map(time => (
+                <button
+                  key={time.value}
+                  type="button"
+                  onClick={() => toggleTime(time.value)}
+                  className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${
+                    selectedTimes.includes(time.value)
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <span className="mr-1">{time.emoji}</span>
+                  {time.label}
                 </button>
               ))}
             </div>
@@ -265,6 +493,21 @@ function ExploreContent() {
           {type !== 'all' && (
             <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
               {type === 'teach' ? '🎓 教えたい' : '📚 学びたい'}
+            </span>
+          )}
+          {locationFilter !== 'all' && (
+            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+              {locationFilter === 'online' ? '🌐 オンライン' : '📍 対面'}
+            </span>
+          )}
+          {selectedDays.length > 0 && (
+            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+              {selectedDays.map(d => DAYS.find(day => day.value === d)?.label).join('・')}
+            </span>
+          )}
+          {selectedTimes.length > 0 && (
+            <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">
+              {selectedTimes.map(t => TIMES.find(time => time.value === t)?.label).join('・')}
             </span>
           )}
           {categoryId && (
