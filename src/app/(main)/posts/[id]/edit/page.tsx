@@ -13,6 +13,8 @@ import { LevelSlider, LevelRangeSlider } from '@/components/ui/level-slider';
 import { TagInput } from '@/components/ui/tag-input';
 import { ScheduleSelector } from '@/components/ui/schedule-selector';
 import type { Category } from '@/types';
+import { updatePost } from './actions';
+import { error } from 'console';
 
 export default function EditPostPage() {
   const params = useParams();
@@ -111,13 +113,8 @@ export default function EditPostPage() {
     checkApprovedMatch();
   }, [postId]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('postId:', postId);
-    console.log('params:', params);
-    console.log('updateData will be:', { title, description, status, my_level: myLevel, target_level_min: targetLevelMin, target_level_max: targetLevelMax, tags });
-    console.log('user:', user);
-    console.log('user.id:', user?.id);
 
     if (!title.trim() || !description.trim()) {
       toast.error('タイトルと詳細を入力してください');
@@ -147,7 +144,6 @@ export default function EditPostPage() {
         tags,
       };
 
-      // 承認済みマッチングがなければ全項目更新可能
       if (!hasApprovedMatch) {
         updateData.type = type;
         updateData.category_id = categoryId;
@@ -159,9 +155,8 @@ export default function EditPostPage() {
         updateData.specific_dates = specificDates;
       }
 
-      const { error } = await (supabase as any).from('posts').update(updateData).eq('id', postId);
-
-      if (error) throw error;
+      const result = await updatePost(postId, user!.id, updateData);
+      if (result.error) throw new Error(result.error);
 
       toast.success('投稿を更新しました');
       router.push(`/posts/${postId}`);
