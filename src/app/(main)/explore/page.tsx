@@ -103,6 +103,7 @@ function ExploreContent() {
   const router = useRouter();
   const { user } = useAuth();
   const supabaseRef = useRef(getClient());
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const initialType = (searchParams.get('type') as 'teach' | 'learn' | 'all') || 'all';
   const initialCategory = searchParams.get('category');
@@ -130,14 +131,17 @@ function ExploreContent() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [includeClosed, setIncludeClosed] = useState(false);
+  const [hideApplied, setHideApplied] = useState(false);
   const [tagInput, setTagInput] = useState('');
 
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { categories } = useCategories();
-  const { posts, isLoading } = usePosts({
+  const { posts, isLoading, isLoadingMore, hasMore, loadMore } = usePosts({
     type: type === 'all' ? undefined : type,
     categoryId: categoryId || undefined,
     search: debouncedSearch || undefined,
+    includeClosed,
   });
 
   useEffect(() => {
@@ -248,7 +252,27 @@ function ExploreContent() {
     setSelectedTags(selectedTags.filter(t => t !== tag));
   };
 
+  // 無限スクロール
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !isLoadingMore) {
+          loadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, isLoadingMore, loadMore]);
+
   const filteredPosts = posts.filter((post) => {
+    // 応募済みを非表示
+    if (hideApplied && appliedPostIds.has(post.id)) return false;
     // 投稿者レベルフィルタ
     const postLevel = post.my_level ?? 5;
     if (postLevel < posterLevelMin || postLevel > posterLevelMax) return false;
@@ -567,6 +591,31 @@ function ExploreContent() {
               ))}
             </div>
           </div>
+          {/* 表示オプション */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">表示オプション</label>
+            <div className="flex flex-wrap gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeClosed}
+                  onChange={(e) => setIncludeClosed(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                />
+                <span className="text-sm">締め切り済みも表示</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={hideApplied}
+                  onChange={(e) => setHideApplied(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                />
+                <span className="text-sm">応募済みを非表示</span>
+              </label>
+            </div>
+          </div>
+
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -749,6 +798,18 @@ function ExploreContent() {
           <p className="text-sm text-gray-500 mb-4">{filteredPosts.length}件の投稿</p>
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredPosts.map((post) => (<PostCard key={post.id} post={post} isApplied={appliedPostIds.has(post.id)} />))}
+          </div>
+          {/* 無限スクロールトリガー */}
+          <div ref={loadMoreRef} className="py-8 flex justify-center">
+            {isLoadingMore && (
+              <div className="flex items-center gap-2 text-gray-500">
+                <div className="animate-spin h-5 w-5 border-2 border-orange-500 border-t-transparent rounded-full" />
+                <span>読み込み中...</span>
+              </div>
+            )}
+            {!hasMore && filteredPosts.length > 0 && (
+              <p className="text-gray-400 text-sm">すべての投稿を表示しました</p>
+            )}
           </div>
         </>
       )}

@@ -10,30 +10,64 @@ interface UsePostsOptions {
   search?: string;
   userId?: string;
   limit?: number;
+  includeClosed?: boolean;
 }
+
+const PAGE_SIZE = 12;
 
 export function usePosts(options: UsePostsOptions = {}) {
   const [posts, setPosts] = useState<PostWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
 
   const supabaseRef = useRef(getClient());
+  const optionsRef = useRef(options);
 
-  const fetchPosts = useCallback(async () => {
+  // オプションが変わったらリセット
+  useEffect(() => {
+    const optionsChanged = 
+      optionsRef.current.type !== options.type ||
+      optionsRef.current.categoryId !== options.categoryId ||
+      optionsRef.current.search !== options.search ||
+      optionsRef.current.userId !== options.userId ||
+      optionsRef.current.includeClosed !== options.includeClosed;
+
+    if (optionsChanged) {
+      optionsRef.current = options;
+      setPosts([]);
+      setPage(0);
+      setHasMore(true);
+    }
+  }, [options.type, options.categoryId, options.search, options.userId, options.includeClosed]);
+
+  const fetchPosts = useCallback(async (pageNum: number, append: boolean = false) => {
     const supabase = supabaseRef.current;
-    setIsLoading(true);
+    
+    if (append) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
-      let query = supabase
+      let query = (supabase as any)
         .from('posts')
         .select(`
           *,
           profile:profiles(*),
           category:categories(*)
         `)
-        .eq('status', 'open')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
+
+      // 締め切りを含めない場合（デフォルト）
+      if (!options.includeClosed) {
+        query = query.eq('status', 'open');
+      }
 
       if (options.type && options.type !== 'all') {
         query = query.eq('type', options.type);
@@ -51,28 +85,48 @@ export function usePosts(options: UsePostsOptions = {}) {
         query = query.or(`title.ilike.%${options.search}%,description.ilike.%${options.search}%`);
       }
 
-      if (options.limit) {
-        query = query.limit(options.limit);
-      }
-
       const { data, error: fetchError } = await query;
 
       if (fetchError) throw fetchError;
 
-      setPosts(data as PostWithRelations[]);
+      const newPosts = data as PostWithRelations[];
+      
+      if (append) {
+        setPosts(prev => [...prev, ...newPosts]);
+      } else {
+        setPosts(newPosts);
+      }
+
+      setHasMore(newPosts.length === PAGE_SIZE);
     } catch (err) {
       console.error('Error fetching posts:', err);
       setError('投稿の取得に失敗しました');
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [options.type, options.categoryId, options.search, options.userId, options.limit]);
+  }, [options.type, options.categoryId, options.search, options.userId, options.includeClosed]);
 
+  // 初回 & オプション変更時
   useEffect(() => {
-    fetchPosts();
+    fetchPosts(0, false);
   }, [fetchPosts]);
 
-  return { posts, isLoading, error, refetch: fetchPosts };
+  const loadMore = useCallback(() => {
+    if (isLoadingMore || !hasMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchPosts(nextPage, true);
+  }, [page, isLoadingMore, hasMore, fetchPosts]);
+
+  const refetch = useCallback(() => {
+    setPosts([]);
+    setPage(0);
+    setHasMore(true);
+    fetchPosts(0, false);
+  }, [fetchPosts]);
+
+  return { posts, isLoading, isLoadingMore, error, hasMore, loadMore, refetch };
 }
 
 export function usePost(postId: string) {
