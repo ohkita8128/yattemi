@@ -1,8 +1,13 @@
+﻿'use client';
+
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Users, Zap, Shield, Star } from 'lucide-react';
+import { ArrowRight, Sparkles, Users, Zap, Shield, Star, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PostCard } from '@/components/posts';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
+import { getClient } from '@/lib/supabase/client';
 
 const features = [
   {
@@ -36,40 +41,186 @@ const categories = [
   { name: '料理', emoji: '🍳', color: 'bg-red-100 text-red-700' },
 ];
 
-const testimonials = [
-  {
-    name: '田中さん',
-    role: '大学3年生',
-    content: 'プログラミングを教えてくれる先輩と出会えて、就活の相談もできるようになりました！',
-    avatar: '👨‍🎓',
-  },
-  {
-    name: '佐藤さん',
-    role: '大学2年生',
-    content: 'ギターを教えることで、自分のスキルも再確認できました。教えることの楽しさを知りました。',
-    avatar: '👩‍🎓',
-  },
-  {
-    name: '鈴木さん',
-    role: '大学4年生',
-    content: '料理好き同士で集まって、定期的に料理会をしています。友達の輪が広がりました！',
-    avatar: '🧑‍🎓',
-  },
-];
+type Post = {
+  id: string;
+  title: string;
+  description?: string;
+  type: 'teach' | 'learn';
+  category_id: number | null;
+  location_type: string | null;
+  my_level: number | null;
+  views: number;
+  created_at: string;
+  profiles: {
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+    university: string | null;
+  } | null;
+  categories: {
+    id: number;
+    name: string;
+    slug: string;
+  } | null;
+};
 
 export default function HomePage() {
+  const supabaseRef = useRef(getClient());
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [recentPosts, setRecentPosts] = useState<Post[]>([]);
+  const [followingPosts, setFollowingPosts] = useState<Post[]>([]);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = supabaseRef.current;
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+
+      if (user) {
+        // 新着投稿を取得
+        const { data: recent } = await (supabase as any)
+          .from('posts')
+          .select(`
+            *,
+            profiles (id, username, display_name, avatar_url, university),
+            categories (id, name, slug)
+          `)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(6);
+
+        if (recent) {
+          setRecentPosts(recent);
+        }
+
+        // フォロー中のユーザーの投稿を取得
+        const { data: following } = await (supabase as any)
+          .from('follows')
+          .select('following_id')
+          .eq('follower_id', user.id);
+
+        if (following && following.length > 0) {
+          const followingIds = following.map((f: any) => f.following_id);
+          const { data: followPosts } = await (supabase as any)
+            .from('posts')
+            .select(`
+              *,
+              profiles (id, username, display_name, avatar_url, university),
+              categories (id, name, slug)
+            `)
+            .in('user_id', followingIds)
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(6);
+
+          if (followPosts) {
+            setFollowingPosts(followPosts);
+          }
+        }
+      }
+
+      setLoading(false);
+    };
+
+    checkAuth();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+      </div>
+    );
+  }
+
+  // ログイン済みユーザー向けホーム
+  if (user) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          {/* ウェルカムバナー */}
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-6 mb-8 text-white">
+            <h1 className="text-2xl font-bold mb-2">おかえりなさい！ 👋</h1>
+            <p className="opacity-90 mb-4">今日も新しいスキルを見つけましょう</p>
+            <div className="flex gap-3">
+              <Link
+                href={ROUTES.POST_NEW}
+                className="inline-flex items-center px-4 py-2 bg-white text-orange-600 rounded-xl font-semibold hover:bg-gray-100 transition"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                投稿する
+              </Link>
+              <Link
+                href={ROUTES.EXPLORE}
+                className="inline-flex items-center px-4 py-2 bg-white/20 text-white rounded-xl font-semibold hover:bg-white/30 transition"
+              >
+                探す
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Link>
+            </div>
+          </div>
+
+          {/* 新着投稿 */}
+          <section className="mb-10">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">🔥 新着の投稿</h2>
+              <Link href={ROUTES.EXPLORE} className="text-orange-500 hover:underline text-sm flex items-center">
+                もっと見る
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+            {recentPosts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {recentPosts.map(post => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 text-center">
+                <p className="text-gray-500 mb-4">まだ投稿がありません</p>
+                <Link
+                  href={ROUTES.POST_NEW}
+                  className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition"
+                >
+                  最初の投稿を作成
+                </Link>
+              </Card>
+            )}
+          </section>
+
+          {/* フォロー中の投稿 */}
+          {followingPosts.length > 0 && (
+            <section>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">👥 フォロー中の投稿</h2>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {followingPosts.map(post => (
+                  <PostCard key={post.id} post={post} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // 未ログインユーザー向けLP
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
       <section className="relative overflow-hidden py-20 md:py-32">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-50 via-white to-teal-50" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(249,115,22,0.1),transparent_50%)]" />
-        
+
         <div className="container relative mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <Badge variant="secondary" className="px-4 py-1.5">
               <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-400 text-yellow-400" />
-              大学生に人気のスキルシェアアプリ
+              大学生のためのスキルシェア
             </Badge>
 
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
@@ -81,9 +232,9 @@ export default function HomePage() {
             </h1>
 
             <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto">
-              趣味や技術を教えたい人と学びたい人をつなぐ
+              教えたいスキルがある人と、学びたい人をマッチング。
               <br className="hidden md:block" />
-              スキルシェアプラットフォーム
+              同じ大学生だから、気軽に始められる。
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -136,10 +287,10 @@ export default function HomePage() {
                   {POST_TYPES.teach.description}
                 </p>
                 <Link
-                  href={`${ROUTES.POST_NEW}?type=teach`}
+                  href={ROUTES.REGISTER}
                   className="inline-flex items-center justify-center h-11 px-6 rounded-xl font-semibold bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
                 >
-                  教えたいを投稿する
+                  登録して投稿する
                 </Link>
               </CardContent>
             </Card>
@@ -158,10 +309,10 @@ export default function HomePage() {
                   {POST_TYPES.learn.description}
                 </p>
                 <Link
-                  href={`${ROUTES.POST_NEW}?type=learn`}
+                  href={ROUTES.REGISTER}
                   className="inline-flex items-center justify-center h-11 px-6 rounded-xl font-semibold bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all"
                 >
-                  教えてほしいを投稿する
+                  登録して投稿する
                 </Link>
               </CardContent>
             </Card>
@@ -185,7 +336,7 @@ export default function HomePage() {
             {categories.map((category) => (
               <Link
                 key={category.name}
-                href={`${ROUTES.EXPLORE}?category=${category.name}`}
+                href={ROUTES.EXPLORE}
                 className={`inline-flex items-center gap-2 px-5 py-3 rounded-full ${category.color} font-medium hover:scale-105 transition-transform`}
               >
                 <span>{category.emoji}</span>
@@ -225,41 +376,6 @@ export default function HomePage() {
                   <p className="text-sm text-gray-500">
                     {feature.description}
                   </p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              ユーザーの声
-            </h2>
-            <p className="text-gray-500">
-              実際に使っている人たちの感想
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {testimonials.map((testimonial) => (
-              <Card key={testimonial.name} className="p-6">
-                <CardContent className="pt-4 space-y-4">
-                  <p className="text-gray-500">
-                    &ldquo;{testimonial.content}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{testimonial.avatar}</span>
-                    <div>
-                      <p className="font-semibold">{testimonial.name}</p>
-                      <p className="text-sm text-gray-500">
-                        {testimonial.role}
-                      </p>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             ))}
