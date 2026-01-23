@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useRef, useState } from 'react';
 import { useProfileImages } from '@/hooks/useProfileImages';
@@ -85,7 +85,7 @@ export function ProfileImageGallery({ userId, maxImages = 5 }: Props) {
             }`}
           >
             <img
-              src={image.image_url}
+              src={image.url}
               alt={`プロフィール写真 ${index + 1}`}
               className="w-full h-full object-cover"
             />

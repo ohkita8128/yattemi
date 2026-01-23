@@ -7,14 +7,14 @@ import { getClient } from '@/lib/supabase/client';
 import { ProfileImageViewer } from '@/components/profile/profile-image-viewer';
 import { PostCard } from '@/components/posts/post-card';
 import { Button } from '@/components/ui/button';
-import { 
-  GraduationCap, 
-  Calendar, 
-  BookOpen, 
-  Sparkles,
+import {
+  GraduationCap,
+  Calendar,
   Loader2,
   Settings,
-  MessageCircle
+  MessageCircle,
+  ImageIcon,
+  FileText,
 } from 'lucide-react';
 
 type Profile = {
@@ -25,6 +25,7 @@ type Profile = {
   bio: string | null;
   university: string | null;
   faculty: string | null;
+  department: string | null;
   grade: string | null;
   created_at: string;
 };
@@ -32,8 +33,8 @@ type Profile = {
 type ProfileImage = {
   id: string;
   user_id: string;
-  image_url: string;
-  sort_order: number;
+  url: string;
+  position: number;
   created_at: string;
 };
 
@@ -73,6 +74,13 @@ const BADGE_INFO: Record<string, { emoji: string; label: string }> = {
 };
 
 const GRADE_LABELS: Record<string, string> = {
+  '1': '1年生',
+  '2': '2年生',
+  '3': '3年生',
+  '4': '4年生',
+  '5': '修士1年',
+  '6': '修士2年',
+  '7': '博士課程',
   B1: '学部1年',
   B2: '学部2年',
   B3: '学部3年',
@@ -83,11 +91,13 @@ const GRADE_LABELS: Record<string, string> = {
   other: 'その他',
 };
 
+type TabType = 'gallery' | 'posts';
+
 export default function UserProfilePage() {
   const params = useParams();
   const username = params.username as string;
   const supabaseRef = useRef(getClient());
-  
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileImages, setProfileImages] = useState<ProfileImage[]>([]);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -98,6 +108,8 @@ export default function UserProfilePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('gallery');
+  const [showAllBadges, setShowAllBadges] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -121,12 +133,12 @@ export default function UserProfilePage() {
 
       setProfile(profileData);
 
-      // プロフィール画像取得
+      // プロフィール画像取得（カラム名修正: position）
       const { data: images } = await (supabase as any)
         .from('profile_images')
         .select('*')
         .eq('user_id', profileData.id)
-        .order('sort_order', { ascending: true });
+        .order('position', { ascending: true });
 
       if (images) {
         setProfileImages(images);
@@ -142,8 +154,7 @@ export default function UserProfilePage() {
         `)
         .eq('user_id', profileData.id)
         .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(6);
+        .order('created_at', { ascending: false });
 
       if (postsData) {
         setPosts(postsData);
@@ -164,11 +175,11 @@ export default function UserProfilePage() {
             });
           }
         });
-        
+
         const badgeArray = Object.entries(badgeCounts)
           .map(([badge_type, count]) => ({ badge_type, count }))
           .sort((a, b) => b.count - a.count);
-        
+
         setBadges(badgeArray);
       }
 
@@ -208,7 +219,7 @@ export default function UserProfilePage() {
 
   const handleFollow = async () => {
     if (!currentUserId || !profile) return;
-    
+
     setFollowLoading(true);
     const supabase = supabaseRef.current;
 
@@ -240,10 +251,13 @@ export default function UserProfilePage() {
     }
   };
 
+  // バッジの総数を計算
+  const totalBadgeCount = badges.reduce((sum, b) => sum + b.count, 0);
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
       </div>
     );
   }
@@ -263,11 +277,13 @@ export default function UserProfilePage() {
   }
 
   const isOwnProfile = currentUserId === profile.id;
+  const displayBadges = showAllBadges ? badges : badges.slice(0, 3);
+  const hasMoreBadges = badges.length > 3;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-lg mx-auto">
-        {/* プロフィール画像 */}
+        {/* プロフィール画像スライダー */}
         <ProfileImageViewer
           images={profileImages}
           avatarUrl={profile.avatar_url}
@@ -275,127 +291,221 @@ export default function UserProfilePage() {
         />
 
         {/* プロフィール情報 */}
-        <div className="bg-white -mt-6 relative rounded-t-3xl px-4 pt-6 pb-8">
-          {/* 名前とユーザー名 */}
-          <div className="mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {profile.display_name || 'ユーザー'}
-            </h1>
-            <p className="text-gray-500">@{profile.username}</p>
-          </div>
-
-          {/* アクションボタン */}
-          <div className="flex gap-2 mb-6">
+        <div className="bg-white -mt-6 relative rounded-t-3xl px-4 pt-6 pb-4">
+          {/* 名前とアクション */}
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                {profile.display_name || 'ユーザー'}
+              </h1>
+              <p className="text-gray-500">@{profile.username}</p>
+            </div>
+            
+            {/* アクションボタン */}
             {isOwnProfile ? (
-              <Link href="/profile/edit" className="flex-1">
-                <Button variant="outline" className="w-full">
-                  <Settings className="h-4 w-4 mr-2" />
-                  プロフィール編集
+              <Link href="/profile/edit">
+                <Button variant="outline" size="sm">
+                  <Settings className="h-4 w-4 mr-1" />
+                  編集
                 </Button>
               </Link>
             ) : (
-              <>
+              <div className="flex gap-2">
                 <Button
                   onClick={handleFollow}
                   disabled={followLoading}
                   variant={isFollowing ? 'outline' : 'default'}
-                  className="flex-1"
+                  size="sm"
                 >
-                  {isFollowing ? 'フォロー中' : 'フォローする'}
+                  {isFollowing ? 'フォロー中' : 'フォロー'}
                 </Button>
-                <Button variant="outline" size="icon">
+                <Button variant="outline" size="icon" className="h-9 w-9">
                   <MessageCircle className="h-4 w-4" />
                 </Button>
-              </>
+              </div>
             )}
           </div>
 
-          {/* 統計 */}
-          <div className="flex justify-around py-4 border-y mb-6">
-            <Link href={`/users/${username}/follows?tab=followers`} className="text-center hover:opacity-70">
-              <div className="text-xl font-bold">{followersCount}</div>
-              <div className="text-sm text-gray-500">フォロワー</div>
-            </Link>
-            <Link href={`/users/${username}/follows?tab=following`} className="text-center hover:opacity-70">
-              <div className="text-xl font-bold">{followingCount}</div>
-              <div className="text-sm text-gray-500">フォロー中</div>
-            </Link>
-            <div className="text-center">
-              <div className="text-xl font-bold">{posts.length}</div>
-              <div className="text-sm text-gray-500">投稿</div>
-            </div>
-          </div>
-
           {/* 学校情報 */}
-          {(profile.university || profile.faculty || profile.grade) && (
-            <div className="mb-6 space-y-2">
-              {profile.university && (
-                <div className="flex items-center text-gray-600">
-                  <GraduationCap className="h-4 w-4 mr-2 text-gray-400" />
-                  {profile.university}
-                  {profile.faculty && ` ${profile.faculty}`}
-                </div>
-              )}
-              {profile.grade && (
-                <div className="flex items-center text-gray-600">
-                  <Calendar className="h-4 w-4 mr-2 text-gray-400" />
-                  {GRADE_LABELS[profile.grade] || profile.grade}
-                </div>
-              )}
+          {(profile.university || profile.department || profile.faculty) && (
+            <div className="flex items-center gap-2 text-gray-600 text-sm mb-2">
+              <GraduationCap className="h-4 w-4 text-gray-400" />
+              <span>
+                {profile.university}
+                {(profile.department || profile.faculty) && ` ${profile.department || profile.faculty}`}
+              </span>
+            </div>
+          )}
+
+          {profile.grade && (
+            <div className="flex items-center gap-2 text-gray-600 text-sm mb-3">
+              <Calendar className="h-4 w-4 text-gray-400" />
+              <span>{GRADE_LABELS[profile.grade] || profile.grade}</span>
             </div>
           )}
 
           {/* 自己紹介 */}
           {profile.bio && (
-            <div className="mb-6">
-              <p className="text-gray-700 whitespace-pre-wrap">{profile.bio}</p>
-            </div>
+            <p className="text-gray-700 text-sm mb-4 whitespace-pre-wrap">
+              {profile.bio}
+            </p>
           )}
 
           {/* バッジ */}
           {badges.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-lg font-bold mb-3 flex items-center">
-                <Sparkles className="h-5 w-5 mr-2 text-orange-500" />
-                もらったバッジ
-              </h2>
+            <div className="mb-4">
               <div className="flex flex-wrap gap-2">
-                {badges.map((badge) => {
+                {displayBadges.map((badge) => {
                   const info = BADGE_INFO[badge.badge_type];
                   if (!info) return null;
                   return (
-                    <div
+                    <span
                       key={badge.badge_type}
-                      className="flex items-center gap-1 bg-orange-50 text-orange-700 px-3 py-1.5 rounded-full text-sm"
+                      className="inline-flex items-center gap-1 bg-orange-50 text-orange-700 px-2.5 py-1 rounded-full text-sm"
                     >
                       <span>{info.emoji}</span>
-                      <span>{info.label}</span>
-                      <span className="text-orange-400">×{badge.count}</span>
-                    </div>
+                      <span className="text-orange-500">×{badge.count}</span>
+                    </span>
                   );
                 })}
+                {hasMoreBadges && !showAllBadges && (
+                  <button
+                    onClick={() => setShowAllBadges(true)}
+                    className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full text-sm hover:bg-gray-200 transition"
+                  >
+                    +{badges.length - 3} more
+                  </button>
+                )}
               </div>
             </div>
           )}
 
-          {/* 投稿一覧 */}
-          <div>
-            <h2 className="text-lg font-bold mb-3 flex items-center">
-              <BookOpen className="h-5 w-5 mr-2 text-orange-500" />
-              投稿
-            </h2>
-            {posts.length > 0 ? (
-              <div className="space-y-3">
-                {posts.map((post) => (
-                  <PostCard key={post.id} post={{...post, description: post.description ?? undefined, profile: post.profiles ?? undefined, profiles: undefined}} />
-                ))}
+          {/* 統計 */}
+          <div className="flex items-center gap-4 py-3 border-t border-b text-sm">
+            <Link 
+              href={`/users/${username}/follows?tab=followers`} 
+              className="hover:opacity-70"
+            >
+              <span className="font-bold">{followersCount}</span>
+              <span className="text-gray-500 ml-1">フォロワー</span>
+            </Link>
+            <Link 
+              href={`/users/${username}/follows?tab=following`} 
+              className="hover:opacity-70"
+            >
+              <span className="font-bold">{followingCount}</span>
+              <span className="text-gray-500 ml-1">フォロー中</span>
+            </Link>
+            {totalBadgeCount > 0 && (
+              <div>
+                <span className="font-bold">{totalBadgeCount}</span>
+                <span className="text-gray-500 ml-1">バッジ</span>
               </div>
-            ) : (
-              <p className="text-gray-500 text-center py-8">
-                まだ投稿がありません
-              </p>
             )}
           </div>
+        </div>
+
+        {/* タブ */}
+        <div className="bg-white border-b sticky top-16 z-10">
+          <div className="flex">
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition ${
+                activeTab === 'gallery'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <ImageIcon className="h-4 w-4" />
+              ギャラリー
+            </button>
+            <button
+              onClick={() => setActiveTab('posts')}
+              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition ${
+                activeTab === 'posts'
+                  ? 'border-orange-500 text-orange-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <FileText className="h-4 w-4" />
+              募集
+              {posts.length > 0 && (
+                <span className="bg-gray-100 text-gray-600 text-xs px-1.5 py-0.5 rounded-full">
+                  {posts.length}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* タブコンテンツ */}
+        <div className="bg-white min-h-[300px]">
+          {/* ギャラリータブ */}
+          {activeTab === 'gallery' && (
+            <div className="p-4">
+              {profileImages.length > 0 ? (
+                <div className="grid grid-cols-3 gap-1">
+                  {profileImages.map((image, index) => (
+                    <div
+                      key={image.id}
+                      className="aspect-square bg-gray-100 overflow-hidden"
+                    >
+                      <img
+                        src={image.url}
+                        alt={`写真 ${index + 1}`}
+                        className="w-full h-full object-cover hover:opacity-90 transition cursor-pointer"
+                      />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <ImageIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p>まだ写真がありません</p>
+                  {isOwnProfile && (
+                    <Link href="/profile/edit">
+                      <Button variant="outline" size="sm" className="mt-3">
+                        写真を追加する
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 募集タブ */}
+          {activeTab === 'posts' && (
+            <div className="p-4">
+              {posts.length > 0 ? (
+                <div className="space-y-3">
+                  {posts.map((post) => (
+                    <PostCard 
+                      key={post.id} 
+                      post={{
+                        ...post, 
+                        description: post.description ?? undefined, 
+                        profile: post.profiles ?? undefined, 
+                        profiles: undefined
+                      }} 
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12 text-gray-500">
+                  <FileText className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p>まだ募集がありません</p>
+                  {isOwnProfile && (
+                    <Link href="/posts/create">
+                      <Button variant="outline" size="sm" className="mt-3">
+                        募集を作成する
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

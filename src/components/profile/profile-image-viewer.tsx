@@ -14,9 +14,9 @@ export function ProfileImageViewer({ images, avatarUrl, displayName }: Props) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // 画像がない場合はアバターを表示
-  const allImages = images.length > 0 
-    ? images.map(img => img.image_url)
-    : avatarUrl 
+  const allImages = images.length > 0
+    ? images.map(img => img.url)
+    : avatarUrl
       ? [avatarUrl]
       : [];
 
@@ -31,7 +31,7 @@ export function ProfileImageViewer({ images, avatarUrl, displayName }: Props) {
   // 画像がない場合
   if (allImages.length === 0) {
     return (
-      <div className="aspect-[4/5] bg-gradient-to-b from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+      <div className="aspect-[4/5] bg-gradient-to-b from-orange-50 to-orange-100 flex items-center justify-center">
         <div className="text-center text-gray-400">
           <User className="h-20 w-20 mx-auto mb-2" />
           <p className="text-sm">{displayName || 'ユーザー'}</p>
@@ -41,7 +41,7 @@ export function ProfileImageViewer({ images, avatarUrl, displayName }: Props) {
   }
 
   return (
-    <div className="relative aspect-[4/5] bg-gray-100 rounded-2xl overflow-hidden group">
+    <div className="relative aspect-[4/5] bg-gray-100 overflow-hidden group">
       {/* メイン画像 */}
       <img
         src={allImages[currentIndex]}
@@ -68,27 +68,12 @@ export function ProfileImageViewer({ images, avatarUrl, displayName }: Props) {
             <ChevronRight className="h-6 w-6" />
           </button>
 
-          {/* ドットインジケーター */}
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {allImages.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`w-2 h-2 rounded-full transition ${
-                  index === currentIndex
-                    ? 'bg-white'
-                    : 'bg-white/50 hover:bg-white/70'
-                }`}
-              />
-            ))}
-          </div>
-
-          {/* 上部のプログレスバー（タップエリア分割） */}
+          {/* 上部のプログレスバー（タップエリア識別） */}
           <div className="absolute top-3 left-3 right-3 flex gap-1">
             {allImages.map((_, index) => (
               <div
                 key={index}
-                className={`h-1 flex-1 rounded-full ${
+                className={`h-1 flex-1 rounded-full transition-all ${
                   index === currentIndex ? 'bg-white' : 'bg-white/40'
                 }`}
               />
