@@ -69,14 +69,35 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
     <Link
       href={'/posts/' + post.id}
       className={cn(
-        "block bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow",
-        isClosed && "opacity-60"
+        "block bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow relative overflow-hidden",
+        isClosed && "opacity-70"
       )}
     >
-      <div className="p-5">
+      {/* 締め切りバッジ（左上） */}
+      {isClosed && (
+        <div className="absolute top-3 left-3 z-10">
+          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-red-500 text-white shadow-sm">
+            締め切り
+          </span>
+        </div>
+      )}
+
+      {/* 応募済みバッジ（右上） */}
+      {isApplied && !isClosed && (
+        <div className="absolute top-3 right-3 z-10">
+          <span className="px-2.5 py-1 rounded-md text-xs font-bold bg-green-500 text-white shadow-sm">
+            ✓ 応募済み
+          </span>
+        </div>
+      )}
+
+      <div className={cn("p-5", isClosed && "pt-12")}>
         {/* 投稿者（上部に表示） */}
         {showAuthor && author && (
-          <div className="flex items-center gap-3 mb-4 pb-3 border-b">
+          <div className={cn(
+            "flex items-center gap-3 mb-4 pb-3 border-b",
+            !isClosed && isApplied && "pt-6"
+          )}>
             <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden">
               {author.avatar_url ? (
                 <img
@@ -100,22 +121,11 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
           </div>
         )}
 
-        {/* ヘッダー: ステータス + タイプ + カテゴリ */}
-        <div className="flex items-center gap-2 mb-3 flex-wrap">
-          {/* 締め切り表示 */}
-          {isClosed && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-600">
-              締め切り
-            </span>
-          )}
-
-          {/* 応募済み表示（締め切りでない場合のみ） */}
-          {isApplied && !isClosed && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-              ✓ 応募済み
-            </span>
-          )}
-
+        {/* ヘッダー: タイプ + カテゴリ */}
+        <div className={cn(
+          "flex items-center gap-2 mb-3 flex-wrap",
+          !showAuthor && (isClosed || isApplied) && "pt-6"
+        )}>
           <span className={'px-2 py-0.5 rounded-full text-xs font-medium ' +
             (post.type === 'teach'
               ? 'bg-purple-100 text-purple-700'
