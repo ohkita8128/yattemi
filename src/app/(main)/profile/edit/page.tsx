@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -326,7 +326,7 @@ export default function ProfileEditPage() {
         {/* プロフィール写真（複数枚） */}
         {user && (
           <div className="p-6 bg-gray-50 rounded-xl">
-            <ProfileImageGallery userId={user.id} maxImages={5} />
+            <ProfileImageGallery userId={user.id} maxImages={9} />
           </div>
         )}
 

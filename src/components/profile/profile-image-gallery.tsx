@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRef, useState } from 'react';
 import { useProfileImages } from '@/hooks/useProfileImages';
@@ -9,7 +9,7 @@ type Props = {
   maxImages?: number;
 };
 
-export function ProfileImageGallery({ userId, maxImages = 5 }: Props) {
+export function ProfileImageGallery({ userId, maxImages = 9 }: Props) {
   const { images, loading, uploading, uploadImage, deleteImage, reorderImages } = useProfileImages(userId);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -102,13 +102,6 @@ export function ProfileImageGallery({ userId, maxImages = 5 }: Props) {
             >
               <X className="h-4 w-4" />
             </button>
-
-            {/* メイン写真バッジ */}
-            {index === 0 && (
-              <div className="absolute bottom-1 left-1 bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full">
-                メイン
-              </div>
-            )}
           </div>
         ))}
 
@@ -141,7 +134,7 @@ export function ProfileImageGallery({ userId, maxImages = 5 }: Props) {
       />
 
       <p className="text-xs text-gray-500">
-        💡 ドラッグして並び替えできます。1枚目がメイン写真になります。
+        💡 ドラッグして並び替えできます
       </p>
     </div>
   );

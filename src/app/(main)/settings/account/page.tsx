@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useAuth } from '@/hooks';
@@ -193,6 +193,7 @@ export default function AccountSettingsPage() {
             <Input
               id="newEmail"
               type="email"
+              autoComplete="off"
               placeholder="new@example.com"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
@@ -204,6 +205,7 @@ export default function AccountSettingsPage() {
             <div className="relative">
               <Input
                 id="emailCurrentPassword"
+                autoComplete="current-password"
                 type={showEmailPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={emailCurrentPassword}
@@ -247,6 +249,7 @@ export default function AccountSettingsPage() {
             <div className="relative">
               <Input
                 id="currentPassword"
+                autoComplete="current-password"
                 type={showCurrentPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={currentPassword}
@@ -268,6 +271,7 @@ export default function AccountSettingsPage() {
             <div className="relative">
               <Input
                 id="newPassword"
+                autoComplete="new-password"
                 type={showNewPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={newPassword}
@@ -329,6 +333,7 @@ export default function AccountSettingsPage() {
             <div className="relative">
               <Input
                 id="confirmPassword"
+                autoComplete="new-password"
                 type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="••••••••"
                 value={confirmPassword}
