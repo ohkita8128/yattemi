@@ -65,6 +65,7 @@ export function PostForm({
   const availableDays = watch('availableDays') ?? [];
   const availableTimes = watch('availableTimes') ?? [];
   const specificDates = watch('specificDates') ?? [];
+  const maxApplicants = watch('maxApplicants') ?? 1;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -186,24 +187,35 @@ export function PostForm({
         />
       </div>
 
-      {/* Max Applicants */}
+      {/* Max Applicants - Stepper */}
       <div className="space-y-2">
-        <Label htmlFor="maxApplicants">募集人数</Label>
-        <Select
-          defaultValue="1"
-          onValueChange={(v) => setValue('maxApplicants', parseInt(v))}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-              <SelectItem key={n} value={n.toString()}>
-                {n}人
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Label>募集人数</Label>
+        <div className="flex items-center justify-center gap-4 p-4 bg-gray-50 rounded-xl">
+          <button
+            type="button"
+            onClick={() => {
+              if (maxApplicants > 1) setValue('maxApplicants', maxApplicants - 1);
+            }}
+            disabled={maxApplicants <= 1}
+            className="w-12 h-12 rounded-xl border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-2xl font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-600"
+          >
+            −
+          </button>
+          <div className="w-24 text-center">
+            <span className="text-3xl font-bold text-gray-800">{maxApplicants}</span>
+            <span className="text-lg text-gray-500 ml-1">人</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (maxApplicants < 10) setValue('maxApplicants', maxApplicants + 1);
+            }}
+            disabled={maxApplicants >= 10}
+            className="w-12 h-12 rounded-xl border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-2xl font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-600"
+          >
+            +
+          </button>
+        </div>
       </div>
 
       {/* Online/Offline */}
