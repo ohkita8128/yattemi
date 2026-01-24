@@ -117,6 +117,17 @@ export interface Notification {
   created_at: string;
 }
 
+export interface PostQuestion {
+  id: string;
+  post_id: string;
+  user_id: string;
+  question_text: string;
+  answer_text: string | null;
+  answered_at: string | null;
+  created_at: string;
+  deleted_at: string | null;
+}
+
 // =====================================================
 // Extended Types (with relations)
 // =====================================================
@@ -158,6 +169,8 @@ export type PostUpdate = Partial<Omit<Post, 'id' | 'user_id' | 'created_at' | 'u
 export type ApplicationInsert = Pick<Application, 'post_id' | 'applicant_id' | 'message'>;
 export type ApplicationUpdate = Pick<Application, 'status'>;
 
+export type PostQuestionInsert = Pick<PostQuestion, 'post_id' | 'user_id' | 'question_text'>;
+export type PostQuestionUpdate = Partial<Pick<PostQuestion, 'answer_text' | 'answered_at' | 'deleted_at'>>;
 // =====================================================
 // Database Type (for Supabase client)
 // =====================================================
@@ -199,6 +212,11 @@ export interface Database {
         Row: Notification;
         Insert: Omit<Notification, 'id' | 'created_at'>;
         Update: Pick<Notification, 'is_read'>;
+      };
+      post_questions: {
+        Row: PostQuestion;
+        Insert: PostQuestionInsert;
+        Update: PostQuestionUpdate;
       };
     };
     Enums: {
