@@ -115,16 +115,19 @@ export function usePostQuestions(postId: string) {
   };
 
   // 質問削除（論理削除）
+  // 削除（論理削除）
   const deleteQuestion = async (questionId: string) => {
-    const { error } = await (supabase
-      .from('post_questions') as any)
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', questionId);
+    const { error } = await (supabase as any).rpc('delete_post_question', {
+      question_id: questionId,
+    });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Delete error:', error);
+      throw error;
+    }
+
     setQuestions((prev) => prev.filter((q) => q.id !== questionId));
   };
-
   return {
     questions,
     isLoading,
