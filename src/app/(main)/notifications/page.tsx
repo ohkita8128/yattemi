@@ -142,6 +142,33 @@ export default function NotificationsPage() {
     }
   };
 
+  // 通知タイプごとにリンクを生成
+  const getLink = (notification: Notification) => {
+    const data = notification.data as Record<string, string> | null;
+    if (!data) return null;
+    
+    switch (notification.type) {
+      case 'new_like':
+      case 'new_question':
+      case 'question_answered':
+        return data.post_id ? `/posts/${data.post_id}` : null;
+      case 'new_follower':
+      case 'new_follow':
+        return data.username ? `/users/${data.username}` : null;
+      case 'new_application':
+        return '/dashboard?tab=received';
+      case 'application_accepted':
+      case 'application_rejected':
+        return '/dashboard?tab=sent';
+      case 'new_message':
+        return data.match_id ? `/messages/${data.match_id}` : '/messages';
+      case 'new_review':
+        return '/dashboard?tab=reviews';
+      default:
+        return null;
+    }
+  };
+
   const filteredNotifications =
     filter === 'unread'
       ? notifications.filter((n) => !n.is_read)
@@ -233,7 +260,7 @@ export default function NotificationsPage() {
               }`}
             >
               <Link
-                href={notification.link || '#'}
+                href={getLink(notification) || '#'}
                 onClick={() => {
                   if (!notification.is_read) {
                     markAsRead(notification.id);
