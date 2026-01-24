@@ -11,7 +11,7 @@ interface TeachStatsProps {
   stats: UserStats | null;
 }
 
-// ティーチ（先輩として）の統計表示
+// サポート（サポーターとして）の統計表示
 export function TeachStats({ stats }: TeachStatsProps) {
   if (!stats) return null;
 
@@ -28,7 +28,7 @@ export function TeachStats({ stats }: TeachStatsProps) {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <span className="text-2xl">🎓</span>
-        <span className="font-semibold">ティーチ</span>
+        <span className="font-semibold">サポート</span>
         <span className="text-orange-500 font-bold">{stats.teach_count}回</span>
         <span className="text-gray-500">完了</span>
       </div>
@@ -53,7 +53,7 @@ interface ChallengeStatsProps {
   stats: UserStats | null;
 }
 
-// チャレンジ（後輩として）の統計表示
+// チャレンジ（チャレンジャーとして）の統計表示
 export function ChallengeStats({ stats }: ChallengeStatsProps) {
   if (!stats) return null;
 
@@ -105,7 +105,7 @@ export function ReviewComment({
   reviewerRole,
   postTitle 
 }: ReviewCommentProps) {
-  const roleLabel = reviewerRole === 'senpai' ? '先輩' : '後輩';
+  const roleLabel = reviewerRole === 'senpai' ? 'サポーター' : 'チャレンジャー';
 
   return (
     <div className="bg-gray-50 rounded-xl p-4">

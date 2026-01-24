@@ -11,7 +11,7 @@ interface ApplicationWithRelations {
   post: {
     id: string;
     title: string;
-    type: 'teach' | 'learn';
+    type: 'support' | 'challenge';
   };
   applicant: {
     id: string;

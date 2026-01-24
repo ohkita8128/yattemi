@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -28,7 +28,7 @@ export function ReviewForm({
   const [comment, setComment] = useState('');
   const { createReview, isSubmitting } = useCreateReview();
 
-  const targetLabel = myRole === 'senpai' ? '後輩' : '先輩';
+  const targetLabel = myRole === 'senpai' ? 'チャレンジャー' : 'サポーター';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

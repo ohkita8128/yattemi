@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -28,7 +28,7 @@ export default function EditPostPage() {
   // フォームの状態
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [type, setType] = useState<'teach' | 'learn'>('teach');
+  const [type, setType] = useState<'support' | 'challenge'>('support');
   const [categoryId, setCategoryId] = useState<number>(1);
   const [maxApplicants, setMaxApplicants] = useState(1);
   const [isOnline, setIsOnline] = useState<boolean | null>(null);
@@ -292,7 +292,7 @@ export default function EditPostPage() {
             {isLocked && <span className="text-gray-400 text-sm ml-2">（変更不可）</span>}
           </label>
           <div className="grid grid-cols-2 gap-4">
-            {(['teach', 'learn'] as const).map((t) => (
+            {(['support', 'challenge'] as const).map((t) => (
               <button
                 key={t}
                 type="button"
@@ -300,7 +300,7 @@ export default function EditPostPage() {
                 onClick={() => setType(t)}
                 className={`p-4 rounded-xl border-2 text-left transition-all ${
                   type === t
-                    ? t === 'teach'
+                    ? t === 'support'
                       ? 'border-purple-500 bg-purple-50'
                       : 'border-cyan-500 bg-cyan-50'
                     : 'border-gray-200 hover:border-gray-300'
@@ -338,7 +338,7 @@ export default function EditPostPage() {
             onChange={(e) => setDescription(e.target.value)}
             rows={6}
             className="w-full px-4 py-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
-            placeholder="どんなことを教えたい/学びたいですか？具体的に書くとマッチングしやすくなります。"
+            placeholder="どんなことをサポートしたい/チャレンジしたいですか？具体的に書くとマッチングしやすくなります。"
           />
           <p className="text-xs text-gray-400">{description.length}/2000文字（10文字以上）</p>
         </div>
@@ -539,14 +539,14 @@ export default function EditPostPage() {
           <LevelSlider
             value={myLevel}
             onChange={setMyLevel}
-            label={type === 'teach' ? '自分のレベル（先輩として）' : '自分のレベル（学習者として）'}
+            label={type === 'support' ? '自分のレベル（サポーターとして）' : '自分のレベル（学習者として）'}
           />
           <LevelRangeSlider
             minValue={targetLevelMin}
             maxValue={targetLevelMax}
             onMinChange={setTargetLevelMin}
             onMaxChange={setTargetLevelMax}
-            label={type === 'teach' ? '募集する後輩のレベル' : '希望する先輩のレベル'}
+            label={type === 'support' ? '募集するチャレンジャーのレベル' : '希望するサポーターのレベル'}
           />
         </div>
 

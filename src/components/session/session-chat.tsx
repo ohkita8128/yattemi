@@ -17,8 +17,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 interface SessionChatProps {
   matchId: string;
-  /** 'teach' or 'challenges' - URLのベースパス */
-  basePath: 'teach' | 'challenges';
+  /** 'support' or 'challenges' - URLのベースパス */
+  basePath: 'support' | 'challenges';
 }
 
 export function SessionChat({ matchId, basePath }: SessionChatProps) {
@@ -146,7 +146,7 @@ export function SessionChat({ matchId, basePath }: SessionChatProps) {
     const postType = matchInfo.application.post.type;
     const isPostOwner = matchInfo.application.post.user_id === user.id;
     
-    if (postType === 'teach') {
+    if (postType === 'support') {
       return isPostOwner ? 'senpai' : 'kouhai';
     } else {
       return isPostOwner ? 'kouhai' : 'senpai';
@@ -156,8 +156,8 @@ export function SessionChat({ matchId, basePath }: SessionChatProps) {
   const partner = getPartner();
   const myRole = getMyRole();
   const post = matchInfo?.application?.post;
-  const sessionLabel = myRole === 'senpai' ? 'ティーチ' : 'チャレンジ';
-  const partnerLabel = myRole === 'senpai' ? '後輩' : '先輩';
+  const sessionLabel = myRole === 'senpai' ? 'サポート' : 'チャレンジ';
+  const partnerLabel = myRole === 'senpai' ? 'チャレンジャー' : 'サポーター';
 
   // ステータス判定
   const isCompleted = matchInfo?.status === 'completed';
@@ -291,11 +291,11 @@ export function SessionChat({ matchId, basePath }: SessionChatProps) {
           >
             <div className="flex items-center gap-3 min-w-0 flex-1">
               <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
-                post?.type === 'teach' 
+                post?.type === 'support' 
                   ? 'bg-purple-100 text-purple-700'
                   : 'bg-cyan-100 text-cyan-700'
               }`}>
-                {post?.type === 'teach' ? '教えたい' : '学びたい'}
+                {post?.type === 'support' ? 'サポートしたい' : 'チャレンジしたい'}
               </span>
               
               <span className="font-medium text-sm truncate">

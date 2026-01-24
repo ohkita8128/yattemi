@@ -1,4 +1,4 @@
-﻿// =====================================================
+// =====================================================
 // Database Types (Supabase Generated Style)
 // =====================================================
 
@@ -11,7 +11,7 @@ export type Json =
   | Json[];
 
 // Enum Types
-export type PostType = 'teach' | 'learn';
+export type PostType = 'support' | 'challenge';
 export type PostStatus = 'open' | 'closed' | 'completed' | 'cancelled';
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
 export type MatchStatus = 'active' | 'completed' | 'cancelled';

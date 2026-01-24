@@ -7,5 +7,5 @@ export default function TeachChatPage() {
   const params = useParams();
   const matchId = params.id as string;
 
-  return <SessionChat matchId={matchId} basePath="teach" />;
+  return <SessionChat matchId={matchId} basePath="support" />;
 }

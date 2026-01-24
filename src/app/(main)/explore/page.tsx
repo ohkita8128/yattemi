@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -105,11 +105,11 @@ function ExploreContent() {
   const supabaseRef = useRef(getClient());
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const initialType = (searchParams.get('type') as 'teach' | 'learn' | 'all') || 'all';
+  const initialType = (searchParams.get('type') as 'support' | 'challenge' | 'all') || 'all';
   const initialCategory = searchParams.get('category');
   const initialSearch = searchParams.get('q') || '';
 
-  const [type, setType] = useState<'teach' | 'learn' | 'all'>(initialType);
+  const [type, setType] = useState<'support' | 'challenge' | 'all'>(initialType);
   const [categoryId, setCategoryId] = useState<number | null>(
     initialCategory ? Number(initialCategory) : null
   );
@@ -354,7 +354,7 @@ function ExploreContent() {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-2xl font-bold mb-2">投稿を探す</h1>
-        <p className="text-gray-500">スキルを教えたい人・学びたい人を見つけよう</p>
+        <p className="text-gray-500">スキルをサポートしたい人・チャレンジしたい人を見つけよう</p>
       </div>
 
       <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
@@ -495,12 +495,12 @@ function ExploreContent() {
             <div className="flex gap-2">
               {[
                 { value: 'all', label: 'すべて', emoji: '📋' },
-                { value: 'teach', label: '教えたい', emoji: '🎓' },
-                { value: 'learn', label: '学びたい', emoji: '📚' },
+                { value: 'support', label: 'サポートしたい', emoji: '🎓' },
+                { value: 'challenge', label: 'チャレンジしたい', emoji: '📚' },
               ].map((option) => (
                 <button
                   key={option.value}
-                  onClick={() => setType(option.value as 'teach' | 'learn' | 'all')}
+                  onClick={() => setType(option.value as 'support' | 'challenge' | 'all')}
                   className={`flex-1 py-2 px-4 rounded-lg border-2 transition-colors ${type === option.value ? 'border-orange-500 bg-orange-50 text-orange-700' : 'border-gray-200 hover:border-gray-300'}`}
                 >
                   <span className="mr-1">{option.emoji}</span>
@@ -768,7 +768,7 @@ function ExploreContent() {
 
       {hasActiveFilters && !showFilters && (
         <div className="flex flex-wrap gap-2 mb-6">
-          {type !== 'all' && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{type === 'teach' ? '🎓 教えたい' : '📚 学びたい'}</span>}
+          {type !== 'all' && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{type === 'support' ? '🎓 サポートしたい' : '📚 チャレンジしたい'}</span>}
           {locationFilter !== 'all' && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{locationFilter === 'online' ? '🌐 オンライン' : '📍 対面'}</span>}
           {targetDates.length > 0 && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{targetDates.map(d => formatDateShort(d)).join(', ')}</span>}
           {selectedDays.length > 0 && targetDates.length === 0 && <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">{selectedDays.map(d => DAYS.find(day => day.value === d)?.label).join('・')}</span>}

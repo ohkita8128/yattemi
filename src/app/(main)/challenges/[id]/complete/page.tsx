@@ -68,18 +68,18 @@ export default function ChallengeCompletePage() {
     return isPostOwner ? matchInfo.application.applicant : postOwner;
   };
 
-  // 自分の役割を取得（先輩 or 後輩）
+  // 自分の役割を取得（サポーター or チャレンジャー）
   const getMyRole = (): ReviewerRole => {
     if (!matchInfo || !user) return 'kouhai';
     
     const postType = matchInfo.application.post.type;
     const isPostOwner = matchInfo.application.post.user_id === user.id;
     
-    // 教えたい投稿の投稿者 → 先輩
-    // 教えたい投稿の応募者 → 後輩
-    // 学びたい投稿の投稿者 → 後輩
-    // 学びたい投稿の応募者 → 先輩
-    if (postType === 'teach') {
+    // サポートしたい投稿の投稿者 → サポーター
+    // サポートしたい投稿の応募者 → チャレンジャー
+    // チャレンジしたい投稿の投稿者 → チャレンジャー
+    // チャレンジしたい投稿の応募者 → サポーター
+    if (postType === 'support') {
       return isPostOwner ? 'senpai' : 'kouhai';
     } else {
       return isPostOwner ? 'kouhai' : 'senpai';
@@ -112,11 +112,11 @@ export default function ChallengeCompletePage() {
             <PartyPopper className="h-10 w-10 text-green-500" />
           </div>
           <h1 className="text-2xl font-bold mb-2">
-            {myRole === 'senpai' ? 'ティーチ' : 'チャレンジ'}完了！
+            {myRole === 'senpai' ? 'サポート' : 'チャレンジ'}完了！
           </h1>
           <p className="text-gray-500 mb-8">
             お疲れさまでした！<br />
-            また新しい{myRole === 'senpai' ? 'ティーチ' : 'チャレンジ'}を探してみよう
+            また新しい{myRole === 'senpai' ? 'サポート' : 'チャレンジ'}を探してみよう
           </p>
           <div className="flex flex-col gap-3">
             <Link
@@ -126,10 +126,10 @@ export default function ChallengeCompletePage() {
               投稿を探す
             </Link>
             <Link
-              href={myRole === 'senpai' ? '/teach' : '/challenges'}
+              href={myRole === 'senpai' ? '/support' : '/challenges'}
               className="h-12 px-6 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 inline-flex items-center justify-center"
             >
-              {myRole === 'senpai' ? 'ティーチ' : 'チャレンジ'}一覧へ
+              {myRole === 'senpai' ? 'サポート' : 'チャレンジ'}一覧へ
             </Link>
           </div>
         </div>
@@ -142,7 +142,7 @@ export default function ChallengeCompletePage() {
       {/* Header */}
       <div className="mb-6">
         <Link
-          href={myRole === 'senpai' ? `/teach/${matchId}` : `/challenges/${matchId}`}
+          href={myRole === 'senpai' ? `/support/${matchId}` : `/challenges/${matchId}`}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -154,7 +154,7 @@ export default function ChallengeCompletePage() {
             <CheckCircle2 className="h-6 w-6 text-green-500" />
           </div>
           <h1 className="text-xl font-bold">
-            {myRole === 'senpai' ? 'ティーチ' : 'チャレンジ'}完了！
+            {myRole === 'senpai' ? 'サポート' : 'チャレンジ'}完了！
           </h1>
         </div>
         <p className="text-gray-500">

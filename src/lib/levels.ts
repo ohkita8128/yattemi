@@ -1,4 +1,4 @@
-﻿// レベル情報を取得
+// レベル情報を取得
 export function getLevelInfo(level: number): { name: string; emoji: string } {
   if (level <= 1) return { name: '見習い', emoji: '🐣' };
   if (level <= 3) return { name: '初心者', emoji: '🌱' };

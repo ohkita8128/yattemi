@@ -22,7 +22,7 @@ interface ChallengeWithDetails {
     post: {
       id: string;
       title: string;
-      type: 'teach' | 'learn';
+      type: 'support' | 'challenge';
       user_id: string;
     };
     applicant: {
@@ -87,16 +87,16 @@ export default function ChallengesPage() {
           })
         );
 
-        // 自分が後輩（学ぶ側）のものだけフィルタ
+        // 自分がチャレンジャー（チャレンジする側）のものだけフィルタ
         const myChallenges = challengesWithOwners.filter((challenge) => {
           const postType = challenge.application.post.type;
           const isPostOwner = challenge.application.post.user_id === user.id;
           const isApplicant = challenge.application.applicant.id === user.id;
           
-          // 教えたい投稿の応募者 → 後輩
-          // 学びたい投稿の投稿者 → 後輩
-          if (postType === 'teach' && isApplicant) return true;
-          if (postType === 'learn' && isPostOwner) return true;
+          // サポートしたい投稿の応募者 → チャレンジャー
+          // チャレンジしたい投稿の投稿者 → チャレンジャー
+          if (postType === 'support' && isApplicant) return true;
+          if (postType === 'challenge' && isPostOwner) return true;
           return false;
         });
 
@@ -151,12 +151,12 @@ export default function ChallengesPage() {
     );
   };
 
-  // 先輩の情報を取得
+  // サポーターの情報を取得
   const getSenpai = (challenge: ChallengeWithDetails) => {
     const postType = challenge.application.post.type;
-    // 教えたい投稿 → 投稿者が先輩
-    // 学びたい投稿 → 応募者が先輩
-    if (postType === 'teach') {
+    // サポートしたい投稿 → 投稿者がサポーター
+    // チャレンジしたい投稿 → 応募者がサポーター
+    if (postType === 'support') {
       return challenge.post_owner;
     } else {
       return challenge.application.applicant;
@@ -212,7 +212,7 @@ export default function ChallengesPage() {
           </h2>
           <p className="text-gray-500 mb-6">
             {filter === 'all' 
-              ? '「教えたい」投稿に応募して、新しいスキルを学んでみよう！'
+              ? '「サポートしたい」投稿に応募して、新しいスキルを学んでみよう！'
               : 'フィルターを変更してみてください'}
           </p>
           {filter === 'all' && (
@@ -220,7 +220,7 @@ export default function ChallengesPage() {
               href={ROUTES.EXPLORE}
               className="inline-flex items-center justify-center h-12 px-6 rounded-xl bg-cyan-500 text-white font-medium hover:bg-cyan-600"
             >
-              「教えたい」投稿を探す
+              「サポートしたい」投稿を探す
             </Link>
           )}
         </div>
@@ -236,7 +236,7 @@ export default function ChallengesPage() {
                 className="block bg-white rounded-xl border shadow-sm p-5 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start gap-4">
-                  {/* 先輩のアバター */}
+                  {/* サポーターのアバター */}
                   <div className="h-12 w-12 rounded-full bg-cyan-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                     {senpai?.avatar_url ? (
                       <img
@@ -262,7 +262,7 @@ export default function ChallengesPage() {
                       <span className="font-medium text-gray-700">
                         {senpai?.display_name}
                       </span>
-                      さん（先輩）から学ぶ
+                      さん（サポーター）からチャレンジする
                     </p>
 
                     <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">

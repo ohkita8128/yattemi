@@ -1,4 +1,4 @@
-﻿import { z } from 'zod';
+import { z } from 'zod';
 
 export const postSchema = z.object({
   title: z
@@ -11,7 +11,7 @@ export const postSchema = z.object({
     .min(1, '内容を入力してください')
     .min(1, '内容を入力してください')
     .max(2000, '内容は2000文字以内で入力してください'),
-  type: z.enum(['teach', 'learn'], {
+  type: z.enum(['support', 'challenge'], {
     required_error: 'タイプを選択してください',
   }),
   categoryId: z

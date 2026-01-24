@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
@@ -49,8 +49,8 @@ export default function DashboardPage() {
           .eq('user_id', user.id);
 
         const totalPosts = posts?.length || 0;
-        const teachPosts = posts?.filter((p: any) => p.type === 'teach').length || 0;
-        const learnPosts = posts?.filter((p: any) => p.type === 'learn').length || 0;
+        const teachPosts = posts?.filter((p: any) => p.type === 'support').length || 0;
+        const learnPosts = posts?.filter((p: any) => p.type === 'challenge').length || 0;
         const totalViews = posts?.reduce((sum: number, p: any) => sum + (p.view_count || 0), 0) || 0;
 
         // いいね数（自分の投稿についたいいね）

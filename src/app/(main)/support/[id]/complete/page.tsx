@@ -67,7 +67,7 @@ export default function TeachCompletePage() {
     return isPostOwner ? matchInfo.application.applicant : postOwner;
   };
 
-  // ティーチページなので自分は先輩
+  // サポートページなので自分はサポーター
   const myRole: ReviewerRole = 'senpai';
 
   const partner = getPartner();
@@ -93,10 +93,10 @@ export default function TeachCompletePage() {
           <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-green-100 mb-6">
             <PartyPopper className="h-10 w-10 text-green-500" />
           </div>
-          <h1 className="text-2xl font-bold mb-2">ティーチ完了！</h1>
+          <h1 className="text-2xl font-bold mb-2">サポート完了！</h1>
           <p className="text-gray-500 mb-8">
             お疲れさまでした！<br />
-            また後輩にスキルを教えてあげましょう
+            またチャレンジャーにスキルを教えてあげましょう
           </p>
           <div className="flex flex-col gap-3">
             <Link
@@ -106,10 +106,10 @@ export default function TeachCompletePage() {
               投稿を探す
             </Link>
             <Link
-              href="/teach"
+              href="/support"
               className="h-12 px-6 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 inline-flex items-center justify-center"
             >
-              ティーチ一覧へ
+              サポート一覧へ
             </Link>
           </div>
         </div>
@@ -121,7 +121,7 @@ export default function TeachCompletePage() {
     <div className="container mx-auto px-4 py-8 max-w-lg">
       <div className="mb-6">
         <Link
-          href={`/teach/${matchId}`}
+          href={`/support/${matchId}`}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -132,7 +132,7 @@ export default function TeachCompletePage() {
           <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
             <CheckCircle2 className="h-6 w-6 text-green-500" />
           </div>
-          <h1 className="text-xl font-bold">ティーチ完了！</h1>
+          <h1 className="text-xl font-bold">サポート完了！</h1>
         </div>
         <p className="text-gray-500">
           {matchInfo?.application.post.title}

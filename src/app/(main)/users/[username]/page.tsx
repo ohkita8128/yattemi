@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import { useParams } from 'next/navigation';
@@ -42,7 +42,7 @@ type Post = {
   id: string;
   title: string;
   description?: string;
-  type: 'teach' | 'learn';
+  type: 'support' | 'challenge';
   category_id: number | null;
   location_type: string | null;
   my_level: number | null;
@@ -64,7 +64,7 @@ type Badge = {
 const BADGE_INFO: Record<string, { emoji: string; label: string }> = {
   clear: { emoji: '🎓', label: 'わかりやすい！' },
   helpful: { emoji: '💡', label: 'ためになった！' },
-  godsenpai: { emoji: '🌟', label: '神先輩！' },
+  godsenpai: { emoji: '🌟', label: '神サポーター！' },
   eager: { emoji: '🔥', label: '熱心だった！' },
   quicklearner: { emoji: '✨', label: 'のみこみ早い！' },
   hardworker: { emoji: '💪', label: 'がんばり屋！' },

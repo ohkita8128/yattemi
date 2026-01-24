@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -87,7 +87,7 @@ export default function NewPostPage() {
           戻る
         </Link>
         <h1 className="text-2xl font-bold">新しい投稿</h1>
-        <p className="text-gray-500 mt-1">スキルを教えたい・学びたいことを投稿しよう</p>
+        <p className="text-gray-500 mt-1">スキルをサポートしたい・チャレンジしたいことを投稿しよう</p>
       </div>
 
       <PostForm

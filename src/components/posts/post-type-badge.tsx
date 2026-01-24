@@ -23,7 +23,7 @@ export function PostTypeBadge({ type, size = 'md', className }: PostTypeBadgePro
     <span
       className={cn(
         'inline-flex items-center gap-1.5 rounded-full font-medium',
-        type === 'teach'
+        type === 'support'
           ? 'bg-purple-100 text-purple-700'
           : 'bg-cyan-100 text-cyan-700',
         sizeClasses[size],

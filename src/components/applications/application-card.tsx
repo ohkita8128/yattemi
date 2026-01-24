@@ -14,7 +14,7 @@ interface ApplicationCardProps {
     post: {
       id: string;
       title: string;
-      type: 'teach' | 'learn';
+      type: 'support' | 'challenge';
     };
     applicant: {
       id: string;
@@ -80,12 +80,12 @@ export function ApplicationCard({
           </Link>
           <span
             className={`inline-block mt-1 text-xs px-2 py-0.5 rounded-full ${
-              application.post.type === 'teach'
+              application.post.type === 'support'
                 ? 'bg-purple-100 text-purple-700'
                 : 'bg-cyan-100 text-cyan-700'
             }`}
           >
-            {application.post.type === 'teach' ? '🎓 教えたい' : '📘 教えてほしい'}
+            {application.post.type === 'support' ? '🎓 サポートしたい' : '📘 教えてほしい'}
           </span>
         </div>
         <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${status.color}`}>

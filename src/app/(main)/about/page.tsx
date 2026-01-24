@@ -39,7 +39,7 @@ export default function AboutPage() {
             <p className="text-gray-700 leading-relaxed">
               YatteMi! は、誰もが持つスキルや知識を気軽に共有し、
               学び合えるプラットフォームです。
-              「教えたい」と「学びたい」をつなぐことで、
+              「サポートしたい」と「チャレンジしたい」をつなぐことで、
               一人ひとりの可能性を広げ、新しい出会いと成長の機会を創出します。
             </p>
           </div>
@@ -58,7 +58,7 @@ export default function AboutPage() {
               </div>
               <h3 className="font-bold mb-2">気軽にマッチング</h3>
               <p className="text-sm text-gray-600">
-                教えたい人と学びたい人が簡単につながる
+                サポートしたい人とチャレンジしたい人が簡単につながる
               </p>
             </div>
             <div className="bg-white rounded-2xl p-6 shadow-sm border text-center">

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -284,7 +284,7 @@ export default function OnboardingPage() {
                   name="bio"
                   value={formData.bio}
                   onChange={handleChange}
-                  placeholder="趣味や得意なこと、学びたいことなどを書いてみましょう！"
+                  placeholder="趣味や得意なこと、チャレンジしたいことなどを書いてみましょう！"
                   rows={4}
                 />
               </div>

@@ -33,9 +33,9 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              趣味・技術を教えたい人と
+              趣味・技術をサポートしたい人と
               <br />
-              学びたい人をつなぐ
+              チャレンジしたい人をつなぐ
               <br />
               スキルシェアプラットフォーム
             </p>

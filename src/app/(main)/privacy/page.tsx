@@ -1,4 +1,4 @@
-﻿// src/app/(main)/privacy/page.tsx
+// src/app/(main)/privacy/page.tsx
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

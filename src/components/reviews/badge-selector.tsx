@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 interface BadgeSelectorProps {
   selected: BadgeKey[];
   onChange: (badges: BadgeKey[]) => void;
-  /** 自分の役割（先輩なら後輩用バッジ、後輩なら先輩用バッジを表示） */
+  /** 自分の役割（サポーターならチャレンジャー用バッジ、チャレンジャーならサポーター用バッジを表示） */
   myRole: ReviewerRole;
   maxSelection?: number;
 }
@@ -22,10 +22,10 @@ export function BadgeSelector({
   myRole,
   maxSelection = 3 
 }: BadgeSelectorProps) {
-  // 自分が先輩 → 後輩に送る → BADGES_FOR_KOUHAI
-  // 自分が後輩 → 先輩に送る → BADGES_FOR_SENPAI
+  // 自分がサポーター → チャレンジャーに送る → BADGES_FOR_KOUHAI
+  // 自分がチャレンジャー → サポーターに送る → BADGES_FOR_SENPAI
   const badges = myRole === 'senpai' ? BADGES_FOR_KOUHAI : BADGES_FOR_SENPAI;
-  const targetLabel = myRole === 'senpai' ? '後輩' : '先輩';
+  const targetLabel = myRole === 'senpai' ? 'チャレンジャー' : 'サポーター';
 
   const toggleBadge = (key: BadgeKey) => {
     if (selected.includes(key)) {

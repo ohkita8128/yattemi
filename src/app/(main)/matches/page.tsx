@@ -20,7 +20,7 @@ interface MatchWithDetails {
     post: {
       id: string;
       title: string;
-      type: 'teach' | 'learn';
+      type: 'support' | 'challenge';
       user_id: string;
     };
     applicant: {

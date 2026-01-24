@@ -53,10 +53,10 @@ export function PostFilters({
           <TabsTrigger value="all" className="flex-1">
             すべて
           </TabsTrigger>
-          <TabsTrigger value="teach" className="flex-1">
-            🎓 教えたい
+          <TabsTrigger value="support" className="flex-1">
+            🎓 サポートしたい
           </TabsTrigger>
-          <TabsTrigger value="learn" className="flex-1">
+          <TabsTrigger value="challenge" className="flex-1">
             📘 教えてほしい
           </TabsTrigger>
         </TabsList>

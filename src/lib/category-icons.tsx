@@ -1,4 +1,4 @@
-﻿import {
+import {
   Code,
   Palette,
   Music,

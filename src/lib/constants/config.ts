@@ -1,6 +1,6 @@
 export const APP_CONFIG = {
   name: 'YatteMi!',
-  description: '趣味・技術を教えたい人と学びたい人をつなぐプラットフォーム',
+  description: '趣味・技術をサポートしたい人とチャレンジしたい人をつなぐプラットフォーム',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
 } as const;
 
@@ -10,17 +10,17 @@ export const PAGINATION = {
 } as const;
 
 export const POST_TYPES = {
-  teach: {
-    label: '教えたい',
+  support: {
+    label: 'サポートしたい',
     emoji: '🎓',
-    color: 'teach',
+    color: 'support',
     description: 'あなたのスキルや知識を共有しましょう',
   },
-  learn: {
-    label: '教えてほしい',
+  challenge: {
+    label: 'チャレンジしたい',
     emoji: '📘',
-    color: 'learn',
-    description: '新しいことを学びたい人を見つけましょう',
+    color: 'challenge',
+    description: '新しいことをチャレンジしたい人を見つけましょう',
   },
 } as const;
 

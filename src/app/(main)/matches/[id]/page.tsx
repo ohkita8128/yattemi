@@ -117,9 +117,9 @@ export default function ChatPage() {
     const postType = matchInfo.application.post.type;
     
     if (isPostOwner) {
-      return postType === 'teach' ? '教える側' : '学ぶ側';
+      return postType === 'support' ? '教える側' : '学ぶ側';
     } else {
-      return postType === 'teach' ? '学ぶ側' : '教える側';
+      return postType === 'support' ? '学ぶ側' : '教える側';
     }
   };
 
@@ -182,11 +182,11 @@ export default function ChatPage() {
             <div className="flex items-center gap-3 min-w-0 flex-1">
               {/* 投稿タイプバッジ */}
               <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
-                post?.type === 'teach' 
+                post?.type === 'support' 
                   ? 'bg-purple-100 text-purple-700'
                   : 'bg-cyan-100 text-cyan-700'
               }`}>
-                {post?.type === 'teach' ? '教えたい' : '学びたい'}
+                {post?.type === 'support' ? 'サポートしたい' : 'チャレンジしたい'}
               </span>
               
               {/* タイトル */}

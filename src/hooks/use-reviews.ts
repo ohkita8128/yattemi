@@ -4,11 +4,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { getClient } from '@/lib/supabase/client';
 import { useAuth } from './use-auth';
 
-// バッジの定義（先輩用・後輩用・共通）
+// バッジの定義（サポーター用・チャレンジャー用・共通）
 export const SENPAI_BADGES = {
   clear: { emoji: '🎓', label: 'わかりやすい！' },
   helpful: { emoji: '💡', label: 'ためになった！' },
-  godsenpai: { emoji: '🌟', label: '神先輩！' },
+  godsenpai: { emoji: '🌟', label: '神サポーター！' },
 } as const;
 
 export const KOUHAI_BADGES = {
@@ -23,10 +23,10 @@ export const COMMON_BADGES = {
   again: { emoji: '🤝', label: 'また会いたい！' },
 } as const;
 
-// 先輩に送るバッジ（後輩が選ぶ）
+// サポーターに送るバッジ（チャレンジャーが選ぶ）
 export const BADGES_FOR_SENPAI = { ...SENPAI_BADGES, ...COMMON_BADGES };
 
-// 後輩に送るバッジ（先輩が選ぶ）
+// チャレンジャーに送るバッジ（サポーターが選ぶ）
 export const BADGES_FOR_KOUHAI = { ...KOUHAI_BADGES, ...COMMON_BADGES };
 
 // 全バッジ
@@ -59,11 +59,11 @@ export interface Review {
 export interface UserStats {
   teach_count: number;
   challenge_count: number;
-  // 先輩としてもらったバッジ
+  // サポーターとしてもらったバッジ
   senpai_badge_clear: number;
   senpai_badge_helpful: number;
   senpai_badge_godsenpai: number;
-  // 後輩としてもらったバッジ
+  // チャレンジャーとしてもらったバッジ
   kouhai_badge_eager: number;
   kouhai_badge_quicklearner: number;
   kouhai_badge_hardworker: number;
@@ -204,7 +204,7 @@ function getDefaultStats(): UserStats {
   };
 }
 
-// 先輩からもらったレビュー一覧
+// サポーターからもらったレビュー一覧
 export function useReviewsFromSenpai(userId: string | undefined) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -243,7 +243,7 @@ export function useReviewsFromSenpai(userId: string | undefined) {
   return { reviews, isLoading };
 }
 
-// 後輩からもらったレビュー一覧
+// チャレンジャーからもらったレビュー一覧
 export function useReviewsFromKouhai(userId: string | undefined) {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState(true);

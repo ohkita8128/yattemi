@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { Heart, MapPin, Monitor, Video, MessageCircle } from 'lucide-react';
@@ -31,7 +31,7 @@ interface PostCardProps {
     id: string;
     title: string;
     description?: string;
-    type: 'teach' | 'learn';
+    type: 'support' | 'challenge';
     is_online?: boolean | null;
     location?: string | null;
     my_level?: number | null;
@@ -104,7 +104,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
 
   // レベル表示を整形（絵文字のみ）
   const formatLevel = () => {
-    if (post.type === 'teach') {
+    if (post.type === 'support') {
       if (post.my_level != null && post.target_level_min != null) {
         return `${getLevelEmoji(post.my_level)}→${getLevelEmoji(post.target_level_min)}`;
       }
@@ -180,12 +180,12 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
             <span
               className={cn(
                 'px-2 py-0.5 rounded-full text-xs font-medium',
-                post.type === 'teach'
+                post.type === 'support'
                   ? 'bg-purple-100 text-purple-700'
                   : 'bg-cyan-100 text-cyan-700'
               )}
             >
-              {post.type === 'teach' ? '🎓 教えたい' : '📚 学びたい'}
+              {post.type === 'support' ? '🎓 サポートしたい' : '📚 チャレンジしたい'}
             </span>
 
             {post.category && (
@@ -223,12 +223,12 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
               <span
                 className={cn(
                   'px-2 py-0.5 rounded-full text-xs font-medium',
-                  post.type === 'teach'
+                  post.type === 'support'
                     ? 'bg-purple-100 text-purple-700'
                     : 'bg-cyan-100 text-cyan-700'
                 )}
               >
-                {post.type === 'teach' ? '🎓 教えたい' : '📚 学びたい'}
+                {post.type === 'support' ? '🎓 サポートしたい' : '📚 チャレンジしたい'}
               </span>
 
               {post.category && (

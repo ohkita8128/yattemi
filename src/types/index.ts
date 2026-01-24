@@ -27,7 +27,7 @@ export interface PaginationParams {
 }
 
 export interface PostFilters {
-  type?: 'teach' | 'learn';
+  type?: 'support' | 'challenge';
   categoryId?: number;
   status?: 'open' | 'closed' | 'completed';
   search?: string;
@@ -73,7 +73,7 @@ export interface RegisterFormData {
 export interface PostFormData {
   title: string;
   description: string;
-  type: 'teach' | 'learn';
+  type: 'support' | 'challenge';
   categoryId: number;
   maxApplicants: number;
   location?: string;

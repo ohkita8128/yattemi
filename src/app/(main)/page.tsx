@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
@@ -18,7 +18,7 @@ const features = [
   {
     icon: Users,
     title: 'スキルシェア',
-    description: '教えることで自分も成長。学ぶことで新しい世界が広がります。',
+    description: 'サポートすることで自分も成長。チャレンジすることで新しい世界が広がります。',
   },
   {
     icon: Zap,
@@ -45,7 +45,7 @@ type Post = {
   id: string;
   title: string;
   description?: string;
-  type: 'teach' | 'learn';
+  type: 'support' | 'challenge';
   category_id: number | null;
   location_type: string | null;
   my_level: number | null;
@@ -252,7 +252,7 @@ export default function HomePage() {
             </h1>
 
             <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto">
-              教えたいスキルがある人と、学びたい人をマッチング。
+              サポートしたいスキルがある人と、チャレンジしたい人をマッチング。
               <br className="hidden md:block" />
               同じ大学生だから、気軽に始められる。
             </p>
@@ -288,7 +288,7 @@ export default function HomePage() {
               2つのタイプで投稿
             </h2>
             <p className="text-gray-500">
-              教える側も、学ぶ側も、どちらでも投稿できます
+              サポートする側も、チャレンジする側も、どちらでも投稿できます
             </p>
           </div>
 
@@ -297,14 +297,14 @@ export default function HomePage() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-purple-100 rounded-full -translate-y-1/2 translate-x-1/2" />
               <CardContent className="p-8">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="text-4xl">{POST_TYPES.teach.emoji}</span>
+                  <span className="text-4xl">{POST_TYPES.support.emoji}</span>
                   <div>
-                    <h3 className="text-2xl font-bold text-purple-600">教えたい</h3>
+                    <h3 className="text-2xl font-bold text-purple-600">サポートしたい</h3>
                     <p className="text-sm text-gray-500">Teach</p>
                   </div>
                 </div>
                 <p className="text-gray-500 mb-6">
-                  {POST_TYPES.teach.description}
+                  {POST_TYPES.support.description}
                 </p>
                 <Link
                   href={ROUTES.REGISTER}
@@ -319,14 +319,14 @@ export default function HomePage() {
               <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-100 rounded-full -translate-y-1/2 translate-x-1/2" />
               <CardContent className="p-8">
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="text-4xl">{POST_TYPES.learn.emoji}</span>
+                  <span className="text-4xl">{POST_TYPES.challenge.emoji}</span>
                   <div>
                     <h3 className="text-2xl font-bold text-cyan-600">教えてほしい</h3>
                     <p className="text-sm text-gray-500">Learn</p>
                   </div>
                 </div>
                 <p className="text-gray-500 mb-6">
-                  {POST_TYPES.learn.description}
+                  {POST_TYPES.challenge.description}
                 </p>
                 <Link
                   href={ROUTES.REGISTER}

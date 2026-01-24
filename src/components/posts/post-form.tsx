@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { X, ImagePlus, Loader2 } from 'lucide-react';
@@ -34,7 +34,7 @@ interface PostFormProps {
 
 export function PostForm({
   categories,
-  defaultType = 'teach',
+  defaultType = 'support',
   defaultValues,
   onSubmit,
   isSubmitting,
@@ -140,14 +140,14 @@ export function PostForm({
       <div className="space-y-2">
         <Label required>投稿タイプ</Label>
         <div className="grid grid-cols-2 gap-4">
-          {(['teach', 'learn'] as const).map((type) => (
+          {(['support', 'challenge'] as const).map((type) => (
             <button
               key={type}
               type="button"
               onClick={() => setValue('type', type)}
               className={`p-4 rounded-xl border-2 text-left transition-all ${
                 selectedType === type
-                  ? type === 'teach'
+                  ? type === 'support'
                     ? 'border-purple-500 bg-purple-50'
                     : 'border-cyan-500 bg-cyan-50'
                   : 'border-gray-200 hover:border-gray-300'
@@ -189,7 +189,7 @@ export function PostForm({
         </Label>
         <Textarea
           id="description"
-          placeholder="どんなことを教えたい/学びたいですか？具体的に書くとマッチングしやすくなります。"
+          placeholder="どんなことをサポートしたい/チャレンジしたいですか？具体的に書くとマッチングしやすくなります。"
           className="min-h-[150px]"
           error={!!errors.description}
           {...register('description')}
@@ -265,7 +265,7 @@ export function PostForm({
         <LevelSlider
           value={myLevel}
           onChange={(v) => setValue('myLevel', v)}
-          label={selectedType === 'teach' ? 'あなたのレベル（先輩として）' : 'あなたの現在レベル'}
+          label={selectedType === 'support' ? 'あなたのレベル（サポーターとして）' : 'あなたの現在レベル'}
         />
       </div>
 
@@ -276,7 +276,7 @@ export function PostForm({
           maxValue={targetLevelMax}
           onMinChange={(v) => setValue('targetLevelMin', v)}
           onMaxChange={(v) => setValue('targetLevelMax', v)}
-          label={selectedType === 'teach' ? '教えたい相手のレベル' : '希望する先輩のレベル'}
+          label={selectedType === 'support' ? 'サポートしたい相手のレベル' : '希望するサポーターのレベル'}
         />
       </div>
 

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -202,7 +202,7 @@ export default function PostDetailPage() {
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                post.type === 'teach' 
+                post.type === 'support' 
                   ? 'bg-purple-100 text-purple-700' 
                   : 'bg-cyan-100 text-cyan-700'
               }`}>
@@ -290,10 +290,10 @@ export default function PostDetailPage() {
               <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-sm">
                 <span>{getLevelEmoji(myLevel)}</span>
                 <span className="text-gray-600">
-                  {post.type === 'teach' ? '教える側のレベル' : '現在のレベル'}
+                  {post.type === 'support' ? '教える側のレベル' : '現在のレベル'}
                 </span>
               </div>
-              {post.type === 'teach' && (
+              {post.type === 'support' && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-sm">
                   <span>{getLevelEmoji(targetMin)}→{getLevelEmoji(targetMax)}</span>
                   <span className="text-gray-600">募集レベル</span>

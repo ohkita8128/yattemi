@@ -22,7 +22,7 @@ interface TeachWithDetails {
     post: {
       id: string;
       title: string;
-      type: 'teach' | 'learn';
+      type: 'support' | 'challenge';
       user_id: string;
     };
     applicant: {
@@ -87,16 +87,16 @@ export default function TeachPage() {
           })
         );
 
-        // 自分が先輩（教える側）のものだけフィルタ
+        // 自分がサポーター（サポートする側）のものだけフィルタ
         const myTeaches = teachesWithOwners.filter((teach) => {
           const postType = teach.application.post.type;
           const isPostOwner = teach.application.post.user_id === user.id;
           const isApplicant = teach.application.applicant.id === user.id;
           
-          // 教えたい投稿の投稿者 → 先輩
-          // 学びたい投稿の応募者 → 先輩
-          if (postType === 'teach' && isPostOwner) return true;
-          if (postType === 'learn' && isApplicant) return true;
+          // サポートしたい投稿の投稿者 → サポーター
+          // チャレンジしたい投稿の応募者 → サポーター
+          if (postType === 'support' && isPostOwner) return true;
+          if (postType === 'challenge' && isApplicant) return true;
           return false;
         });
 
@@ -151,12 +151,12 @@ export default function TeachPage() {
     );
   };
 
-  // 後輩の情報を取得
+  // チャレンジャーの情報を取得
   const getKouhai = (teach: TeachWithDetails) => {
     const postType = teach.application.post.type;
-    // 教えたい投稿 → 応募者が後輩
-    // 学びたい投稿 → 投稿者が後輩
-    if (postType === 'teach') {
+    // サポートしたい投稿 → 応募者がチャレンジャー
+    // チャレンジしたい投稿 → 投稿者がチャレンジャー
+    if (postType === 'support') {
       return teach.application.applicant;
     } else {
       return teach.post_owner;
@@ -166,7 +166,7 @@ export default function TeachPage() {
   if (authLoading || isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 max-w-3xl">
-        <h1 className="text-2xl font-bold mb-6">ティーチ</h1>
+        <h1 className="text-2xl font-bold mb-6">サポート</h1>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-32 w-full rounded-xl" />
@@ -180,7 +180,7 @@ export default function TeachPage() {
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <div className="flex items-center gap-3 mb-6">
         <GraduationCap className="h-8 w-8 text-purple-500" />
-        <h1 className="text-2xl font-bold">ティーチ</h1>
+        <h1 className="text-2xl font-bold">サポート</h1>
       </div>
 
       {/* フィルター */}
@@ -205,14 +205,14 @@ export default function TeachPage() {
           <GraduationCap className="h-16 w-16 text-gray-200 mx-auto mb-4" />
           <h2 className="text-xl font-bold text-gray-700 mb-2">
             {filter === 'all' 
-              ? 'ティーチがまだありません' 
+              ? 'サポートがまだありません' 
               : filter === 'active'
-              ? '進行中のティーチはありません'
-              : '完了したティーチはありません'}
+              ? '進行中のサポートはありません'
+              : '完了したサポートはありません'}
           </h2>
           <p className="text-gray-500 mb-6">
             {filter === 'all' 
-              ? '「学びたい」投稿に応募して、先輩としてスキルを教えてみよう！'
+              ? '「チャレンジしたい」投稿に応募して、サポーターとしてスキルを教えてみよう！'
               : 'フィルターを変更してみてください'}
           </p>
           {filter === 'all' && (
@@ -220,7 +220,7 @@ export default function TeachPage() {
               href={ROUTES.EXPLORE}
               className="inline-flex items-center justify-center h-12 px-6 rounded-xl bg-purple-500 text-white font-medium hover:bg-purple-600"
             >
-              「学びたい」投稿を探す
+              「チャレンジしたい」投稿を探す
             </Link>
           )}
         </div>
@@ -232,11 +232,11 @@ export default function TeachPage() {
             return (
               <Link
                 key={teach.id}
-                href={`/teach/${teach.id}`}
+                href={`/support/${teach.id}`}
                 className="block bg-white rounded-xl border shadow-sm p-5 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start gap-4">
-                  {/* 後輩のアバター */}
+                  {/* チャレンジャーのアバター */}
                   <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center overflow-hidden flex-shrink-0">
                     {kouhai?.avatar_url ? (
                       <img
@@ -262,7 +262,7 @@ export default function TeachPage() {
                       <span className="font-medium text-gray-700">
                         {kouhai?.display_name}
                       </span>
-                      さん（後輩）に教える
+                      さん（チャレンジャー）にサポートする
                     </p>
 
                     <div className="flex items-center gap-4 mt-3 text-xs text-gray-400">

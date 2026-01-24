@@ -167,12 +167,12 @@ export function Header() {
                       応募管理
                     </Link>
                     <Link
-                      href="/teach"
+                      href="/support"
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
                     >
                       <GraduationCap className="h-4 w-4 text-purple-500" />
-                      ティーチ
+                      サポート
                     </Link>
                     <Link
                       href="/challenges"
@@ -295,12 +295,12 @@ export function Header() {
                     応募管理
                   </Link>
                   <Link
-                    href="/teach"
+                    href="/support"
                     onClick={closeMobileNav}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
                   >
                     <GraduationCap className="h-5 w-5 text-purple-500" />
-                    ティーチ
+                    サポート
                   </Link>
                   <Link
                     href="/challenges"
