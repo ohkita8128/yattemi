@@ -93,7 +93,12 @@ export function usePosts(options: UsePostsOptions = {}) {
       const newPosts = data as PostWithRelations[];
       
       if (append) {
-        setPosts(prev => [...prev, ...newPosts]);
+        // 重複を防ぐ
+        setPosts(prev => {
+          const existingIds = new Set(prev.map(p => p.id));
+          const uniqueNewPosts = newPosts.filter(p => !existingIds.has(p.id));
+          return [...prev, ...uniqueNewPosts];
+        });
       } else {
         setPosts(newPosts);
       }

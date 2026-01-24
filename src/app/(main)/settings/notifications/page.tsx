@@ -6,7 +6,7 @@ import { getClient } from '@/lib/supabase/client';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Bell, Heart, MessageSquare, UserPlus, Send, ArrowLeft } from 'lucide-react';
+import { Bell, Heart, MessageSquare, UserPlus, Send, ArrowLeft, HelpCircle, Star } from 'lucide-react';
 import Link from 'next/link';
 
 interface NotificationSettings {
@@ -15,6 +15,8 @@ interface NotificationSettings {
   messages: boolean;
   follows: boolean;
   matches: boolean;
+  questions: boolean;
+  reviews: boolean;
 }
 
 const DEFAULT_SETTINGS: NotificationSettings = {
@@ -23,6 +25,8 @@ const DEFAULT_SETTINGS: NotificationSettings = {
   messages: true,
   follows: true,
   matches: true,
+  questions: true,
+  reviews: true,
 };
 
 const NOTIFICATION_OPTIONS = [
@@ -65,6 +69,22 @@ const NOTIFICATION_OPTIONS = [
     icon: Bell,
     color: 'text-orange-500',
     bgColor: 'bg-orange-100',
+  },
+  {
+    key: 'questions' as keyof NotificationSettings,
+    label: '質問',
+    description: '投稿に質問が来たとき・回答があったとき',
+    icon: HelpCircle,
+    color: 'text-cyan-500',
+    bgColor: 'bg-cyan-100',
+  },
+  {
+    key: 'reviews' as keyof NotificationSettings,
+    label: 'レビュー',
+    description: 'レビューが届いたとき',
+    icon: Star,
+    color: 'text-yellow-500',
+    bgColor: 'bg-yellow-100',
   },
 ];
 

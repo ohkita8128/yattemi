@@ -241,7 +241,7 @@ export default function NotificationsPage() {
                 }}
                 className="flex items-start gap-4"
               >
-                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                   {getIcon(notification.type)}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -258,7 +258,7 @@ export default function NotificationsPage() {
               </Link>
 
               {/* アクションボタン */}
-              <div className="absolute top-2 right-2 flex gap-1">
+              <div className="absolute top-2 right-2 flex gap-1 md:opacity-50 md:group-hover:opacity-100 transition-opacity">
                 {!notification.is_read && (
                   <button
                     onClick={(e) => {
