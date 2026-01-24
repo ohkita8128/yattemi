@@ -60,6 +60,7 @@ export function usePosts(options: UsePostsOptions = {}) {
           *,
           profile:profiles(*),
           category:categories(*)
+          post_questions(id)
         `)
         .order('created_at', { ascending: false })
         .range(pageNum * PAGE_SIZE, (pageNum + 1) * PAGE_SIZE - 1);
@@ -152,6 +153,7 @@ export function usePost(postId: string) {
             *,
             profile:profiles(*),
             category:categories(*)
+            post_questions(id)
           `)
           .eq('id', postId)
           .single();

@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import Link from 'next/link';
-import { Heart, MapPin, Monitor, Video } from 'lucide-react';
+import { Heart, MapPin, Monitor, Video, MessageCircle } from 'lucide-react';
 import { useLikes } from '@/hooks/use-likes';
 import { useAuth } from '@/hooks';
 import { getLevelEmoji } from '@/lib/levels';
@@ -37,6 +37,7 @@ interface PostCardProps {
     my_level?: number | null;
     target_level_min?: number | null;
     target_level_max?: number | null;
+    post_questions?: { id: string }[] | null;
     available_days?: string[] | null;
     available_times?: string[] | null;
     tags?: string[] | null;
@@ -333,22 +334,31 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
               {style.text}
             </span>
           </div>
+          {/* 右側: 質問数 + いいね */}
+          <div className="flex items-center gap-3">
+              {/* 質問数 */}
+              <span className="flex items-center gap-1 text-xs text-gray-400">
+                <MessageCircle className="h-4 w-4" />
+                <span>{post.post_questions?.length || 0}</span>
+              </span>
 
-          {/* 右側: いいね */}
-          <button
-            onClick={handleLikeClick}
-            disabled={!user || isLoading}
-            className={cn(
-              'flex items-center gap-1 text-xs transition-colors',
-              isLiked
-                ? 'text-red-500'
-                : 'text-gray-400 hover:text-red-400',
-              !user && 'cursor-not-allowed opacity-50'
-            )}
-          >
-            <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
-            <span>{likesCount}</span>
-          </button>
+
+            {/* 右側: いいね */}
+            <button
+              onClick={handleLikeClick}
+              disabled={!user || isLoading}
+              className={cn(
+                'flex items-center gap-1 text-xs transition-colors',
+                isLiked
+                  ? 'text-red-500'
+                  : 'text-gray-400 hover:text-red-400',
+                !user && 'cursor-not-allowed opacity-50'
+              )}
+            >
+              <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
+              <span>{likesCount}</span>
+            </button>
+          </div>
         </div>
       </div>
     </Link>

@@ -22,12 +22,14 @@ export function PostQuestions({
   currentUserId,
   isClosed,
 }: PostQuestionsProps) {
-  const { questions, isLoading, submitQuestion, submitAnswer, deleteQuestion } =
+  const { questions, isLoading, submitQuestion, submitAnswer, updateAnswer, deleteQuestion } =
     usePostQuestions(postId);
   const [newQuestion, setNewQuestion] = useState('');
   const [answeringId, setAnsweringId] = useState<string | null>(null);
   const [answerText, setAnswerText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingAnswerId, setEditingAnswerId] = useState<string | null>(null); 
+  const [editAnswerText, setEditAnswerText] = useState(''); 
 
   const isPostOwner = currentUserId === postOwnerId;
 
@@ -97,7 +99,7 @@ export function PostQuestions({
     <div className="mt-8">
       <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
         <MessageCircleQuestion className="w-5 h-5" />
-        質問 ({questions.length})
+        投稿者への質問 ({questions.length})
       </h2>
 
       {/* 注意文 */}
@@ -187,8 +189,62 @@ export function PostQuestions({
               {/* 回答 */}
               {q.answer_text ? (
                 <div className="mt-4 ml-11 pl-4 border-l-2 border-primary/30">
-                  <p className="text-sm font-medium text-primary">投稿者の回答</p>
-                  <p className="mt-1 whitespace-pre-wrap">{q.answer_text}</p>
+                    <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-primary">投稿者の回答</p>
+                    {isPostOwner && !isClosed && (
+                        <button
+                        onClick={() => {
+                            setEditingAnswerId(q.id);
+                            setEditAnswerText(q.answer_text || '');
+                        }}
+                        className="text-xs text-gray-400 hover:text-gray-600"
+                        >
+                        編集
+                        </button>
+                    )}
+                    </div>
+                    {editingAnswerId === q.id ? (
+                    <div className="mt-2 space-y-2">
+                        <Textarea
+                        value={editAnswerText}
+                        onChange={(e) => setEditAnswerText(e.target.value)}
+                        rows={2}
+                        />
+                        <div className="flex gap-2">
+                        <Button
+                            size="sm"
+                            onClick={async () => {
+                            if (!editAnswerText.trim()) return;
+                            setIsSubmitting(true);
+                            try {
+                                await updateAnswer(q.id, editAnswerText.trim());
+                                setEditingAnswerId(null);
+                                setEditAnswerText('');
+                            } catch (err) {
+                                console.error('回答の更新に失敗しました', err);
+                            } finally {
+                                setIsSubmitting(false);
+                            }
+                            }}
+                            disabled={!editAnswerText.trim() || isSubmitting}
+                        >
+                            更新
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                            setEditingAnswerId(null);
+                            setEditAnswerText('');
+                            }}
+                        >
+                            キャンセル
+                        </Button>
+                        </div>
+                    </div>
+                    ) : (
+                    <p className="mt-1 whitespace-pre-wrap">{q.answer_text}</p>
+                    )}
                 </div>
               ) : isPostOwner && !isClosed ? (
                 <div className="mt-4 ml-11">

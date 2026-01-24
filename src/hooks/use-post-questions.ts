@@ -90,6 +90,30 @@ export function usePostQuestions(postId: string) {
     return data;
   };
 
+  const updateAnswer = async (questionId: string, answerText: string) => {
+    const { data, error } = await (supabase
+      .from('post_questions') as any)
+      .update({
+        answer_text: answerText,
+      })
+      .eq('id', questionId)
+      .select(`
+        *,
+        profiles:user_id (
+          username,
+          display_name,
+          avatar_url
+        )
+      `)
+      .single();
+
+    if (error) throw error;
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === questionId ? data : q))
+    );
+    return data;
+  };
+
   // 質問削除（論理削除）
   const deleteQuestion = async (questionId: string) => {
     const { error } = await (supabase
@@ -108,6 +132,7 @@ export function usePostQuestions(postId: string) {
     refetch: fetchQuestions,
     submitQuestion,
     submitAnswer,
+    updateAnswer,
     deleteQuestion,
   };
 }
