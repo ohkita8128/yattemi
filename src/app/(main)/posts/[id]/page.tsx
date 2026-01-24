@@ -24,6 +24,7 @@ import { useLikes } from '@/hooks/use-likes';
 import { formatRelativeTime } from '@/lib/utils';
 import { getLevelEmoji } from '@/lib/levels';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
+import { PostQuestions } from '@/components/posts/post-questions';
 
 const DAYS_LABEL: Record<string, string> = {
   mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土', sun: '日',
@@ -394,7 +395,12 @@ export default function PostDetailPage() {
           </div>
         </div>
       </div>
-
+      <PostQuestions
+        postId={post.id}
+        postOwnerId={post.user_id}
+        currentUserId={user?.id || null}
+        isClosed={post.status === 'closed'}
+      />
       {/* Image Modal */}
       {selectedImage && (
         <div 
