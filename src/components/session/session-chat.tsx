@@ -37,6 +37,7 @@ export function SessionChat({ matchId, basePath }: SessionChatProps) {
   const [showPostDetail, setShowPostDetail] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const supabase = getClient();
 
   useEffect(() => {
@@ -85,7 +86,9 @@ export function SessionChat({ matchId, basePath }: SessionChatProps) {
   }, [matchId, supabase]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -369,7 +372,7 @@ export function SessionChat({ matchId, basePath }: SessionChatProps) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 bg-white">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 bg-white">
         <div className="container mx-auto max-w-2xl space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-8">
