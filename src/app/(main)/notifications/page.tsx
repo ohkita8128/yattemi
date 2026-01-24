@@ -24,7 +24,7 @@ interface Notification {
   type: string;
   title: string;
   message: string;
-  link: string | null;
+  data: Record<string, string> | null;
   is_read: boolean;
   created_at: string;
 }
