@@ -59,7 +59,7 @@ export function usePosts(options: UsePostsOptions = {}) {
         .select(`
           *,
           profile:profiles(*),
-          category:categories(*)
+          category:categories(*),
           post_questions(id)
         `)
         .order('created_at', { ascending: false })
@@ -152,7 +152,7 @@ export function usePost(postId: string) {
           .select(`
             *,
             profile:profiles(*),
-            category:categories(*)
+            category:categories(*),
             post_questions(id)
           `)
           .eq('id', postId)

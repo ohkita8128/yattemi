@@ -26,7 +26,7 @@ export function useAuth() {
   // プロフィールを取得
   const fetchProfile = useCallback(
     async (userId: string) => {
-      console.log('Fetching profile for:', userId);
+      // console.log('Fetching profile for:', userId);
       
       try {
         // Supabase クライアントの代わりに直接 fetch を使う
@@ -41,7 +41,7 @@ export function useAuth() {
         );
         
         const data = await response.json();
-        console.log('Profile result:', data);
+        // console.log('Profile result:', data);
         
         if (data && data.length > 0) {
           return data[0] as Profile;
@@ -64,7 +64,7 @@ export function useAuth() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth event:', event, 'Session:', !!session);
+      // console.log('Auth event:', event, 'Session:', !!session);
       
       if (!isMounted) return;
 
