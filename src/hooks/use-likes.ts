@@ -4,8 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { getClient } from '@/lib/supabase/client';
 import { useAuth } from './use-auth';
 
-export function useLikes(postId: string) {
-  const [likesCount, setLikesCount] = useState(0);
+export function useLikes(postId: string, initialCount?: number) {
+  const [likesCount, setLikesCount] = useState(initialCount ?? 0);
   const [isLiked, setIsLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
@@ -24,7 +24,8 @@ export function useLikes(postId: string) {
       const supabase = supabaseRef.current;
       
       try {
-        // いいね数を取得
+        // いいね数を取得（initialCountがなければ）
+        if (initialCount === undefined) {
         const { count, error: countError } = await (supabase as any)
           .from('likes')
           .select('*', { count: 'exact', head: true })
@@ -32,6 +33,7 @@ export function useLikes(postId: string) {
 
         if (!countError) {
           setLikesCount(count || 0);
+        }
         }
 
         // 自分がいいねしてるか確認

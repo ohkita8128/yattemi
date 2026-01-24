@@ -75,7 +75,7 @@ interface PostCardProps {
 
 export function PostCard({ post, showAuthor = true, isApplied = false }: PostCardProps) {
   const { user } = useAuth();
-  const { likesCount, isLiked, toggleLike, isLoading } = useLikes(post.id);
+  const { likesCount, isLiked, toggleLike, isLoading } = useLikes(post.id, post.likes_count ?? undefined);
 
   // profile または user から投稿者情報を取得
   const author = post.profile || post.user || post.profiles;
