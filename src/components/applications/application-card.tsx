@@ -97,7 +97,7 @@ export function ApplicationCard({
       {/* Applicant (if showing) */}
       {showApplicant && (
         <div className="flex items-center gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
-          <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+          <Link href={`/users/${application.applicant.username}`} className="flex items-center gap-3 mb-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
             {application.applicant.avatar_url ? (
               <img
                 src={application.applicant.avatar_url}
@@ -109,7 +109,7 @@ export function ApplicationCard({
                 {application.applicant.display_name[0]}
               </span>
             )}
-          </div>
+          </Link>
           <div>
             <p className="font-medium">{application.applicant.display_name}</p>
             <p className="text-sm text-gray-500">@{application.applicant.username}</p>

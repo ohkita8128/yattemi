@@ -312,7 +312,7 @@ export default function ChatPage() {
       <div className="border-t bg-white px-4 py-3">
         <form
           onSubmit={handleSend}
-          className="container mx-auto max-w-2xl flex gap-2"
+          className="flex gap-2 w-full"
         >
           <input
             type="text"
