@@ -1,9 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { Clock, CheckCircle, XCircle, AlertCircle, Ban } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, AlertCircle, Ban, MessageSquare } from 'lucide-react';
 import { formatRelativeTime } from '@/lib/utils';
 import type { ApplicationStatus } from '@/types';
+
+interface PostOwner {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
+interface MatchInfo {
+  id: string;
+  status: 'active' | 'completed' | 'cancelled';
+}
 
 interface ApplicationCardProps {
   application: {
@@ -22,6 +34,8 @@ interface ApplicationCardProps {
       display_name: string;
       avatar_url: string | null;
     };
+    post_owner?: PostOwner;
+    match?: MatchInfo | null;
   };
   showApplicant?: boolean;
   onApprove?: (id: string) => void;
@@ -29,30 +43,34 @@ interface ApplicationCardProps {
   isUpdating?: boolean;
 }
 
-// ApplicationStatus型に合わせたキー定義
 const statusConfig: Record<ApplicationStatus, {
   label: string;
   color: string;
+  bgColor: string;
   icon: typeof AlertCircle;
 }> = {
   pending: {
     label: '審査中',
-    color: 'bg-yellow-100 text-yellow-700',
+    color: 'text-yellow-700',
+    bgColor: 'bg-yellow-100',
     icon: AlertCircle,
   },
   accepted: {
     label: '承認済み',
-    color: 'bg-green-100 text-green-700',
+    color: 'text-green-700',
+    bgColor: 'bg-green-100',
     icon: CheckCircle,
   },
   rejected: {
     label: '却下',
-    color: 'bg-red-100 text-red-700',
+    color: 'text-red-700',
+    bgColor: 'bg-red-100',
     icon: XCircle,
   },
   cancelled: {
     label: 'キャンセル',
-    color: 'bg-gray-100 text-gray-500',
+    color: 'text-gray-500',
+    bgColor: 'bg-gray-100',
     icon: Ban,
   },
 };
@@ -66,9 +84,17 @@ export function ApplicationCard({
 }: ApplicationCardProps) {
   const status = statusConfig[application.status];
   const StatusIcon = status.icon;
+  
+  // 送った応募の場合は投稿者を表示
+  const showPostOwner = !showApplicant && application.post_owner;
+  
+  // チャットボタンを表示するか（承認済み & マッチあり）
+  const showChatButton = application.status === 'accepted' && application.match;
 
   return (
-    <div className="bg-white rounded-xl border shadow-sm p-5">
+    <div className={`bg-white rounded-xl border shadow-sm p-5 ${
+      application.status === 'accepted' ? 'border-green-200' : ''
+    }`}>
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1">
@@ -85,41 +111,70 @@ export function ApplicationCard({
                 : 'bg-cyan-100 text-cyan-700'
             }`}
           >
-            {application.post.type === 'support' ? '🎓 サポートしたい' : '📘 教えてほしい'}
+            {application.post.type === 'support' ? '🎓 サポート' : '📘 チャレンジ'}
           </span>
         </div>
-        <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${status.color}`}>
+        <span className={`flex items-center gap-1 text-xs px-2 py-1 rounded-full ${status.bgColor} ${status.color}`}>
           <StatusIcon className="h-3 w-3" />
           {status.label}
         </span>
       </div>
 
-      {/* Applicant (if showing) */}
+      {/* 受け取った応募: 応募者を表示 */}
       {showApplicant && (
-        <div className="flex items-center gap-3 mb-3 p-3 bg-gray-50 rounded-lg">
-          <Link href={`/users/${application.applicant.username}`} className="flex items-center gap-3 mb-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-            {application.applicant.avatar_url ? (
-              <img
-                src={application.applicant.avatar_url}
-                alt={application.applicant.display_name}
-                className="h-10 w-10 rounded-full object-cover"
-              />
-            ) : (
-              <span className="font-medium text-gray-600">
+        <Link 
+          href={`/users/${application.applicant.username}`}
+          className="flex items-center gap-3 mb-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          {application.applicant.avatar_url ? (
+            <img
+              src={application.applicant.avatar_url}
+              alt={application.applicant.display_name}
+              className="h-10 w-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
+              <span className="font-medium text-orange-600">
                 {application.applicant.display_name[0]}
               </span>
-            )}
-          </Link>
+            </div>
+          )}
           <div>
             <p className="font-medium">{application.applicant.display_name}</p>
             <p className="text-sm text-gray-500">@{application.applicant.username}</p>
           </div>
-        </div>
+        </Link>
+      )}
+
+      {/* 送った応募: 投稿者を表示 */}
+      {showPostOwner && application.post_owner && (
+        <Link 
+          href={`/users/${application.post_owner.username}`}
+          className="flex items-center gap-3 mb-3 p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+        >
+          {application.post_owner.avatar_url ? (
+            <img
+              src={application.post_owner.avatar_url}
+              alt={application.post_owner.display_name}
+              className="h-10 w-10 rounded-full object-cover"
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+              <span className="font-medium text-blue-600">
+                {application.post_owner.display_name[0]}
+              </span>
+            </div>
+          )}
+          <div>
+            <p className="font-medium">{application.post_owner.display_name}</p>
+            <p className="text-sm text-gray-500">@{application.post_owner.username} の投稿</p>
+          </div>
+        </Link>
       )}
 
       {/* Message */}
       {application.message && (
-        <p className="text-sm text-gray-600 mb-3 line-clamp-3">
+        <p className="text-sm text-gray-600 mb-3 line-clamp-3 bg-gray-50 p-3 rounded-lg">
           {application.message}
         </p>
       )}
@@ -131,25 +186,38 @@ export function ApplicationCard({
           {formatRelativeTime(application.created_at)}
         </span>
 
-        {/* Actions (for received applications) */}
-        {application.status === 'pending' && onApprove && onReject && (
-          <div className="flex gap-2">
-            <button
-              onClick={() => onReject(application.id)}
-              disabled={isUpdating}
-              className="px-3 py-1.5 text-sm rounded-lg border hover:bg-gray-50 disabled:opacity-50"
+        <div className="flex gap-2">
+          {/* 承認済み: チャットボタン */}
+          {showChatButton && application.match && (
+            <Link
+              href={`/matches/${application.match.id}`}
+              className="flex items-center gap-1.5 px-4 py-1.5 text-sm rounded-lg bg-orange-500 text-white hover:bg-orange-600 transition-colors"
             >
-              却下
-            </button>
-            <button
-              onClick={() => onApprove(application.id)}
-              disabled={isUpdating}
-              className="px-3 py-1.5 text-sm rounded-lg bg-green-500 text-white hover:bg-green-600 disabled:opacity-50"
-            >
-              承認
-            </button>
-          </div>
-        )}
+              <MessageSquare className="h-4 w-4" />
+              チャットを開く
+            </Link>
+          )}
+
+          {/* 審査中: 承認/却下ボタン */}
+          {application.status === 'pending' && onApprove && onReject && (
+            <>
+              <button
+                onClick={() => onReject(application.id)}
+                disabled={isUpdating}
+                className="px-3 py-1.5 text-sm rounded-lg border hover:bg-gray-50 disabled:opacity-50"
+              >
+                却下
+              </button>
+              <button
+                onClick={() => onApprove(application.id)}
+                disabled={isUpdating}
+                className="px-3 py-1.5 text-sm rounded-lg bg-green-500 text-white hover:bg-green-600 disabled:opacity-50"
+              >
+                承認
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

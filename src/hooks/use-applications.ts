@@ -3,6 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getClient } from '@/lib/supabase/client';
 
+interface PostOwner {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+}
+
+interface MatchInfo {
+  id: string;
+  status: 'active' | 'completed' | 'cancelled';
+}
+
 interface ApplicationWithRelations {
   id: string;
   message: string | null;
@@ -12,6 +24,7 @@ interface ApplicationWithRelations {
     id: string;
     title: string;
     type: 'support' | 'challenge';
+    user_id: string;
   };
   applicant: {
     id: string;
@@ -19,9 +32,11 @@ interface ApplicationWithRelations {
     display_name: string;
     avatar_url: string | null;
   };
+  post_owner?: PostOwner;
+  match?: MatchInfo;
 }
 
-// 自分が応募したもの一覧
+// 自分が応募したもの一覧（投稿者情報 + マッチ情報付き）
 export function useMyApplications() {
   const [applications, setApplications] = useState<ApplicationWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,18 +48,40 @@ export function useMyApplications() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data, error } = await supabase
+      // 応募 + 投稿 + 自分のプロフィール + マッチ情報を取得
+      const { data, error } = await (supabase as any)
         .from('applications')
         .select(`
           *,
-          post:posts(id, title, type),
-          applicant:profiles!applicant_id(id, username, display_name, avatar_url)
+          post:posts(id, title, type, user_id),
+          applicant:profiles!applicant_id(id, username, display_name, avatar_url),
+          match:matches(id, status)
         `)
         .eq('applicant_id', session.user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setApplications((data as any) || []);
+
+      // 投稿者情報を別途取得
+      const applicationsWithOwners = await Promise.all(
+        (data || []).map(async (app: any) => {
+          if (app.post?.user_id) {
+            const { data: owner } = await (supabase as any)
+              .from('profiles')
+              .select('id, username, display_name, avatar_url')
+              .eq('id', app.post.user_id)
+              .single();
+            return { 
+              ...app, 
+              post_owner: owner,
+              match: app.match?.[0] || null  // 配列から単一オブジェクトに
+            };
+          }
+          return { ...app, match: app.match?.[0] || null };
+        })
+      );
+
+      setApplications(applicationsWithOwners);
     } catch (error) {
       console.error('Error fetching applications:', error);
     } finally {
@@ -59,7 +96,7 @@ export function useMyApplications() {
   return { applications, isLoading, refetch: fetchApplications };
 }
 
-// 自分の投稿への応募一覧
+// 自分の投稿への応募一覧（マッチ情報付き）
 export function useReceivedApplications() {
   const [applications, setApplications] = useState<ApplicationWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -71,18 +108,26 @@ export function useReceivedApplications() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('applications')
         .select(`
           *,
           post:posts!inner(id, title, type, user_id),
-          applicant:profiles!applicant_id(id, username, display_name, avatar_url)
+          applicant:profiles!applicant_id(id, username, display_name, avatar_url),
+          match:matches(id, status)
         `)
         .eq('post.user_id', session.user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setApplications((data as any) || []);
+      
+      // matchを配列から単一オブジェクトに変換
+      const formatted = (data || []).map((app: any) => ({
+        ...app,
+        match: app.match?.[0] || null
+      }));
+      
+      setApplications(formatted);
     } catch (error) {
       console.error('Error fetching received applications:', error);
     } finally {

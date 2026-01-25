@@ -13,8 +13,7 @@ import {
   User,
   Settings,
   FileText,
-  GraduationCap,
-  Rocket,
+  MessageSquare,
   ChevronDown,
 } from 'lucide-react';
 import { useAuth } from '@/hooks';
@@ -167,20 +166,12 @@ export function Header() {
                       応募管理
                     </Link>
                     <Link
-                      href="/support"
+                      href="/matches"
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
                     >
-                      <GraduationCap className="h-4 w-4 text-purple-500" />
-                      サポート
-                    </Link>
-                    <Link
-                      href="/challenges"
-                      onClick={() => setIsDropdownOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
-                    >
-                      <Rocket className="h-4 w-4 text-cyan-500" />
-                      チャレンジ
+                      <MessageSquare className="h-4 w-4 text-orange-500" />
+                      メッセージ
                     </Link>
                     <div className="border-t my-1" />
                     <Link
@@ -295,20 +286,12 @@ export function Header() {
                     応募管理
                   </Link>
                   <Link
-                    href="/support"
+                    href="/matches"
                     onClick={closeMobileNav}
                     className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
                   >
-                    <GraduationCap className="h-5 w-5 text-purple-500" />
-                    サポート
-                  </Link>
-                  <Link
-                    href="/challenges"
-                    onClick={closeMobileNav}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
-                  >
-                    <Rocket className="h-5 w-5 text-cyan-500" />
-                    チャレンジ
+                    <MessageSquare className="h-5 w-5 text-orange-500" />
+                    メッセージ
                   </Link>
                   <Link
                     href="/settings"
