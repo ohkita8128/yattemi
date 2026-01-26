@@ -465,8 +465,8 @@ function ExploreContent() {
         </div>
       )}
 
-      <div className="flex gap-3 mb-6">
-        <div className="flex-1 relative">
+      <div className="mb-6">
+        <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
           <input
             type="text"
@@ -476,20 +476,39 @@ function ExploreContent() {
             className="w-full h-12 pl-12 pr-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
           />
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`h-12 px-4 rounded-xl border flex items-center gap-2 transition-colors ${showFilters || hasActiveFilters ? 'bg-orange-500 text-white border-orange-500' : 'hover:bg-gray-50'}`}
-        >
-          <SlidersHorizontal className="h-5 w-5" />
-          <span className="hidden sm:inline">フィルター</span>
-          {hasActiveFilters && (
-            <span className="h-5 w-5 rounded-full bg-white text-orange-500 text-xs font-bold flex items-center justify-center">!</span>
-          )}
-        </button>
       </div>
-
+      {/* ボトムシート オーバーレイ */}
       {showFilters && (
-        <div className="bg-white rounded-xl border p-6 mb-6 space-y-6">
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowFilters(false)} />
+      )}
+
+      {/* ボトムシート */}
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl transform transition-transform duration-300 ease-out ${showFilters ? "translate-y-0" : "translate-y-full pointer-events-none"}`}
+        style={{ maxHeight: '85vh' }}
+      >
+        {/* ハンドル */}
+        <div className="flex justify-center py-3">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
+
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between px-4 pb-3 border-b">
+          <h3 className="text-lg font-bold">フィルター</h3>
+          <div className="flex items-center gap-3">
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="text-sm text-orange-500 hover:text-orange-600">
+                クリア
+              </button>
+            )}
+            <button onClick={() => setShowFilters(false)} className="p-2 hover:bg-gray-100 rounded-full">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* フィルター内容 */}
+        <div className="overflow-y-auto p-4 space-y-6" style={{ maxHeight: 'calc(85vh - 140px)' }}>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">タイプ</label>
             <div className="flex gap-2">
@@ -764,7 +783,17 @@ function ExploreContent() {
             </button>
           )}
         </div>
-      )}
+
+        {/* 適用ボタン */}
+        <div className="p-4 border-t bg-white">
+          <button
+            onClick={() => setShowFilters(false)}
+            className="w-full py-3 bg-orange-500 text-white font-medium rounded-xl hover:bg-orange-600 transition-colors"
+          >
+            {filteredPosts.length}件の投稿を見る
+          </button>
+        </div>
+      </div>
 
       {hasActiveFilters && !showFilters && (
         <div className="flex flex-wrap gap-2 mb-6">
@@ -821,6 +850,19 @@ function ExploreContent() {
           </div>
         </>
       )}
+
+      {/* FAB フィルターボタン */}
+      <button
+        onClick={() => setShowFilters(true)}
+        className="fixed bottom-6 right-6 z-30 h-14 px-5 rounded-full shadow-lg flex items-center gap-2 transition-all bg-white text-gray-700 border hover:shadow-xl"
+        style={{ display: showFilters ? 'none' : 'flex' }}
+      >
+        <SlidersHorizontal className="h-5 w-5" />
+        <span className="font-medium">絞り込み</span>
+        {hasActiveFilters && (
+          <span className="ml-1 h-5 w-5 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">!</span>
+        )}
+      </button>
     </div>
   );
 }
