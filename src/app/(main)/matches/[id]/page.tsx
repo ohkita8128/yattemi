@@ -473,7 +473,7 @@ export default function ChatPage() {
           <button
             type="submit"
             disabled={!newMessage.trim() || isSending}
-            className="h-12 w-12 rounded-xl bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 disabled:bg-orange-300 disabled:cursor-not-allowed"
+            className="h-12 w-12 rounded-xl bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 disabled:bg-orange-500 disabled:cursor-not-allowed"
           >
             <Send className="h-5 w-5" />
           </button>
