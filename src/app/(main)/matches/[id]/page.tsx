@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Send, User, MapPin, Monitor, Calendar, ChevronDown, ChevronUp, CheckCircle, Clock, Star } from 'lucide-react';
+import { ArrowLeft, Send, User, MapPin, Monitor, Calendar, ChevronDown, ChevronUp, CheckCircle, Clock, Star, MoreHorizontal, Flag } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks';
 import { useMessages } from '@/hooks/use-messages';
@@ -11,6 +11,7 @@ import { getClient } from '@/lib/supabase/client';
 import { formatRelativeTime } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ReportDialog } from '@/components/common/report-dialog';
 
 export default function ChatPage() {
   const params = useParams();
@@ -26,6 +27,8 @@ export default function ChatPage() {
   const [category, setCategory] = useState<any>(null);
   const [showPostDetail, setShowPostDetail] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const supabase = getClient();
@@ -111,12 +114,12 @@ export default function ChatPage() {
   // 完了報告
   const handleComplete = async () => {
     if (!user || isUpdating) return;
-    
+
     setIsUpdating(true);
     try {
       const { error } = await (supabase as any)
         .from('matches')
-        .update({ 
+        .update({
           completed_by: user.id,
           completed_at: new Date().toISOString()
         })
@@ -136,12 +139,12 @@ export default function ChatPage() {
   // 完了承認
   const handleConfirm = async () => {
     if (!user || isUpdating) return;
-    
+
     setIsUpdating(true);
     try {
       const { error } = await (supabase as any)
         .from('matches')
-        .update({ 
+        .update({
           confirmed_by: user.id,
           confirmed_at: new Date().toISOString(),
           status: 'completed'
@@ -237,6 +240,36 @@ export default function ChatPage() {
                   あなたは{myRole}
                 </p>
               </div>
+
+              {/* メニューボタン */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <MoreHorizontal className="h-5 w-5 text-gray-500" />
+                </button>
+                {isMenuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-10"
+                      onClick={() => setIsMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg border py-1 z-20">
+                      <button
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          setIsReportOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                      >
+                        <Flag className="h-4 w-4" />
+                        相手を通報
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -250,11 +283,10 @@ export default function ChatPage() {
             className="w-full py-3 flex items-center justify-between text-left"
           >
             <div className="flex items-center gap-3 min-w-0 flex-1">
-              <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${
-                post?.type === 'support'
-                  ? 'bg-purple-100 text-purple-700'
-                  : 'bg-cyan-100 text-cyan-700'
-              }`}>
+              <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${post?.type === 'support'
+                ? 'bg-purple-100 text-purple-700'
+                : 'bg-cyan-100 text-cyan-700'
+                }`}>
                 {post?.type === 'support' ? 'サポート' : 'チャレンジ'}
               </span>
               <span className="font-medium text-sm truncate">
@@ -404,17 +436,15 @@ export default function ChatPage() {
                   className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                      isMe
-                        ? 'bg-orange-500 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}
+                    className={`max-w-[70%] rounded-2xl px-4 py-2 ${isMe
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                      }`}
                   >
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     <p
-                      className={`text-xs mt-1 ${
-                        isMe ? 'text-orange-100' : 'text-gray-400'
-                      }`}
+                      className={`text-xs mt-1 ${isMe ? 'text-orange-100' : 'text-gray-400'
+                        }`}
                     >
                       {formatRelativeTime(message.created_at)}
                     </p>
@@ -449,6 +479,15 @@ export default function ChatPage() {
           </button>
         </form>
       </div>
+
+      {partner && (
+        <ReportDialog
+          isOpen={isReportOpen}
+          onClose={() => setIsReportOpen(false)}
+          type="user"
+          targetId={partner.id}
+        />
+      )}
     </div>
   );
 }

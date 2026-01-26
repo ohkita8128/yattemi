@@ -15,7 +15,10 @@ import {
   ImageIcon,
   FileText,
   User,
+  MoreHorizontal,
+  Flag,
 } from 'lucide-react';
+import { ReportDialog } from '@/components/common/report-dialog';
 
 type Profile = {
   id: string;
@@ -110,6 +113,8 @@ export default function UserProfilePage() {
   const [followLoading, setFollowLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('posts');
   const [showAllBadges, setShowAllBadges] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -313,7 +318,7 @@ export default function UserProfilePage() {
                   </h1>
                   <p className="text-gray-500 text-sm">@{profile.username}</p>
                 </div>
-                
+
                 {/* アクションボタン */}
                 {isOwnProfile ? (
                   <Link href="/profile/edit">
@@ -335,6 +340,37 @@ export default function UserProfilePage() {
                     <Button variant="outline" size="icon" className="h-9 w-9">
                       <MessageCircle className="h-4 w-4" />
                     </Button>
+                    {/* メニューボタン */}
+                    <div className="relative">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                      {isMenuOpen && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setIsMenuOpen(false)}
+                          />
+                          <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border py-1 z-20">
+                            <button
+                              onClick={() => {
+                                setIsMenuOpen(false);
+                                setIsReportOpen(true);
+                              }}
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                            >
+                              <Flag className="h-4 w-4" />
+                              通報
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -397,15 +433,15 @@ export default function UserProfilePage() {
 
           {/* 統計 */}
           <div className="flex items-center gap-4 py-3 border-t border-b text-sm">
-            <Link 
-              href={`/users/${username}/follows?tab=followers`} 
+            <Link
+              href={`/users/${username}/follows?tab=followers`}
               className="hover:opacity-70"
             >
               <span className="font-bold">{followersCount}</span>
               <span className="text-gray-500 ml-1">フォロワー</span>
             </Link>
-            <Link 
-              href={`/users/${username}/follows?tab=following`} 
+            <Link
+              href={`/users/${username}/follows?tab=following`}
               className="hover:opacity-70"
             >
               <span className="font-bold">{followingCount}</span>
@@ -425,22 +461,20 @@ export default function UserProfilePage() {
           <div className="flex">
             <button
               onClick={() => setActiveTab('posts')}
-              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition ${
-                activeTab === 'posts'
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition ${activeTab === 'posts'
+                ? 'border-orange-500 text-orange-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               <ImageIcon className="h-4 w-4" />
               ギャラリー
             </button>
             <button
               onClick={() => setActiveTab('gallery')}
-              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition ${
-                activeTab === 'gallery'
-                  ? 'border-orange-500 text-orange-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
+              className={`flex-1 py-3 text-sm font-medium flex items-center justify-center gap-2 border-b-2 transition ${activeTab === 'gallery'
+                ? 'border-orange-500 text-orange-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
             >
               <FileText className="h-4 w-4" />
               募集
@@ -495,14 +529,14 @@ export default function UserProfilePage() {
               {posts.length > 0 ? (
                 <div className="space-y-3">
                   {posts.map((post) => (
-                    <PostCard 
-                      key={post.id} 
+                    <PostCard
+                      key={post.id}
                       post={{
-                        ...post, 
-                        description: post.description ?? undefined, 
-                        profile: post.profiles ?? undefined, 
+                        ...post,
+                        description: post.description ?? undefined,
+                        profile: post.profiles ?? undefined,
                         profiles: undefined
-                      }} 
+                      }}
                     />
                   ))}
                 </div>
@@ -523,6 +557,13 @@ export default function UserProfilePage() {
           )}
         </div>
       </div>
+      {/* Report Dialog */}
+      <ReportDialog
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        type="user"
+        targetId={profile.id}
+      />
     </div>
   );
 }

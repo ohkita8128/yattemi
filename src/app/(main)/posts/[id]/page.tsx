@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -16,6 +16,8 @@ import {
   MessageCircle,
   Clock,
   Edit,
+  MoreHorizontal,
+  Flag,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ApplicationDialog } from '@/components/applications';
@@ -25,6 +27,7 @@ import { formatRelativeTime } from '@/lib/utils';
 import { getLevelEmoji } from '@/lib/levels';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
 import { PostQuestions } from '@/components/posts/post-questions';
+import { ReportDialog } from '@/components/common/report-dialog';
 
 const DAYS_LABEL: Record<string, string> = {
   mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土', sun: '日',
@@ -44,6 +47,8 @@ export default function PostDetailPage() {
   const { likesCount, isLiked, toggleLike } = useLikes(postId);
   const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isReportOpen, setIsReportOpen] = useState(false);
 
   const isOwner = user?.id === post?.user_id;
 
@@ -122,7 +127,7 @@ export default function PostDetailPage() {
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return `${date.getMonth() + 1}/${date.getDate()}(${['日','月','火','水','木','金','土'][date.getDay()]})`;
+    return `${date.getMonth() + 1}/${date.getDate()}(${['日', '月', '火', '水', '木', '金', '土'][date.getDay()]})`;
   };
 
   const formatSchedule = () => {
@@ -187,32 +192,65 @@ export default function PostDetailPage() {
                 </span>
               </div>
             </div>
-            {isOwner && (
-              <Link
-                href={`/posts/${post.id}/edit`}
+            {/* メニューボタン */}
+            <div className="relative">
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <Edit className="h-5 w-5 text-gray-500" />
-              </Link>
-            )}
+                <MoreHorizontal className="h-5 w-5 text-gray-500" />
+              </button>
+
+              {isMenuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-10"
+                    onClick={() => setIsMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-1 w-40 bg-white rounded-xl shadow-lg border py-1 z-20">
+                    {isOwner && (
+                      <Link
+                        href={`/posts/${post.id}/edit`}
+                        className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Edit className="h-4 w-4 text-gray-500" />
+                        編集
+                      </Link>
+                    )}
+                    {!isOwner && (
+                      <button
+                        onClick={() => {
+                          setIsMenuOpen(false);
+                          setIsReportOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                      >
+                        <Flag className="h-4 w-4" />
+                        通報
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Content */}
           <div className="px-4 pb-3">
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                post.type === 'support' 
-                  ? 'bg-purple-100 text-purple-700' 
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${post.type === 'support'
+                  ? 'bg-purple-100 text-purple-700'
                   : 'bg-cyan-100 text-cyan-700'
-              }`}>
+                }`}>
                 {POST_TYPES[post.type].emoji} {POST_TYPES[post.type].label}
               </span>
-              <span 
+              <span
                 className="px-3 py-1 rounded-full text-sm"
-                style={{ 
+                style={{
                   backgroundColor: post.category.color + '20',
-                  color: post.category.color 
+                  color: post.category.color
                 }}
               >
                 {post.category.name}
@@ -250,30 +288,27 @@ export default function PostDetailPage() {
           {/* Images */}
           {images.length > 0 && (
             <div className="px-4 pb-4">
-              <div className={`rounded-xl overflow-hidden border ${
-                images.length === 1 ? '' : 'grid gap-0.5 ' + (images.length === 2 ? 'grid-cols-2' : 'grid-cols-2')
-              }`}>
+              <div className={`rounded-xl overflow-hidden border ${images.length === 1 ? '' : 'grid gap-0.5 ' + (images.length === 2 ? 'grid-cols-2' : 'grid-cols-2')
+                }`}>
                 {images.length === 1 ? (
-                  <img 
-                    src={images[0]} 
-                    alt="" 
+                  <img
+                    src={images[0]}
+                    alt=""
                     className="w-full max-h-[350px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
                     onClick={() => setSelectedImage(images[0] || null)}
                   />
                 ) : (
                   images.slice(0, 4).map((url, index) => (
-                    <div 
+                    <div
                       key={index}
-                      className={`relative overflow-hidden ${
-                        images.length === 3 && index === 0 ? 'row-span-2' : ''
-                      }`}
-                    >
-                      <img 
-                        src={url} 
-                        alt="" 
-                        className={`w-full object-cover cursor-pointer hover:opacity-95 transition-opacity ${
-                          images.length === 3 && index === 0 ? 'h-full' : 'h-[150px]'
+                      className={`relative overflow-hidden ${images.length === 3 && index === 0 ? 'row-span-2' : ''
                         }`}
+                    >
+                      <img
+                        src={url}
+                        alt=""
+                        className={`w-full object-cover cursor-pointer hover:opacity-95 transition-opacity ${images.length === 3 && index === 0 ? 'h-full' : 'h-[150px]'
+                          }`}
                         onClick={() => setSelectedImage(url || null)}
                       />
                     </div>
@@ -358,11 +393,10 @@ export default function PostDetailPage() {
             <div className="flex items-center gap-1">
               <button
                 onClick={handleLike}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full transition-colors ${
-                  isLiked 
-                    ? 'text-red-500 hover:bg-red-50' 
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full transition-colors ${isLiked
+                    ? 'text-red-500 hover:bg-red-50'
                     : 'text-gray-500 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
                 <span className="text-sm">{likesCount}</span>
@@ -403,13 +437,13 @@ export default function PostDetailPage() {
       />
       {/* Image Modal */}
       {selectedImage && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
         >
-          <img 
-            src={selectedImage} 
-            alt="" 
+          <img
+            src={selectedImage}
+            alt=""
             className="max-w-full max-h-full object-contain"
           />
         </div>
@@ -421,8 +455,17 @@ export default function PostDetailPage() {
         postTitle={post.title}
         isOpen={isApplyDialogOpen}
         onClose={() => setIsApplyDialogOpen(false)}
-        onSuccess={() => {}}
+        onSuccess={() => { }}
       />
+      
+      {/* Report Dialog */}
+      <ReportDialog
+        isOpen={isReportOpen}
+        onClose={() => setIsReportOpen(false)}
+        type="post"
+        targetId={post.id}
+      />
+      
     </div>
   );
 }

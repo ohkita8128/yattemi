@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { usePostQuestions } from '@/hooks/use-post-questions';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
-import { MessageCircleQuestion, Send, Trash2 } from 'lucide-react';
+import { MessageCircleQuestion, Send, Trash2, Flag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ReportDialog } from '@/components/common/report-dialog';
 
 interface PostQuestionsProps {
   postId: string;
@@ -28,14 +29,15 @@ export function PostQuestions({
   const [answeringId, setAnsweringId] = useState<string | null>(null);
   const [answerText, setAnswerText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingAnswerId, setEditingAnswerId] = useState<string | null>(null); 
-  const [editAnswerText, setEditAnswerText] = useState(''); 
+  const [editingAnswerId, setEditingAnswerId] = useState<string | null>(null);
+  const [editAnswerText, setEditAnswerText] = useState('');
+  const [reportTargetId, setReportTargetId] = useState<string | null>(null);
 
   const isPostOwner = currentUserId === postOwnerId;
 
   const handleSubmitQuestion = async () => {
     if (!currentUserId || !newQuestion.trim() || newQuestion.length > 400) return;
-    
+
     setIsSubmitting(true);
     try {
       await submitQuestion(newQuestion.trim(), currentUserId);
@@ -49,7 +51,7 @@ export function PostQuestions({
 
   const handleSubmitAnswer = async (questionId: string) => {
     if (!answerText.trim()) return;
-    
+
     setIsSubmitting(true);
     try {
       await submitAnswer(questionId, answerText.trim());
@@ -73,9 +75,9 @@ export function PostQuestions({
         return;
       }
     }
-    
+
     if (!confirm('この質問を削除しますか？')) return;
-    
+
     try {
       await deleteQuestion(questionId);
     } catch (err) {
@@ -173,14 +175,27 @@ export function PostQuestions({
                         locale: ja,
                       })}
                     </span>
-                    {canDelete(q.user_id, q.created_at) && (
-                      <button
-                        onClick={() => handleDelete(q.id, q.user_id, q.created_at)}
-                        className="text-muted-foreground hover:text-destructive ml-auto"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2 ml-auto">
+                      {/* 通報ボタン（自分の質問以外） */}
+                      {currentUserId && q.user_id !== currentUserId && (
+                        <button
+                          onClick={() => setReportTargetId(q.id)}
+                          className="text-muted-foreground hover:text-red-500"
+                          title="通報"
+                        >
+                          <Flag className="w-4 h-4" />
+                        </button>
+                      )}
+                      {/* 削除ボタン */}
+                      {canDelete(q.user_id, q.created_at) && (
+                        <button
+                          onClick={() => handleDelete(q.id, q.user_id, q.created_at)}
+                          className="text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <p className="mt-1 whitespace-pre-wrap">{q.question_text}</p>
                 </div>
@@ -189,62 +204,62 @@ export function PostQuestions({
               {/* 回答 */}
               {q.answer_text ? (
                 <div className="mt-4 ml-11 pl-4 border-l-2 border-primary/30">
-                    <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-primary">投稿者の回答</p>
                     {isPostOwner && !isClosed && (
-                        <button
+                      <button
                         onClick={() => {
-                            setEditingAnswerId(q.id);
-                            setEditAnswerText(q.answer_text || '');
+                          setEditingAnswerId(q.id);
+                          setEditAnswerText(q.answer_text || '');
                         }}
                         className="text-xs text-gray-400 hover:text-gray-600"
-                        >
+                      >
                         編集
-                        </button>
+                      </button>
                     )}
-                    </div>
-                    {editingAnswerId === q.id ? (
+                  </div>
+                  {editingAnswerId === q.id ? (
                     <div className="mt-2 space-y-2">
-                        <Textarea
+                      <Textarea
                         value={editAnswerText}
                         onChange={(e) => setEditAnswerText(e.target.value)}
                         rows={2}
-                        />
-                        <div className="flex gap-2">
+                      />
+                      <div className="flex gap-2">
                         <Button
-                            size="sm"
-                            onClick={async () => {
+                          size="sm"
+                          onClick={async () => {
                             if (!editAnswerText.trim()) return;
                             setIsSubmitting(true);
                             try {
-                                await updateAnswer(q.id, editAnswerText.trim());
-                                setEditingAnswerId(null);
-                                setEditAnswerText('');
+                              await updateAnswer(q.id, editAnswerText.trim());
+                              setEditingAnswerId(null);
+                              setEditAnswerText('');
                             } catch (err) {
-                                console.error('回答の更新に失敗しました', err);
+                              console.error('回答の更新に失敗しました', err);
                             } finally {
-                                setIsSubmitting(false);
+                              setIsSubmitting(false);
                             }
-                            }}
-                            disabled={!editAnswerText.trim() || isSubmitting}
+                          }}
+                          disabled={!editAnswerText.trim() || isSubmitting}
                         >
-                            更新
+                          更新
                         </Button>
                         <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
                             setEditingAnswerId(null);
                             setEditAnswerText('');
-                            }}
+                          }}
                         >
-                            キャンセル
+                          キャンセル
                         </Button>
-                        </div>
+                      </div>
                     </div>
-                    ) : (
+                  ) : (
                     <p className="mt-1 whitespace-pre-wrap">{q.answer_text}</p>
-                    )}
+                  )}
                 </div>
               ) : isPostOwner && !isClosed ? (
                 <div className="mt-4 ml-11">
@@ -291,6 +306,13 @@ export function PostQuestions({
           ))}
         </div>
       )}
+      {/* Report Dialog */}
+      <ReportDialog
+        isOpen={!!reportTargetId}
+        onClose={() => setReportTargetId(null)}
+        type="question"
+        targetId={reportTargetId || ''}
+      />
     </div>
   );
 }
