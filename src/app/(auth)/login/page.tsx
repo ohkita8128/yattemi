@@ -19,7 +19,10 @@ import { ROUTES } from '@/lib/constants';
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get('redirect') || ROUTES.DASHBOARD;
+  const rawRedirect = searchParams.get('redirect');
+  const redirect = (rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')) 
+    ? rawRedirect 
+    : ROUTES.DASHBOARD;
   const { signIn, signInWithOAuth, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 

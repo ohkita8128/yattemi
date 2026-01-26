@@ -15,7 +15,7 @@ export default function AuthLayout({
             href={ROUTES.HOME}
             className="flex items-center gap-2 font-display text-xl font-bold"
           >
-            <span className="text-2xl">🎯</span>
+            <img src="/logo.png" alt="YatteMi!" className="h-8 w-8" />
             <span className="text-gradient">YatteMi!</span>
           </Link>
         </div>

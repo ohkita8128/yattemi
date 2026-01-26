@@ -60,10 +60,10 @@ export function Header() {
         {/* Logo */}
         <Link
           href={ROUTES.HOME}
-          className="flex items-center gap-2 text-xl font-bold"
+          className="flex items-center gap-1.5 text-xl font-bold"
           onClick={closeMobileNav}
         >
-          <span className="text-2xl">🎯</span>
+          <img src="/logo.png" alt="YatteMi!" className="h-8 w-8" />
           <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
             YatteMi!
           </span>
