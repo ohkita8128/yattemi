@@ -254,21 +254,31 @@ function ExploreContent() {
 
   // 無限スクロール
   useEffect(() => {
+    // 初回ローディング中は設定しない
+    if (isLoading) return;
+    
+    const element = loadMoreRef.current;
+    if (!element) return;
+
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0]?.isIntersecting && hasMore && !isLoadingMore) {
           loadMore();
         }
       },
-      { threshold: 0.1 }
+      { 
+        threshold: 0,
+        rootMargin: '200px'  // 200px手前で発火（スムーズに）
+      }
     );
 
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
+    observer.observe(element);
 
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore, loadMore]);
+    return () => {
+      observer.unobserve(element);
+      observer.disconnect();
+    };
+  }, [isLoading, hasMore, isLoadingMore, loadMore]);
 
   const filteredPosts = posts.filter((post) => {
     // 応募済みを非表示

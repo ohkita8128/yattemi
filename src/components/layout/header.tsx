@@ -12,14 +12,17 @@ import {
   LogOut,
   User,
   Settings,
-  FileText,
+  LayoutDashboard,
+  Inbox,
   MessageSquare,
   ChevronDown,
+  FileText,
 } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { useUIStore, useNotificationStore } from '@/stores';
 import { ROUTES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { getClient } from '@/lib/supabase/client';
 
 const navItems = [
   { label: 'ホーム', href: ROUTES.HOME },
@@ -30,9 +33,60 @@ export function Header() {
   const pathname = usePathname();
   const { profile, isAuthenticated, signOut } = useAuth();
   const { isMobileNavOpen, toggleMobileNav, closeMobileNav } = useUIStore();
-  const { unreadCount } = useNotificationStore();
+  const { unreadCount, setNotifications } = useNotificationStore();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // 未読メッセージ数を取得
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const fetchUnreadMessages = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+
+      const { count } = await (supabase as any)
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .neq('sender_id', profile.id)
+        .eq('is_read', false);
+
+      setUnreadMessages(count || 0);
+    };
+
+    fetchUnreadMessages();
+
+    // 30秒ごとに更新
+    const interval = setInterval(fetchUnreadMessages, 30000);
+    return () => clearInterval(interval);
+  }, [profile?.id]);
+
+  // 未読通知を取得
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    const fetchNotifications = async () => {
+      const supabase = getClient();
+      
+      const { data } = await (supabase as any)
+        .from('notifications')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      
+      if (data) {
+        setNotifications(data);
+      }
+    };
+
+    fetchNotifications();
+    
+    // 30秒ごとに更新
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [profile?.id, setNotifications]);
 
   // クリック外で閉じる
   useEffect(() => {
@@ -104,9 +158,7 @@ export function Header() {
               >
                 <Bell className="h-5 w-5 text-gray-500" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-[10px] font-bold text-white flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
+                  <span className="absolute top-1 right-2 h-1.5 w-1.5 rounded-full bg-orange-600" />
                 )}
               </Link>
 
@@ -124,6 +176,10 @@ export function Header() {
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
                 >
+                  {/* 未読メッセージがあればポッチ */}
+                  {unreadMessages > 0 && (
+                    <span className="absolute top-0 right-5 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-white" />
+                  )}
                   <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden">
                     {profile?.avatar_url ? (
                       <img
@@ -162,7 +218,7 @@ export function Header() {
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
                     >
-                      <FileText className="h-4 w-4 text-gray-400" />
+                      <LayoutDashboard className="h-4 w-4 text-gray-400" />
                       管理
                     </Link>
                     <Link
@@ -170,7 +226,7 @@ export function Header() {
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
                     >
-                      <FileText className="h-4 w-4 text-gray-400" />
+                      <Inbox className="h-4 w-4 text-gray-400" />
                       応募
                     </Link>
                     <Link
@@ -180,6 +236,11 @@ export function Header() {
                     >
                       <MessageSquare className="h-4 w-4 text-orange-500" />
                       メッセージ
+                      {unreadMessages > 0 && (
+                        <span className="ml-auto px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
+                          {unreadMessages > 9 ? '9+' : unreadMessages}
+                        </span>
+                      )}
                     </Link>
                     <div className="border-t my-1" />
                     <Link
@@ -291,7 +352,7 @@ export function Header() {
                     className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-gray-100"
                   >
                     <FileText className="h-5 w-5 text-gray-500" />
-                    応募管理
+                    応募
                   </Link>
                   <Link
                     href="/matches"
