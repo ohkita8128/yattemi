@@ -55,7 +55,7 @@ export function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur">
+    <header className="sticky top-0 z-50 w-full border-b border-green-100 bg-gradient-to-r from-green-50 to-orange-50 backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link
@@ -63,7 +63,7 @@ export function Header() {
           className="flex items-center gap-1.5 text-xl font-bold"
           onClick={closeMobileNav}
         >
-          <img src="/logo.png" alt="YatteMi!" className="h-8 w-8" />
+          <img src="/logo.png" alt="YatteMi!" className="h-10 w-10" />
           <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
             YatteMi!
           </span>

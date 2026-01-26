@@ -363,7 +363,7 @@ function ExploreContent() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="検索..."
-              className="w-full h-9 pl-10 pr-3 rounded-full bg-white border-0 shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+              className="w-full h-9 pl-10 pr-3 rounded-full bg-white border border-gray-200 shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             />
           </div>
         </div>
