@@ -231,7 +231,7 @@ export default function MatchesPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-2">
+        <div className="divide-y">
           {filteredMatches.map((match) => {
             const isPostOwner = match.application.post.user_id === user?.id;
             const partner = isPostOwner
@@ -239,103 +239,84 @@ export default function MatchesPage() {
               : match.post_owner;
             const hasUnread = (match.unread_count || 0) > 0;
             const lastMessage = match.last_message;
+            const postType = match.application.post.type;
 
             return (
               <div
                 key={match.id}
-                className={`bg-white rounded-xl border shadow-sm hover:shadow-md transition-shadow ${
-                  hasUnread ? 'border-orange-200 bg-orange-50/30' : ''
+                className={`flex items-start py-3 hover:bg-gray-50 transition-colors ${
+                  hasUnread ? 'bg-orange-50/50' : ''
                 }`}
               >
-                <div className="flex items-center p-4">
-                  {/* Partner Avatar - クリックでプロフィールへ */}
-                  <Link
-                    href={`/users/${partner?.username}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="relative flex-shrink-0"
-                  >
-                    <div className="h-14 w-14 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-orange-300 transition-all">
-                      {partner?.avatar_url ? (
-                        <img
-                          src={partner.avatar_url}
-                          alt={partner.display_name}
-                          className="h-14 w-14 object-cover"
-                        />
-                      ) : (
-                        <User className="h-7 w-7 text-orange-500" />
-                      )}
-                    </div>
-                    {/* オンラインステータス風の装飾 */}
-                    {match.status === 'active' && (
-                      <div className="absolute bottom-0 right-0 h-4 w-4 bg-green-500 rounded-full border-2 border-white" />
+                {/* Avatar */}
+                <Link
+                  href={`/users/${partner?.username}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="relative flex-shrink-0 mt-0.5"
+                >
+                  <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-orange-300 transition-all">
+                    {partner?.avatar_url ? (
+                      <img
+                        src={partner.avatar_url}
+                        alt={partner.display_name}
+                        className="h-12 w-12 object-cover"
+                      />
+                    ) : (
+                      <User className="h-6 w-6 text-orange-500" />
                     )}
-                  </Link>
+                  </div>
+                </Link>
 
-                  {/* Content - クリックでチャットへ */}
-                  <Link
-                    href={`/matches/${match.id}`}
-                    className="flex-1 ml-4 min-w-0"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold truncate">
-                        {partner?.display_name}
-                      </p>
-                      <span className="text-xs text-gray-400 flex-shrink-0 ml-2">
-                        {formatRelativeTime(lastMessage?.created_at || match.matched_at)}
-                      </span>
-                    </div>
-
-                    <p className="text-sm text-gray-500 truncate mt-0.5">
-                      {match.application.post.title}
+                {/* Content */}
+                <Link href={`/matches/${match.id}`} className="flex-1 ml-3 min-w-0">
+                  {/* 1行目: 名前 + バッジ + 時間 */}
+                  <div className="flex items-center gap-1.5">
+                    <p className={`font-medium truncate ${hasUnread ? 'text-gray-900' : 'text-gray-700'}`}>
+                      {partner?.display_name}
                     </p>
-
-                    {/* 最新メッセージプレビュー */}
-                    <div className="flex items-center justify-between mt-1">
-                      <p className={`text-sm truncate ${hasUnread ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-                        {lastMessage ? (
-                          <>
-                            {lastMessage.sender_id === user?.id && (
-                              <span className="text-gray-400">あなた: </span>
-                            )}
-                            {lastMessage.content}
-                          </>
-                        ) : (
-                          'メッセージを始めましょう'
-                        )}
-                      </p>
-
-                      {/* 未読バッジ */}
-                      {hasUnread && (
-                        <span className="flex-shrink-0 ml-2 min-w-[20px] h-5 px-1.5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                          {match.unread_count}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                </div>
-
-                {/* ステータスバー */}
-                <div className="px-4 pb-3 pt-0">
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      match.application.post.type === 'support'
-                        ? 'bg-purple-100 text-purple-700'
-                        : 'bg-cyan-100 text-cyan-700'
+                    <span className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded ${
+                      postType === 'support'
+                        ? 'bg-purple-100 text-purple-600'
+                        : 'bg-cyan-100 text-cyan-600'
                     }`}>
-                      {match.application.post.type === 'support' ? 'サポート' : 'チャレンジ'}
+                      {postType === 'support' ? 'サポート' : 'チャレンジ'}
                     </span>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    <span className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded ${
                       match.status === 'active'
-                        ? 'bg-green-100 text-green-700'
-                        : match.status === 'completed'
-                        ? 'bg-blue-100 text-blue-700'
+                        ? 'bg-green-100 text-green-600'
                         : 'bg-gray-100 text-gray-500'
                     }`}>
-                      {match.status === 'active' ? '進行中' :
-                       match.status === 'completed' ? '完了' : 'キャンセル'}
+                      {match.status === 'active' ? '進行中' : '完了'}
+                    </span>
+                    <span className="text-xs text-gray-400 ml-auto flex-shrink-0">
+                      {formatRelativeTime(lastMessage?.created_at || match.matched_at)}
                     </span>
                   </div>
-                </div>
+
+                  {/* 2行目: タイトル */}
+                  <p className="text-sm text-gray-500 truncate mt-0.5">
+                    {match.application.post.title}
+                  </p>
+
+                  {/* 3行目: 最新メッセージ + 未読バッジ */}
+                  <div className="flex items-center justify-between mt-0.5">
+                    <p className={`text-sm truncate ${hasUnread ? 'text-gray-800 font-medium' : 'text-gray-400'}`}>
+                      {lastMessage ? (
+                        <>
+                          {lastMessage.sender_id === user?.id && <span className="text-gray-400">あなた: </span>}
+                          {lastMessage.content}
+                        </>
+                      ) : (
+                        'メッセージを始めましょう'
+                      )}
+                    </p>
+                    {hasUnread && (
+                      <span className="ml-2 min-w-[20px] h-5 px-1.5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                        {match.unread_count}
+                      </span>
+                    )}
+                  </div>
+                </Link>
               </div>
             );
           })}
