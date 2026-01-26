@@ -27,18 +27,18 @@ export function BottomNav() {
 
     const fetchUnreadMessages = async () => {
       const supabase = getClient();
-      
+
       const { count } = await (supabase as any)
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .neq('sender_id', profile.id)
         .eq('is_read', false);
-      
+
       setUnreadMessages(count || 0);
     };
 
     fetchUnreadMessages();
-    
+
     // 30秒ごとに更新
     const interval = setInterval(fetchUnreadMessages, 30000);
     return () => clearInterval(interval);
@@ -48,14 +48,14 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t md:hidden">
-      <div className="flex justify-around items-center h-16 px-2">
+      <div className="flex justify-evenly items-center h-16">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
-          
+
           // マイページは動的リンク
-          const href = item.href === '/profile' && profile?.username 
-            ? `/users/${profile.username}` 
+          const href = item.href === '/profile' && profile?.username
+            ? `/users/${profile.username}`
             : item.href;
 
           if (item.highlight) {
@@ -87,9 +87,13 @@ export function BottomNav() {
                       isActive ? 'text-orange-500' : 'text-gray-400'
                     )}
                   />
+                  
                   {unreadMessages > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[10px] text-white font-bold flex items-center justify-center">
-                      {unreadMessages > 9 ? '9+' : unreadMessages}
+                    <span className={`absolute -top-1 -right-3 bg-red-500 rounded-full text-white font-bold flex items-center justify-center ${unreadMessages > 9
+                        ? 'h-4 w-7 text-[8px]'   // 2桁以上（9+）
+                        : 'h-4 w-4 text-[10px]'  // 1桁
+                      }`}>
+                      {unreadMessages > 99 ? '99+' : unreadMessages}
                     </span>
                   )}
                 </div>

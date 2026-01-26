@@ -12,7 +12,8 @@ import {
   UserPlus,
   Award,
   FileText,
-  Trash2,
+  HelpCircle,
+  MessageCircleQuestion,
 } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
@@ -113,36 +114,31 @@ export default function NotificationsPage() {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
   };
 
-  const deleteNotification = async (id: string) => {
-    const supabase = supabaseRef.current;
-
-    await (supabase as any).from('notifications').delete().eq('id', id);
-
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
-  };
-
   const getIcon = (type: string) => {
     switch (type) {
       case 'new_application':
-        return <FileText className="h-5 w-5 text-blue-500" />;
+        return <FileText className="h-4 w-4 text-blue-500" />;
       case 'application_accepted':
-        return <Check className="h-5 w-5 text-green-500" />;
+        return <Check className="h-4 w-4 text-green-500" />;
       case 'application_rejected':
-        return <FileText className="h-5 w-5 text-red-500" />;
+        return <FileText className="h-4 w-4 text-gray-400" />;
       case 'new_message':
-        return <MessageSquare className="h-5 w-5 text-purple-500" />;
+        return <MessageSquare className="h-4 w-4 text-orange-500" />;
       case 'new_like':
-        return <Heart className="h-5 w-5 text-red-500" />;
+        return <Heart className="h-4 w-4 text-red-500" />;
       case 'new_follower':
-        return <UserPlus className="h-5 w-5 text-cyan-500" />;
+        return <UserPlus className="h-4 w-4 text-cyan-500" />;
       case 'new_review':
-        return <Award className="h-5 w-5 text-yellow-500" />;
+        return <Award className="h-4 w-4 text-yellow-500" />;
+      case 'new_question':
+        return <HelpCircle className="h-4 w-4 text-purple-500" />;
+      case 'question_answered':
+        return <MessageCircleQuestion className="h-4 w-4 text-green-500" />;
       default:
-        return <Bell className="h-5 w-5 text-gray-500" />;
+        return <Bell className="h-4 w-4 text-gray-400" />;
     }
   };
 
-  // 通知タイプごとにリンクを生成
   const getLink = (notification: Notification) => {
     const data = notification.data as Record<string, string> | null;
     if (!data) return null;
@@ -156,14 +152,14 @@ export default function NotificationsPage() {
       case 'new_follow':
         return data.username ? `/users/${data.username}` : null;
       case 'new_application':
-        return '/dashboard?tab=received';
+        return '/applications';
       case 'application_accepted':
       case 'application_rejected':
-        return '/dashboard?tab=sent';
+        return '/applications';
       case 'new_message':
-        return data.match_id ? `/messages/${data.match_id}` : '/messages';
+        return data.match_id ? `/matches/${data.match_id}` : '/matches';
       case 'new_review':
-        return '/dashboard?tab=reviews';
+        return '/dashboard';
       default:
         return null;
     }
@@ -178,61 +174,53 @@ export default function NotificationsPage() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Skeleton className="h-8 w-32 mb-6" />
-        <div className="space-y-4">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
-          ))}
-        </div>
+      <div className="max-w-3xl mx-auto px-4 py-4">
+        <Skeleton className="h-8 w-32 mb-4" />
+        <Skeleton className="h-12 w-full mb-4 rounded-xl" />
+        <Skeleton className="h-64 rounded-lg" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
+    <div className="max-w-3xl mx-auto px-4 py-4">
       {/* ヘッダー */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">通知</h1>
-          {unreadCount > 0 && (
-            <p className="text-sm text-gray-500">{unreadCount}件の未読</p>
-          )}
-        </div>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-lg font-bold">通知</h1>
         {unreadCount > 0 && (
           <button
             onClick={markAllAsRead}
-            className="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700"
+            className="flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700"
           >
-            <CheckCheck className="h-4 w-4" />
-            すべて既読にする
+            <CheckCheck className="h-3.5 w-3.5" />
+            すべて既読
           </button>
         )}
       </div>
 
-      {/* フィルタータブ */}
-      <div className="flex border-b mb-6">
+      {/* セグメントコントロール風タブ */}
+      <div className="bg-gray-100 p-1 rounded-xl flex mb-4">
         <button
           onClick={() => setFilter('all')}
-          className={`flex-1 py-3 text-center font-medium border-b-2 transition-colors ${
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
             filter === 'all'
-              ? 'border-orange-500 text-orange-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500'
           }`}
         >
           すべて
         </button>
         <button
           onClick={() => setFilter('unread')}
-          className={`flex-1 py-3 text-center font-medium border-b-2 transition-colors ${
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
             filter === 'unread'
-              ? 'border-orange-500 text-orange-600'
-              : 'border-transparent text-gray-500 hover:text-gray-700'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500'
           }`}
         >
           未読
           {unreadCount > 0 && (
-            <span className="ml-2 px-2 py-0.5 bg-orange-500 text-white text-xs rounded-full">
+            <span className="ml-2 px-1.5 py-0.5 text-xs bg-red-500 text-white rounded-full">
               {unreadCount}
             </span>
           )}
@@ -240,79 +228,52 @@ export default function NotificationsPage() {
       </div>
 
       {/* 通知リスト */}
-      {filteredNotifications.length === 0 ? (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4">🔔</div>
-          <h2 className="text-xl font-bold mb-2">
-            {filter === 'unread' ? '未読の通知はありません' : '通知はありません'}
-          </h2>
-          <p className="text-gray-500">
-            新しい通知が届くとここに表示されます
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredNotifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`relative bg-white rounded-xl border p-4 transition-all hover:shadow-md ${
-                !notification.is_read ? 'border-l-4 border-l-orange-500' : ''
-              }`}
-            >
+      <div className="bg-white rounded-lg border overflow-hidden">
+        {filteredNotifications.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-400 text-sm">
+              {filter === 'unread' ? '未読の通知はありません' : '通知はありません'}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {filteredNotifications.map((notification) => (
               <Link
+                key={notification.id}
                 href={getLink(notification) || '#'}
                 onClick={() => {
                   if (!notification.is_read) {
                     markAsRead(notification.id);
                   }
                 }}
-                className="flex items-start gap-4"
+                className={`flex items-start gap-3 p-3 hover:bg-gray-50 transition-colors ${
+                  !notification.is_read ? 'bg-orange-50/50' : ''
+                }`}
               >
+                {/* アイコン */}
                 <div className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
                   {getIcon(notification.type)}
                 </div>
+
+                {/* コンテンツ */}
                 <div className="flex-1 min-w-0">
-                  <p className={`font-medium ${!notification.is_read ? 'text-gray-900' : 'text-gray-700'}`}>
-                    {notification.title}
-                  </p>
-                  <p className="text-sm text-gray-500 line-clamp-2">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={`text-sm line-clamp-2 ${!notification.is_read ? 'font-medium' : 'text-gray-600'}`}>
+                      {notification.message}
+                    </p>
+                    {!notification.is_read && (
+                      <span className="h-2 w-2 rounded-full bg-orange-500 flex-shrink-0 mt-1.5" />
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5">
                     {formatRelativeTime(notification.created_at)}
                   </p>
                 </div>
               </Link>
-
-              {/* アクションボタン */}
-              <div className="absolute top-2 right-2 flex gap-1 md:opacity-50 md:group-hover:opacity-100 transition-opacity">
-                {!notification.is_read && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      markAsRead(notification.id);
-                    }}
-                    className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors"
-                    title="既読にする"
-                  >
-                    <Check className="h-4 w-4" />
-                  </button>
-                )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteNotification(notification.id);
-                  }}
-                  className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  title="削除"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
