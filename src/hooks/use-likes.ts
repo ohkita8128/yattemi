@@ -15,6 +15,12 @@ export function useLikes(postId: string, initialCount?: number) {
   
   // フェッチ済みフラグ
   const hasFetched = useRef(false);
+  // initialCountが変わったら更新
+  useEffect(() => {
+    if (initialCount !== undefined) {
+      setLikesCount(initialCount);
+    }
+  }, [initialCount]);
 
   useEffect(() => {
     // 既にフェッチ済みなら何もしない
