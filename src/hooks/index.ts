@@ -8,3 +8,4 @@ export * from './use-reviews';
 export * from './use-challenges';
 export * from './use-follow';
 export * from './use-report';
+export * from './use-tags';

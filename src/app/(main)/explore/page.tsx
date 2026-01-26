@@ -8,6 +8,7 @@ import { usePosts, useCategories, useDebounce } from '@/hooks';
 import { useAuth } from '@/hooks';
 import { getLevelInfo } from '@/lib/levels';
 import { getClient } from '@/lib/supabase/client';
+import { useTags } from '@/hooks/use-tags';
 
 const DAYS = [
   { value: 'mon', label: '月' },
@@ -30,8 +31,6 @@ const LOCATION_OPTIONS = [
   { value: 'online', label: '🌐 オンライン' },
   { value: 'offline', label: '📍 対面' },
 ];
-
-const POPULAR_TAGS = ['初心者歓迎', 'オンラインOK', '対面希望', '単発OK', '経験者向け'];
 
 const toDateString = (date: Date): string => {
   const year = date.getFullYear();
@@ -134,6 +133,7 @@ function ExploreContent() {
   const [includeClosed, setIncludeClosed] = useState(false);
   const [hideApplied, setHideApplied] = useState(false);
   const [tagInput, setTagInput] = useState('');
+  const {popularTags} = useTags();
 
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { categories } = useCategories();
@@ -256,7 +256,7 @@ function ExploreContent() {
   useEffect(() => {
     // 初回ローディング中は設定しない
     if (isLoading) return;
-    
+
     const element = loadMoreRef.current;
     if (!element) return;
 
@@ -266,7 +266,7 @@ function ExploreContent() {
           loadMore();
         }
       },
-      { 
+      {
         threshold: 0,
         rootMargin: '200px'  // 200px手前で発火（スムーズに）
       }
@@ -456,14 +456,14 @@ function ExploreContent() {
                             onClick={() => isSelectable && handleDateSelect(dateStr)}
                             disabled={!isSelectable}
                             className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${isSelected
-                                ? 'bg-orange-500 text-white'
-                                : !isSelectable
-                                  ? 'text-gray-300 cursor-not-allowed'
-                                  : date.getDay() === 0
-                                    ? 'text-red-500 hover:bg-red-50'
-                                    : date.getDay() === 6
-                                      ? 'text-blue-500 hover:bg-blue-50'
-                                      : 'text-gray-700 hover:bg-gray-100'
+                              ? 'bg-orange-500 text-white'
+                              : !isSelectable
+                                ? 'text-gray-300 cursor-not-allowed'
+                                : date.getDay() === 0
+                                  ? 'text-red-500 hover:bg-red-50'
+                                  : date.getDay() === 6
+                                    ? 'text-blue-500 hover:bg-blue-50'
+                                    : 'text-gray-700 hover:bg-gray-100'
                               }`}
                           >
                             {date.getDate()}
@@ -575,8 +575,8 @@ function ExploreContent() {
                   type="button"
                   onClick={() => toggleDay(day.value)}
                   className={`w-8 h-8 rounded-full font-medium text-xs transition-all ${selectedDays.includes(day.value)
-                      ? day.value === 'sat' ? 'bg-blue-500 text-white' : day.value === 'sun' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    ? day.value === 'sat' ? 'bg-blue-500 text-white' : day.value === 'sun' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                 >
                   {day.label}
@@ -693,14 +693,17 @@ function ExploreContent() {
             <div>
               <p className="text-xs text-gray-500 mb-2">よく使われるタグ:</p>
               <div className="flex flex-wrap gap-2">
-                {POPULAR_TAGS.map(tag => (
+                {popularTags.map(tag => (
                   <button
-                    key={tag}
+                    key={tag.id}
                     type="button"
-                    onClick={() => addTag(tag)}
-                    className={`px-3 py-1 rounded-full text-sm transition-colors ${selectedTags.includes(tag) ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
+                    onClick={() => addTag(tag.name)}
+                    className={`px-3 py-1 rounded-full text-sm transition-colors ${selectedTags.includes(tag.name)
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-100 hover:bg-gray-200'
+                      }`}
                   >
-                    #{tag}
+                    #{tag.name}
                   </button>
                 ))}
               </div>
