@@ -658,7 +658,7 @@ function ExploreContent() {
               <button
                 type="button"
                 onClick={() => addTag(tagInput)}
-                className="px-4 h-10 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                className="px-3 h-9 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 flex-shrink-0"
               >
                 追加
               </button>
