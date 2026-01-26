@@ -3,29 +3,58 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BookOpen, Users, Heart, MessageSquare, TrendingUp, Award, Eye } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface Stats {
-  totalPosts: number;
-  teachPosts: number;
-  learnPosts: number;
-  totalViews: number;
-  totalLikes: number;
-  followers: number;
-  following: number;
-  completedMatches: number;
-  receivedBadges: { badge: string; count: number }[];
+interface DashboardPost {
+  id: string;
+  title: string;
+  type: 'support' | 'challenge';
+  applicants: {
+    id: string;
+    avatar_url: string | null;
+    display_name: string;
+  }[];
+}
+
+interface DashboardApplication {
+  id: string;
+  post_id: string;
+  post_title: string;
+  post_type: 'support' | 'challenge';
+  status: string;
+}
+
+interface DashboardMatch {
+  id: string;
+  post_title: string;
+  post_type: 'support' | 'challenge';
+  partner: {
+    id: string;
+    avatar_url: string | null;
+    display_name: string;
+  };
+  is_owner: boolean;
+}
+
+interface DashboardData {
+  myPosts: DashboardPost[];
+  myApplications: DashboardApplication[];
+  myMatches: DashboardMatch[];
 }
 
 export default function DashboardPage() {
   const router = useRouter();
   const { user, profile, isAuthenticated, isLoading: authLoading } = useAuth();
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [dashboardData, setDashboardData] = useState<DashboardData>({
+    myPosts: [],
+    myApplications: [],
+    myMatches: [],
+  });
 
   const supabaseRef = useRef(getClient());
 
@@ -38,277 +67,500 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user) return;
 
-    const fetchStats = async () => {
+    const fetchDashboardData = async () => {
       const supabase = supabaseRef.current;
 
       try {
-        // 投稿数
-        const { data: posts } = await (supabase as any)
+        // 1. 自分の募集中の投稿 + 応募者
+        const { data: myActivePosts } = await (supabase as any)
           .from('posts')
-          .select('id, type, view_count')
-          .eq('user_id', user.id);
-
-        const totalPosts = posts?.length || 0;
-        const teachPosts = posts?.filter((p: any) => p.type === 'support').length || 0;
-        const learnPosts = posts?.filter((p: any) => p.type === 'challenge').length || 0;
-        const totalViews = posts?.reduce((sum: number, p: any) => sum + (p.view_count || 0), 0) || 0;
-
-        // いいね数（自分の投稿についたいいね）
-        const postIds = posts?.map((p: any) => p.id) || [];
-        let totalLikes = 0;
-        if (postIds.length > 0) {
-          const { count } = await (supabase as any)
-            .from('likes')
-            .select('*', { count: 'exact', head: true })
-            .in('post_id', postIds);
-          totalLikes = count || 0;
-        }
-
-        // フォロワー/フォロー中
-        const { count: followers } = await (supabase as any)
-          .from('follows')
-          .select('*', { count: 'exact', head: true })
-          .eq('following_id', user.id);
-
-        const { count: following } = await (supabase as any)
-          .from('follows')
-          .select('*', { count: 'exact', head: true })
-          .eq('follower_id', user.id);
-
-        // 完了したマッチ数
-        const { data: applications } = await (supabase as any)
-          .from('applications')
-          .select('id')
-          .eq('applicant_id', user.id)
-          .eq('status', 'accepted');
-
-        const { data: myPostApps } = await (supabase as any)
-          .from('applications')
-          .select('id, post:posts!inner(user_id)')
-          .eq('posts.user_id', user.id)
-          .eq('status', 'accepted');
-
-        const completedMatches = (applications?.length || 0) + (myPostApps?.length || 0);
-
-        // 受け取ったバッジ
-        const { data: reviews } = await (supabase as any)
-          .from('reviews')
-          .select('badges')
-          .eq('reviewee_id', user.id);
-
-        const badgeCounts: Record<string, number> = {};
-        reviews?.forEach((r: any) => {
-          r.badges?.forEach((b: string) => {
-            badgeCounts[b] = (badgeCounts[b] || 0) + 1;
-          });
-        });
-
-        const receivedBadges = Object.entries(badgeCounts)
-          .map(([badge, count]) => ({ badge, count }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 5);
-
-        setStats({
-          totalPosts,
-          teachPosts,
-          learnPosts,
-          totalViews,
-          totalLikes,
-          followers: followers || 0,
-          following: following || 0,
-          completedMatches,
-          receivedBadges,
-        });
-
-        // 最近のアクティビティ（通知から取得）
-        const { data: notifications } = await (supabase as any)
-          .from('notifications')
-          .select('*')
+          .select(`
+            id,
+            title,
+            type,
+            applications (
+              id,
+              status,
+              applicant:profiles!applications_applicant_id_fkey (
+                id,
+                avatar_url,
+                display_name
+              )
+            )
+          `)
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
+          .eq('status', 'open');
 
-        setRecentActivity(notifications || []);
+        const myPosts: DashboardPost[] = (myActivePosts || []).map((post: any) => ({
+          id: post.id,
+          title: post.title,
+          type: post.type,
+          applicants: (post.applications || [])
+            .filter((app: any) => app.status === 'pending')
+            .map((app: any) => ({
+              id: app.applicant?.id || '',
+              avatar_url: app.applicant?.avatar_url || null,
+              display_name: app.applicant?.display_name || '',
+            })),
+        }));
+
+        // 2. 自分の応募（返事待ち）
+        const { data: pendingApps } = await (supabase as any)
+          .from('applications')
+          .select(`
+            id,
+            status,
+            post:posts (
+              id,
+              title,
+              type
+            )
+          `)
+          .eq('applicant_id', user.id)
+          .eq('status', 'pending');
+
+        const myApplications: DashboardApplication[] = (pendingApps || []).map((app: any) => ({
+          id: app.id,
+          post_id: app.post?.id || '',
+          post_title: app.post?.title || '',
+          post_type: app.post?.type || 'support',
+          status: app.status,
+        }));
+
+        // 3. マッチ中
+        const { data: activeMatches } = await (supabase as any)
+          .from('matches')
+          .select(`
+            id,
+            post:posts (
+              id,
+              title,
+              type,
+              user_id
+            ),
+            senpai:profiles!matches_senpai_id_fkey (
+              id,
+              avatar_url,
+              display_name
+            ),
+            kouhai:profiles!matches_kouhai_id_fkey (
+              id,
+              avatar_url,
+              display_name
+            )
+          `)
+          .or(`senpai_id.eq.${user.id},kouhai_id.eq.${user.id}`)
+          .eq('status', 'active');
+
+        const myMatches: DashboardMatch[] = (activeMatches || []).map((match: any) => {
+          const isOwner = match.post?.user_id === user.id;
+          const isSenpai = match.senpai?.id === user.id;
+          const partner = isSenpai ? match.kouhai : match.senpai;
+
+          return {
+            id: match.id,
+            post_title: match.post?.title || '',
+            post_type: match.post?.type || 'support',
+            partner: {
+              id: partner?.id || '',
+              avatar_url: partner?.avatar_url || null,
+              display_name: partner?.display_name || '',
+            },
+            is_owner: isOwner,
+          };
+        });
+
+        setDashboardData({
+          myPosts,
+          myApplications,
+          myMatches,
+        });
+
+        // 4. 未読通知カウント
+        const { count: unreadCount } = await (supabase as any)
+          .from('notifications')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .eq('is_read', false);
+
+        setUnreadNotificationCount(unreadCount || 0);
+
       } catch (err) {
-        console.error('Error fetching stats:', err);
+        console.error('Error fetching dashboard data:', err);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchStats();
+    fetchDashboardData();
   }, [user]);
 
   if (authLoading || isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Skeleton className="h-8 w-48 mb-8" />
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-32 rounded-xl" />
-          ))}
+      <div className="max-w-3xl mx-auto px-4 py-4">
+        <Skeleton className="h-8 w-32 mb-4" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Skeleton className="h-64 rounded-lg" />
+          <Skeleton className="h-64 rounded-lg" />
         </div>
       </div>
     );
   }
 
-  const badgeEmojis: Record<string, string> = {
-    clear: '🎓',
-    helpful: '💡',
-    godsenpai: '🌟',
-    eager: '🔥',
-    quicklearner: '✨',
-    hardworker: '💪',
-    awesome: '👏',
-    thanks: '💖',
-    again: '🤝',
+  const toggleSection = (key: string) => {
+    setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const MAX_COLLAPSED = 3;
+
+  const supportPosts = dashboardData.myPosts.filter(p => p.type === 'support');
+  const challengePosts = dashboardData.myPosts.filter(p => p.type === 'challenge');
+  const supportApplications = dashboardData.myApplications.filter(a => a.post_type === 'support');
+  const challengeApplications = dashboardData.myApplications.filter(a => a.post_type === 'challenge');
+  const supportMatches = dashboardData.myMatches.filter(m => m.post_type === 'support');
+  const challengeMatches = dashboardData.myMatches.filter(m => m.post_type === 'challenge');
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      {/* ヘッダー */}
-      <div className="flex items-center gap-4 mb-8">
-        <div className="h-16 w-16 rounded-full bg-gradient-to-br from-orange-400 to-pink-500 flex items-center justify-center text-2xl font-bold text-white overflow-hidden">
-          {profile?.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            profile?.display_name?.[0] || '?'
-          )}
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">{profile?.display_name}のダッシュボード</h1>
-          <p className="text-gray-500">@{profile?.username}</p>
-        </div>
-      </div>
+    <div className="max-w-3xl mx-auto px-4 py-4">
+      <h1 className="text-lg font-bold mb-4">管理</h1>
 
-      {/* 統計カード */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
-        <div className="bg-white rounded-xl border p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-500 text-sm">投稿数</span>
-            <BookOpen className="h-5 w-5 text-orange-500" />
-          </div>
-          <p className="text-3xl font-bold">{stats?.totalPosts || 0}</p>
-          <div className="flex gap-2 mt-2 text-xs text-gray-500">
-            <span>🎓 {stats?.teachPosts || 0}</span>
-            <span>📚 {stats?.learnPosts || 0}</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl border p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-500 text-sm">閲覧数</span>
-            <Eye className="h-5 w-5 text-blue-500" />
-          </div>
-          <p className="text-3xl font-bold">{stats?.totalViews || 0}</p>
-        </div>
-
-        <div className="bg-white rounded-xl border p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-500 text-sm">いいね</span>
-            <Heart className="h-5 w-5 text-red-500" />
-          </div>
-          <p className="text-3xl font-bold">{stats?.totalLikes || 0}</p>
-        </div>
-
-        <div className="bg-white rounded-xl border p-5">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-gray-500 text-sm">マッチング</span>
-            <Users className="h-5 w-5 text-green-500" />
-          </div>
-          <p className="text-3xl font-bold">{stats?.completedMatches || 0}</p>
-        </div>
-      </div>
-
-      {/* フォロー統計 */}
-      <div className="grid gap-4 md:grid-cols-2 mb-8">
-        <Link
-          href={`/users/${profile?.username}/follows?tab=followers`}
-          className="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm mb-1">フォロワー</p>
-              <p className="text-2xl font-bold">{stats?.followers || 0}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        {/* サポートカード */}
+        <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="flex items-center gap-2 p-4 border-b bg-orange-50">
+            <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center">
+              <span className="text-sm">🎓</span>
             </div>
-            <Users className="h-8 w-8 text-purple-500" />
+            <span className="font-bold">サポート</span>
           </div>
-        </Link>
 
-        <Link
-          href={`/users/${profile?.username}/follows?tab=following`}
-          className="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm mb-1">フォロー中</p>
-              <p className="text-2xl font-bold">{stats?.following || 0}</p>
+          {/* 募集中 */}
+          <div className="border-b">
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50">
+              <div className="w-1 h-4 bg-orange-400 rounded-full" />
+              <span className="text-sm font-semibold text-gray-700">募集中</span>
             </div>
-            <Users className="h-8 w-8 text-cyan-500" />
-          </div>
-        </Link>
-      </div>
-
-      {/* 受け取ったバッジ */}
-      {stats?.receivedBadges && stats.receivedBadges.length > 0 && (
-        <div className="bg-white rounded-xl border p-6 mb-8">
-          <h2 className="font-semibold mb-4 flex items-center gap-2">
-            <Award className="h-5 w-5 text-yellow-500" />
-            受け取ったバッジ
-          </h2>
-          <div className="flex flex-wrap gap-3">
-            {stats.receivedBadges.map(({ badge, count }) => (
-              <div
-                key={badge}
-                className="flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full"
-              >
-                <span className="text-xl">{badgeEmojis[badge] || '🏅'}</span>
-                <span className="font-medium">×{count}</span>
+            {supportPosts.length === 0 ? (
+              <p className="text-xs text-gray-400 px-4 py-3">なし</p>
+            ) : (
+              <div className="divide-y">
+                {supportPosts
+                  .slice(0, expandedSections['support-posts'] ? undefined : MAX_COLLAPSED)
+                  .map((post) => (
+                    <Link
+                      key={post.id}
+                      href={`/posts/${post.id}`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="truncate flex-1 mr-3 text-xs">{post.title}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {post.applicants.length > 0 && (
+                          <div className="flex -space-x-1.5">
+                            {post.applicants.slice(0, 3).map((applicant, i) => (
+                              <div
+                                key={applicant.id || i}
+                                className="h-8 w-8 rounded-full border-2 border-white bg-gray-300 overflow-hidden"
+                              >
+                                {applicant.avatar_url ? (
+                                  <img src={applicant.avatar_url} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="h-full w-full bg-orange-400 flex items-center justify-center text-white text-[10px] font-bold">
+                                    {applicant.display_name?.[0] || '?'}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            {post.applicants.length > 3 && (
+                              <div className="h-8 w-8 rounded-full bg-gray-400 border-2 border-white text-[10px] flex items-center justify-center text-white font-bold">
+                                +{post.applicants.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <span className="text-gray-400">›</span>
+                      </div>
+                    </Link>
+                  ))}
+                {supportPosts.length > MAX_COLLAPSED && (
+                  <button
+                    onClick={() => toggleSection('support-posts')}
+                    className="w-full text-xs text-gray-500 hover:bg-gray-50 py-2"
+                  >
+                    {expandedSections['support-posts'] ? '▲ 閉じる' : `▼ あと${supportPosts.length - MAX_COLLAPSED}件`}
+                  </button>
+                )}
               </div>
-            ))}
+            )}
+          </div>
+
+          {/* 応募中 */}
+          <div className="border-b">
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50">
+              <div className="w-1 h-4 bg-blue-400 rounded-full" />
+              <span className="text-sm font-semibold text-gray-700">応募中</span>
+            </div>
+            {supportApplications.length === 0 ? (
+              <p className="text-xs text-gray-400 px-4 py-3">なし</p>
+            ) : (
+              <div className="divide-y">
+                {supportApplications
+                  .slice(0, expandedSections['support-apps'] ? undefined : MAX_COLLAPSED)
+                  .map((app) => (
+                    <Link
+                      key={app.id}
+                      href={`/posts/${app.post_id}`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="truncate flex-1 mr-3 text-xs">{app.post_title}</span>
+                      <span className="text-gray-400">›</span>
+                    </Link>
+                  ))}
+                {supportApplications.length > MAX_COLLAPSED && (
+                  <button
+                    onClick={() => toggleSection('support-apps')}
+                    className="w-full text-xs text-gray-500 hover:bg-gray-50 py-2"
+                  >
+                    {expandedSections['support-apps'] ? '▲ 閉じる' : `▼ あと${supportApplications.length - MAX_COLLAPSED}件`}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* サポート中 */}
+          <div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50">
+              <div className="w-1 h-4 bg-green-400 rounded-full" />
+              <span className="text-sm font-semibold text-gray-700">サポート中</span>
+            </div>
+            {supportMatches.length === 0 ? (
+              <p className="text-xs text-gray-400 px-4 py-3">なし</p>
+            ) : (
+              <div className="divide-y">
+                {supportMatches
+                  .slice(0, expandedSections['support-matches'] ? undefined : MAX_COLLAPSED)
+                  .map((match) => (
+                    <Link
+                      key={match.id}
+                      href={`/matches/${match.id}`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="truncate flex-1 mr-3 text-xs">{match.post_title}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="h-8 w-8 rounded-full border-2 border-white bg-gray-300 overflow-hidden">
+                          {match.partner.avatar_url ? (
+                            <img src={match.partner.avatar_url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full bg-green-400 flex items-center justify-center text-white text-[10px] font-bold">
+                              {match.partner.display_name?.[0] || '?'}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-gray-400">›</span>
+                      </div>
+                    </Link>
+                  ))}
+                {supportMatches.length > MAX_COLLAPSED && (
+                  <button
+                    onClick={() => toggleSection('support-matches')}
+                    className="w-full text-xs text-gray-500 hover:bg-gray-50 py-2"
+                  >
+                    {expandedSections['support-matches'] ? '▲ 閉じる' : `▼ あと${supportMatches.length - MAX_COLLAPSED}件`}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         </div>
-      )}
 
-      {/* 最近のアクティビティ */}
-      <div className="bg-white rounded-xl border p-6">
-        <h2 className="font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-orange-500" />
-          最近のアクティビティ
-        </h2>
-        {recentActivity.length === 0 ? (
-          <p className="text-gray-500 text-center py-8">まだアクティビティがありません</p>
-        ) : (
-          <div className="space-y-3">
-            {recentActivity.map((activity) => (
-              <Link
-                key={activity.id}
-                href={activity.link || '#'}
-                className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
-                  <MessageSquare className="h-5 w-5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{activity.title}</p>
-                  <p className="text-sm text-gray-500 truncate">{activity.message}</p>
-                </div>
-              </Link>
-            ))}
+        {/* チャレンジカード */}
+        <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="flex items-center gap-2 p-4 border-b bg-cyan-50">
+            <div className="h-8 w-8 rounded-full bg-cyan-100 flex items-center justify-center">
+              <span className="text-sm">📚</span>
+            </div>
+            <span className="font-bold">チャレンジ</span>
           </div>
-        )}
 
+          {/* 募集中 */}
+          <div className="border-b">
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50">
+              <div className="w-1 h-4 bg-cyan-400 rounded-full" />
+              <span className="text-sm font-semibold text-gray-700">募集中</span>
+            </div>
+            {challengePosts.length === 0 ? (
+              <p className="text-xs text-gray-400 px-4 py-3">なし</p>
+            ) : (
+              <div className="divide-y">
+                {challengePosts
+                  .slice(0, expandedSections['challenge-posts'] ? undefined : MAX_COLLAPSED)
+                  .map((post) => (
+                    <Link
+                      key={post.id}
+                      href={`/posts/${post.id}`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="truncate flex-1 mr-3 text-xs">{post.title}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {post.applicants.length > 0 && (
+                          <div className="flex -space-x-1.5">
+                            {post.applicants.slice(0, 3).map((applicant, i) => (
+                              <div
+                                key={applicant.id || i}
+                                className="h-8 w-8 rounded-full border-2 border-white bg-gray-300 overflow-hidden"
+                              >
+                                {applicant.avatar_url ? (
+                                  <img src={applicant.avatar_url} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="h-full w-full bg-cyan-400 flex items-center justify-center text-white text-[10px] font-bold">
+                                    {applicant.display_name?.[0] || '?'}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                            {post.applicants.length > 3 && (
+                              <div className="h-8 w-8 rounded-full bg-gray-400 border-2 border-white text-[10px] flex items-center justify-center text-white font-bold">
+                                +{post.applicants.length - 3}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <span className="text-gray-400">›</span>
+                      </div>
+                    </Link>
+                  ))}
+                {challengePosts.length > MAX_COLLAPSED && (
+                  <button
+                    onClick={() => toggleSection('challenge-posts')}
+                    className="w-full text-xs text-gray-500 hover:bg-gray-50 py-2"
+                  >
+                    {expandedSections['challenge-posts'] ? '▲ 閉じる' : `▼ あと${challengePosts.length - MAX_COLLAPSED}件`}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* 応募中 */}
+          <div className="border-b">
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50">
+              <div className="w-1 h-4 bg-blue-400 rounded-full" />
+              <span className="text-sm font-semibold text-gray-700">応募中</span>
+            </div>
+            {challengeApplications.length === 0 ? (
+              <p className="text-xs text-gray-400 px-4 py-3">なし</p>
+            ) : (
+              <div className="divide-y">
+                {challengeApplications
+                  .slice(0, expandedSections['challenge-apps'] ? undefined : MAX_COLLAPSED)
+                  .map((app) => (
+                    <Link
+                      key={app.id}
+                      href={`/posts/${app.post_id}`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="truncate flex-1 mr-3 text-xs">{app.post_title}</span>
+                      <span className="text-gray-400">›</span>
+                    </Link>
+                  ))}
+                {challengeApplications.length > MAX_COLLAPSED && (
+                  <button
+                    onClick={() => toggleSection('challenge-apps')}
+                    className="w-full text-xs text-gray-500 hover:bg-gray-50 py-2"
+                  >
+                    {expandedSections['challenge-apps'] ? '▲ 閉じる' : `▼ あと${challengeApplications.length - MAX_COLLAPSED}件`}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* チャレンジ中 */}
+          <div>
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50">
+              <div className="w-1 h-4 bg-purple-400 rounded-full" />
+              <span className="text-sm font-semibold text-gray-700">チャレンジ中</span>
+            </div>
+            {challengeMatches.length === 0 ? (
+              <p className="text-xs text-gray-400 px-4 py-3">なし</p>
+            ) : (
+              <div className="divide-y">
+                {challengeMatches
+                  .slice(0, expandedSections['challenge-matches'] ? undefined : MAX_COLLAPSED)
+                  .map((match) => (
+                    <Link
+                      key={match.id}
+                      href={`/matches/${match.id}`}
+                      className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="truncate flex-1 mr-3 text-xs">{match.post_title}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="h-8 w-8 rounded-full border-2 border-white bg-gray-300 overflow-hidden">
+                          {match.partner.avatar_url ? (
+                            <img src={match.partner.avatar_url} alt="" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full bg-purple-400 flex items-center justify-center text-white text-[10px] font-bold">
+                              {match.partner.display_name?.[0] || '?'}
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-gray-400">›</span>
+                      </div>
+                    </Link>
+                  ))}
+                {challengeMatches.length > MAX_COLLAPSED && (
+                  <button
+                    onClick={() => toggleSection('challenge-matches')}
+                    className="w-full text-xs text-gray-500 hover:bg-gray-50 py-2"
+                  >
+                    {expandedSections['challenge-matches'] ? '▲ 閉じる' : `▼ あと${challengeMatches.length - MAX_COLLAPSED}件`}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 通知 & 設定 */}
+      <div className="grid grid-cols-2 gap-3 mb-3">
         <Link
           href="/notifications"
-          className="block text-center text-orange-600 font-medium mt-4 hover:underline"
+          className="bg-white rounded-lg border p-4 hover:bg-gray-50 transition-colors flex items-center justify-between"
         >
-          すべての通知を見る →
+          <div className="flex items-center gap-2">
+            <span>🔔</span>
+            <span className="font-medium">通知</span>
+          </div>
+          <div className="flex items-center gap-2">
+            {unreadNotificationCount > 0 && (
+              <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded-full">
+                {unreadNotificationCount}
+              </span>
+            )}
+            <span className="text-gray-400">›</span>
+          </div>
+        </Link>
+
+        <Link
+          href="/settings"
+          className="bg-white rounded-lg border p-4 hover:bg-gray-50 transition-colors flex items-center justify-between"
+        >
+          <div className="flex items-center gap-2">
+            <span>⚙️</span>
+            <span className="font-medium">設定</span>
+          </div>
+          <span className="text-gray-400">›</span>
         </Link>
       </div>
+
+      {/* プロフィールへ */}
+      <Link
+        href={`/users/${profile?.username}`}
+        className="block text-center text-sm text-orange-600 hover:underline py-2"
+      >
+        プロフィールを見る →
+      </Link>
     </div>
   );
 }

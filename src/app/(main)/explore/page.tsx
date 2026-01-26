@@ -351,147 +351,172 @@ function ExploreContent() {
   const calendarDays = generateCalendarDays();
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold mb-2">投稿を探す</h1>
-        <p className="text-gray-500">スキルをサポートしたい人・チャレンジしたい人を見つけよう</p>
-      </div>
-
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-2">
-        <button
-          onClick={() => handleQuickDateFilter('today')}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${quickDateFilter === 'today' ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
-        >
-          📅 今日
-        </button>
-        <button
-          onClick={() => handleQuickDateFilter('tomorrow')}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${quickDateFilter === 'tomorrow' ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
-        >
-          📅 明日
-        </button>
-        <button
-          onClick={() => handleQuickDateFilter('weekend')}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${quickDateFilter === 'weekend' ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
-        >
-          🎉 今週末
-        </button>
-        <button
-          onClick={() => {
-            setShowDatePicker(!showDatePicker);
-            if (!showDatePicker) setQuickDateFilter(null);
-          }}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${showDatePicker || (targetDates.length > 0 && !quickDateFilter) ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-200'}`}
-        >
-          🗓️ 日付を選ぶ
-        </button>
-      </div>
-
-      {showDatePicker && (
-        <div className="relative mb-4">
-          <div className="bg-white rounded-xl border shadow-lg p-3 max-w-[280px]">
-            <div className="flex items-center justify-between mb-2">
-              <button
-                type="button"
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="font-medium text-sm">
-                {currentMonth.getFullYear()}年{currentMonth.getMonth() + 1}月
-              </span>
-              <button
-                type="button"
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
-                className="p-1 hover:bg-gray-100 rounded"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="grid grid-cols-7 gap-0.5 mb-1">
-              {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
-                <div key={d} className={`text-center text-xs py-1 ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'}`}>
-                  {d}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-0.5">
-              {calendarDays.map((date, i) => {
-                const dateStr = date ? toDateString(date) : '';
-                const isSelected = date ? targetDates.includes(dateStr) : false;
-                const isSelectable = date ? isDateSelectable(date) : false;
-                return (
-                  <div key={i} className="aspect-square flex items-center justify-center">
-                    {date ? (
-                      <button
-                        type="button"
-                        onClick={() => isSelectable && handleDateSelect(dateStr)}
-                        disabled={!isSelectable}
-                        className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${
-                          isSelected
-                            ? 'bg-orange-500 text-white'
-                            : !isSelectable
-                            ? 'text-gray-300 cursor-not-allowed'
-                            : date.getDay() === 0
-                            ? 'text-red-500 hover:bg-red-50'
-                            : date.getDay() === 6
-                            ? 'text-blue-500 hover:bg-blue-50'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {date.getDate()}
-                      </button>
-                    ) : null}
-                  </div>
-                );
-              })}
-            </div>
-            {targetDates.length > 0 && (
-              <div className="mt-2 pt-2 border-t">
-                <div className="flex flex-wrap gap-1">
-                  {targetDates.sort().map(d => (
-                    <span key={d} className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs flex items-center gap-1">
-                      {formatDateShort(d)}
-                      <button onClick={() => handleDateSelect(d)} className="hover:text-orange-900">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+    <div className="max-w-6xl mx-auto px-4 pt-2">
+      {/* スティッキーヘッダー */}
+      <div className="sticky top-16 z-20 bg-white-50 -mx-4 px-4 py-2">
+        {/* 検索バー */}
+        <div className="max-w-sm mx-auto mb-1">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="検索..."
+              className="w-full h-9 pl-10 pr-3 rounded-full bg-white border-0 shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+            />
           </div>
         </div>
-      )}
-
-      <div className="flex gap-3 mb-6">
-        <div className="flex-1 relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="キーワードで検索..."
-            className="w-full h-12 pl-12 pr-4 rounded-xl border focus:outline-none focus:ring-2 focus:ring-orange-500"
-          />
+        {/* 日付ボタン */}
+        <div className="flex justify-center gap-1.5">
+          <button
+            onClick={() => handleQuickDateFilter('today')}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${quickDateFilter === 'today' ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-100'}`}
+          >
+            今日
+          </button>
+          <button
+            onClick={() => handleQuickDateFilter('tomorrow')}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${quickDateFilter === 'tomorrow' ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-100'}`}
+          >
+            明日
+          </button>
+          <button
+            onClick={() => handleQuickDateFilter('weekend')}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${quickDateFilter === 'weekend' ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-100'}`}
+          >
+            週末
+          </button>
+          <button
+            onClick={() => {
+              setShowDatePicker(!showDatePicker);
+              if (!showDatePicker) setQuickDateFilter(null);
+            }}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${showDatePicker || (targetDates.length > 0 && !quickDateFilter) ? 'bg-orange-500 text-white' : 'bg-gray-100 hover:bg-gray-100'}`}
+          >
+            日付
+          </button>
         </div>
-        <button
-          onClick={() => setShowFilters(!showFilters)}
-          className={`h-12 px-4 rounded-xl border flex items-center gap-2 transition-colors ${showFilters || hasActiveFilters ? 'bg-orange-500 text-white border-orange-500' : 'hover:bg-gray-50'}`}
-        >
-          <SlidersHorizontal className="h-5 w-5" />
-          <span className="hidden sm:inline">フィルター</span>
-          {hasActiveFilters && (
-            <span className="h-5 w-5 rounded-full bg-white text-orange-500 text-xs font-bold flex items-center justify-center">!</span>
-          )}
-        </button>
+        {/* カレンダー */}
+        {showDatePicker && (
+          <>
+            {/* 透明オーバーレイ */}
+            <div
+              className="fixed inset-0 z-10"
+              onClick={() => setShowDatePicker(false)}
+            />
+            <div className="flex justify-center mt-2 relative z-20">
+              <div className="bg-white rounded-lg shadow-lg p-3 w-[280px]">
+                <div className="flex items-center justify-between mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="font-medium text-sm">
+                    {currentMonth.getFullYear()}年{currentMonth.getMonth() + 1}月
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))}
+                    className="p-1 hover:bg-gray-100 rounded"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="grid grid-cols-7 gap-0.5 mb-1">
+                  {['日', '月', '火', '水', '木', '金', '土'].map((d, i) => (
+                    <div key={d} className={`text-center text-xs py-1 ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-500' : 'text-gray-500'}`}>
+                      {d}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-0.5">
+                  {calendarDays.map((date, i) => {
+                    const dateStr = date ? toDateString(date) : '';
+                    const isSelected = date ? targetDates.includes(dateStr) : false;
+                    const isSelectable = date ? isDateSelectable(date) : false;
+                    return (
+                      <div key={i} className="aspect-square flex items-center justify-center">
+                        {date ? (
+                          <button
+                            type="button"
+                            onClick={() => isSelectable && handleDateSelect(dateStr)}
+                            disabled={!isSelectable}
+                            className={`w-8 h-8 rounded-full text-xs font-medium transition-all ${isSelected
+                                ? 'bg-orange-500 text-white'
+                                : !isSelectable
+                                  ? 'text-gray-300 cursor-not-allowed'
+                                  : date.getDay() === 0
+                                    ? 'text-red-500 hover:bg-red-50'
+                                    : date.getDay() === 6
+                                      ? 'text-blue-500 hover:bg-blue-50'
+                                      : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                          >
+                            {date.getDate()}
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+                {targetDates.length > 0 && (
+                  <div className="mt-2 pt-2 border-t">
+                    <div className="flex flex-wrap gap-1">
+                      {targetDates.sort().map(d => (
+                        <span key={d} className="px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full text-xs flex items-center gap-1">
+                          {formatDateShort(d)}
+                          <button onClick={() => handleDateSelect(d)} className="hover:text-orange-900">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
       </div>
 
+      {/* ボトムシート オーバーレイ */}
       {showFilters && (
-        <div className="bg-white rounded-xl border p-6 mb-6 space-y-6">
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowFilters(false)} />
+      )}
+
+      {/* ボトムシート */}
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl transform transition-transform duration-300 ease-out ${showFilters ? "translate-y-0" : "translate-y-full pointer-events-none"}`}
+        style={{ maxHeight: '85vh' }}
+      >
+        {/* ハンドル */}
+        <div className="flex justify-center py-3">
+          <div className="w-10 h-1 bg-gray-300 rounded-full" />
+        </div>
+
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between px-4 pb-3 border-b">
+          <h3 className="text-lg font-bold">フィルター</h3>
+          <div className="flex items-center gap-3">
+            {hasActiveFilters && (
+              <button onClick={clearFilters} className="text-sm text-orange-500 hover:text-orange-600">
+                クリア
+              </button>
+            )}
+            <button onClick={() => setShowFilters(false)} className="p-2 hover:bg-gray-100 rounded-full">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* フィルター内容 */}
+        <div className="overflow-y-auto overflow-x-hidden px-4 py-3 space-y-4" style={{ maxHeight: 'calc(85vh - 140px)' }}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">タイプ</label>
+            <label className="block text-xs font-medium text-gray-600 mb-2">タイプ</label>
             <div className="flex gap-2">
               {[
                 { value: 'all', label: 'すべて', emoji: '📋' },
@@ -511,7 +536,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <MapPin className="h-4 w-4 inline mr-2" />
               実施形式
             </label>
@@ -529,7 +554,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <Calendar className="h-4 w-4 inline mr-2" />
               希望曜日
             </label>
@@ -539,11 +564,10 @@ function ExploreContent() {
                   key={day.value}
                   type="button"
                   onClick={() => toggleDay(day.value)}
-                  className={`w-10 h-10 rounded-full font-medium text-sm transition-all ${
-                    selectedDays.includes(day.value)
+                  className={`w-8 h-8 rounded-full font-medium text-xs transition-all ${selectedDays.includes(day.value)
                       ? day.value === 'sat' ? 'bg-blue-500 text-white' : day.value === 'sun' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   {day.label}
                 </button>
@@ -552,7 +576,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <Clock className="h-4 w-4 inline mr-2" />
               希望時間帯
             </label>
@@ -572,7 +596,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">カテゴリ</label>
+            <label className="block text-xs font-medium text-gray-600 mb-2">カテゴリ</label>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setCategoryId(null)}
@@ -593,7 +617,7 @@ function ExploreContent() {
           </div>
           {/* 表示オプション */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">表示オプション</label>
+            <label className="block text-xs font-medium text-gray-600 mb-2">表示オプション</label>
             <div className="flex flex-wrap gap-3">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -618,11 +642,11 @@ function ExploreContent() {
 
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <Tag className="h-4 w-4 inline mr-2" />
               タグで絞り込み
             </label>
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-2">
               <input
                 type="text"
                 value={tagInput}
@@ -633,13 +657,13 @@ function ExploreContent() {
                     addTag(tagInput);
                   }
                 }}
-                placeholder="タグを入力してEnter..."
-                className="flex-1 h-10 px-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="タグを入力..."
+                className="min-w-0 flex-1 h-9 px-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
               <button
                 type="button"
                 onClick={() => addTag(tagInput)}
-                className="px-4 h-10 bg-orange-500 text-white rounded-lg hover:bg-orange-600"
+                className="px-3 h-9 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 whitespace-nowrap"
               >
                 追加
               </button>
@@ -674,7 +698,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">🎓 投稿者のレベル</label>
+            <label className="block text-xs font-medium text-gray-600 mb-2">🎓 投稿者のレベル</label>
             <div className="flex items-center justify-center gap-3 mb-4 py-2 bg-gray-50 rounded-lg">
               <span className="text-xl">{posterMinInfo.emoji}</span>
               <span className="font-medium text-sm">{posterMinInfo.name}</span>
@@ -726,7 +750,7 @@ function ExploreContent() {
 
           {/* 自分のレベル（応募条件マッチ） */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <User className="h-4 w-4 inline mr-2" />
               自分のレベルで応募できる投稿を探す
             </label>
@@ -764,7 +788,17 @@ function ExploreContent() {
             </button>
           )}
         </div>
-      )}
+
+        {/* 適用ボタン */}
+        <div className="p-4 border-t bg-white">
+          <button
+            onClick={() => setShowFilters(false)}
+            className="w-full py-3 bg-orange-500 text-white font-medium rounded-xl hover:bg-orange-600 transition-colors"
+          >
+            {filteredPosts.length}件の投稿を見る
+          </button>
+        </div>
+      </div>
 
       {hasActiveFilters && !showFilters && (
         <div className="flex flex-wrap gap-2 mb-6">
@@ -783,7 +817,7 @@ function ExploreContent() {
       )}
 
       {isLoading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-1 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (<PostCardSkeleton key={i} />))}
         </div>
       ) : filteredPosts.length === 0 ? (
@@ -796,7 +830,7 @@ function ExploreContent() {
       ) : (
         <>
           <p className="text-sm text-gray-500 mb-4">{filteredPosts.length}件の投稿</p>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-1 md:grid-cols-2 lg:grid-cols-3">
             {filteredPosts.map((post) => (<PostCard key={post.id} post={post} isApplied={appliedPostIds.has(post.id)} />))}
           </div>
           {/* 無限スクロールトリガー */}
@@ -821,13 +855,26 @@ function ExploreContent() {
           </div>
         </>
       )}
+
+      {/* FAB フィルターボタン */}
+      <button
+        onClick={() => setShowFilters(true)}
+        className="fixed bottom-6 right-6 z-30 h-14 px-5 rounded-full shadow-lg flex items-center gap-2 transition-all bg-gray-100 text-gray-900 border hover:shadow-xl"
+        style={{ display: showFilters ? 'none' : 'flex' }}
+      >
+        <SlidersHorizontal className="h-5 w-5" />
+        <span className="font-medium">絞り込み</span>
+        {hasActiveFilters && (
+          <span className="ml-1 h-5 w-5 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">!</span>
+        )}
+      </button>
     </div>
   );
 }
 
 export default function ExplorePage() {
   return (
-    <Suspense fallback={<div className="container mx-auto px-4 py-8"><div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[1, 2, 3, 4, 5, 6].map((i) => (<PostCardSkeleton key={i} />))}</div></div>}>
+    <Suspense fallback={<div className="max-w-6xl mx-auto px-4 py-8"><div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{[1, 2, 3, 4, 5, 6].map((i) => (<PostCardSkeleton key={i} />))}</div></div>}>
       <ExploreContent />
     </Suspense>
   );

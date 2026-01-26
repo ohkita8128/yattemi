@@ -10,7 +10,7 @@ import { ROUTES } from '@/lib/constants';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ReviewForm } from '@/components/reviews';
 
-export default function ChallengeCompletePage() {
+export default function MatchReviewPage() {
   const params = useParams();
   const router = useRouter();
   const matchId = params.id as string;
@@ -46,13 +46,13 @@ export default function ChallengeCompletePage() {
 
       if (data) {
         setMatchInfo(data);
-        
+
         const { data: owner } = await (supabase as any)
           .from('profiles')
           .select('id, username, display_name, avatar_url')
           .eq('id', data.application.post.user_id)
           .single();
-        
+
         setPostOwner(owner);
       }
       setIsLoading(false);
@@ -68,17 +68,17 @@ export default function ChallengeCompletePage() {
     return isPostOwner ? matchInfo.application.applicant : postOwner;
   };
 
-  // 自分の役割を取得（サポーター or チャレンジャー）
+  // 自分の役割を取得（senpai = 教える側, kouhai = 学ぶ側）
   const getMyRole = (): ReviewerRole => {
     if (!matchInfo || !user) return 'kouhai';
-    
+
     const postType = matchInfo.application.post.type;
     const isPostOwner = matchInfo.application.post.user_id === user.id;
-    
-    // サポートしたい投稿の投稿者 → サポーター
-    // サポートしたい投稿の応募者 → チャレンジャー
-    // チャレンジしたい投稿の投稿者 → チャレンジャー
-    // チャレンジしたい投稿の応募者 → サポーター
+
+    // サポート投稿の投稿者 → 教える側(senpai)
+    // サポート投稿の応募者 → 学ぶ側(kouhai)
+    // チャレンジ投稿の投稿者 → 学ぶ側(kouhai)
+    // チャレンジ投稿の応募者 → 教える側(senpai)
     if (postType === 'support') {
       return isPostOwner ? 'senpai' : 'kouhai';
     } else {
@@ -126,10 +126,10 @@ export default function ChallengeCompletePage() {
               投稿を探す
             </Link>
             <Link
-              href={myRole === 'senpai' ? '/support' : '/challenges'}
+              href={ROUTES.MATCHES}
               className="h-12 px-6 rounded-xl border border-gray-300 text-gray-600 font-medium hover:bg-gray-50 inline-flex items-center justify-center"
             >
-              {myRole === 'senpai' ? 'サポート' : 'チャレンジ'}一覧へ
+              メッセージ一覧へ
             </Link>
           </div>
         </div>
@@ -142,13 +142,13 @@ export default function ChallengeCompletePage() {
       {/* Header */}
       <div className="mb-6">
         <Link
-          href={myRole === 'senpai' ? `/support/${matchId}` : `/challenges/${matchId}`}
+          href={`/matches/${matchId}`}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 mb-4"
         >
           <ArrowLeft className="h-4 w-4" />
           戻る
         </Link>
-        
+
         <div className="flex items-center gap-3 mb-2">
           <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
             <CheckCircle2 className="h-6 w-6 text-green-500" />

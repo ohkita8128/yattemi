@@ -144,13 +144,13 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
     <Link
       href={'/posts/' + post.id}
       className={cn(
-        "block bg-white rounded-xl border hover:bg-gray-50 transition-colors",
+        "block bg-white rounded-md border hover:bg-gray-50 transition-colors",
         isClosed && "opacity-60"
       )}
     >
       {/* ヘッダー */}
       {showAuthor && author && (
-        <div className="p-4 pb-3 border-b">
+        <div className="px-3 py-2 border-b">
           {/* 1行目: アバター + 名前 + 時間 */}
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -265,7 +265,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
       )}
 
       {/* 本文 */}
-      <div className="p-4 pt-3">
+      <div className="px-3 py-2">
         {/* タイトル */}
         <h3 className="font-semibold text-base line-clamp-2">
           {post.title}
@@ -299,7 +299,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
 
         {/* 画像 */}
         {post.images && post.images.length > 0 && (
-          <div className="mt-3 rounded-xl overflow-hidden max-h-[180px]">
+          <div className="mt-2 rounded-md overflow-hidden max-h-[180px]">
             {post.images.length === 1 ? (
               <img src={post.images[0]} alt="" className="w-full h-full max-h-[180px] object-cover" />
             ) : (
@@ -322,7 +322,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
         )}
 
         {/* メタ情報 + いいね */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t">
+        <div className="flex items-center justify-between mt-2 pt-2 border-t">
           {/* 左側: レベル、日程、形式 */}
           <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
             {level && (

@@ -158,6 +158,14 @@ export function Header() {
                       プロフィール
                     </Link>
                     <Link
+                      href="/dashboard"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
+                    >
+                      <FileText className="h-4 w-4 text-gray-400" />
+                      管理
+                    </Link>
+                    <Link
                       href={ROUTES.APPLICATIONS}
                       onClick={() => setIsDropdownOpen(false)}
                       className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
