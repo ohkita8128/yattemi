@@ -180,23 +180,7 @@ export default function ChatPage() {
   };
 
   // レビューページのパスを取得
-  const getReviewPath = () => {
-    if (!matchInfo || !user) return '';
-    const isPostOwner = matchInfo.application.post.user_id === user.id;
-    const postType = matchInfo.application.post.type;
-    
-    // 自分がサポーター（教える側）なら /support/[id]/complete
-    // 自分がチャレンジャー（学ぶ側）なら /challenges/[id]/complete
-    if (isPostOwner) {
-      return postType === 'support' 
-        ? `/support/${matchId}/complete`
-        : `/challenges/${matchId}/complete`;
-    } else {
-      return postType === 'support'
-        ? `/challenges/${matchId}/complete`
-        : `/support/${matchId}/complete`;
-    }
-  };
+  const getReviewPath = () => `/matches/${matchId}/review`;
 
   const partner = getPartner();
   const myRole = getMyRole();
