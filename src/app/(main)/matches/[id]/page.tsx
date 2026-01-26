@@ -25,6 +25,7 @@ export default function ChatPage() {
   const [category, setCategory] = useState<any>(null);
   const [showPostDetail, setShowPostDetail] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const supabase = getClient();
 
   // 認証チェック
@@ -78,7 +79,7 @@ export default function ChatPage() {
 
   // スクロール
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) { messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight; }
   }, [messages]);
 
   // 既読にする
@@ -266,7 +267,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 bg-white">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 bg-white">
         <div className="container mx-auto max-w-2xl space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-8">
