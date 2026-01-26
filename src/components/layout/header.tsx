@@ -171,7 +171,7 @@ export function Header() {
                       className="flex items-center gap-3 px-4 py-2 text-sm hover:bg-gray-50"
                     >
                       <FileText className="h-4 w-4 text-gray-400" />
-                      応募管理
+                      応募
                     </Link>
                     <Link
                       href="/matches"

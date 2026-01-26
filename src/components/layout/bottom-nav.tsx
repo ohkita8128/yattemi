@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Search, Plus, LayoutDashboard, User } from 'lucide-react';
+import { Home, Search, Plus, LucideMail, User } from 'lucide-react';
 import { useAuth } from '@/hooks';
 import { cn } from '@/lib/utils';
 
@@ -10,8 +10,8 @@ const navItems = [
   { label: 'ホーム', href: '/', icon: Home },
   { label: '探す', href: '/explore', icon: Search },
   { label: '投稿', href: '/posts/new', icon: Plus, highlight: true },
-  { label: '管理', href: '/dashboard', icon: LayoutDashboard },
-  { label: 'マイ', href: '/profile', icon: User },
+  { label: 'メッセージ', href: '/matches', icon: LucideMail },
+  { label: 'マイページ', href: '/profile', icon: User },
 ];
 
 export function BottomNav() {
