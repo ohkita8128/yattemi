@@ -641,7 +641,7 @@ function ExploreContent() {
               <Tag className="h-4 w-4 inline mr-2" />
               タグで絞り込み
             </label>
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mb-2">
               <input
                 type="text"
                 value={tagInput}
@@ -652,13 +652,13 @@ function ExploreContent() {
                     addTag(tagInput);
                   }
                 }}
-                placeholder="タグを入力してEnter..."
-                className="flex-1 h-10 px-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
+                placeholder="タグを入力..."
+                className="min-w-0 flex-1 h-9 px-3 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
               <button
                 type="button"
                 onClick={() => addTag(tagInput)}
-                className="px-3 h-9 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 flex-shrink-0"
+                className="px-3 h-9 bg-orange-500 text-white text-sm rounded-lg hover:bg-orange-600 whitespace-nowrap"
               >
                 追加
               </button>
