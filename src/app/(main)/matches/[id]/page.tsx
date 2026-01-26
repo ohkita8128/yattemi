@@ -231,7 +231,10 @@ export default function ChatPage() {
 
           {partner && (
             <div className="flex items-center gap-3 flex-1">
-              <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+              <Link
+                href={`/users/${partner.username}`}
+                className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-orange-300 transition-all"
+              >
                 {partner.avatar_url ? (
                   <img
                     src={partner.avatar_url}
@@ -241,9 +244,11 @@ export default function ChatPage() {
                 ) : (
                   <User className="h-5 w-5 text-orange-500" />
                 )}
-              </div>
+              </Link>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{partner.display_name}</p>
+                <Link href={`/users/${partner.username}`} className="font-medium truncate hover:text-orange-500">
+                  {partner.display_name}
+                </Link>
                 <p className="text-xs text-gray-500">
                   あなたは{myRole}
                 </p>

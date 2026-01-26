@@ -96,8 +96,7 @@ export default function MatchesPage() {
               .select('content, created_at, sender_id')
               .eq('match_id', match.id)
               .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
+              .limit(1).maybeSingle();
 
             // 未読数
             const { count: unreadCount } = await (supabase as any)

@@ -134,15 +134,21 @@ export function useMessages(matchId: string) {
   };
 
   const markAsRead = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     try {
-      await (supabase as any)
+      const { error } = await (supabase as any)
         .from('messages')
         .update({ is_read: true })
         .eq('match_id', matchId)
         .neq('sender_id', user.id)
         .eq('is_read', false);
+
+      if (error) {
+        console.error('[useMessages] markAsRead error:', error);
+      }
     } catch (error) {
       console.error('[useMessages] Error marking as read:', error);
     }
