@@ -508,9 +508,9 @@ function ExploreContent() {
         </div>
 
         {/* フィルター内容 */}
-        <div className="overflow-y-auto p-4 space-y-6" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+        <div className="overflow-y-auto overflow-x-hidden px-4 py-3 space-y-4" style={{ maxHeight: 'calc(85vh - 140px)' }}>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">タイプ</label>
+            <label className="block text-xs font-medium text-gray-600 mb-2">タイプ</label>
             <div className="flex gap-2">
               {[
                 { value: 'all', label: 'すべて', emoji: '📋' },
@@ -530,7 +530,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <MapPin className="h-4 w-4 inline mr-2" />
               実施形式
             </label>
@@ -548,7 +548,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <Calendar className="h-4 w-4 inline mr-2" />
               希望曜日
             </label>
@@ -558,7 +558,7 @@ function ExploreContent() {
                   key={day.value}
                   type="button"
                   onClick={() => toggleDay(day.value)}
-                  className={`w-10 h-10 rounded-full font-medium text-sm transition-all ${
+                  className={`w-8 h-8 rounded-full font-medium text-xs transition-all ${
                     selectedDays.includes(day.value)
                       ? day.value === 'sat' ? 'bg-blue-500 text-white' : day.value === 'sun' ? 'bg-red-500 text-white' : 'bg-orange-500 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -571,7 +571,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <Clock className="h-4 w-4 inline mr-2" />
               希望時間帯
             </label>
@@ -591,7 +591,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">カテゴリ</label>
+            <label className="block text-xs font-medium text-gray-600 mb-2">カテゴリ</label>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setCategoryId(null)}
@@ -612,7 +612,7 @@ function ExploreContent() {
           </div>
           {/* 表示オプション */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">表示オプション</label>
+            <label className="block text-xs font-medium text-gray-600 mb-2">表示オプション</label>
             <div className="flex flex-wrap gap-3">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -637,7 +637,7 @@ function ExploreContent() {
 
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <Tag className="h-4 w-4 inline mr-2" />
               タグで絞り込み
             </label>
@@ -693,7 +693,7 @@ function ExploreContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">🎓 投稿者のレベル</label>
+            <label className="block text-xs font-medium text-gray-600 mb-2">🎓 投稿者のレベル</label>
             <div className="flex items-center justify-center gap-3 mb-4 py-2 bg-gray-50 rounded-lg">
               <span className="text-xl">{posterMinInfo.emoji}</span>
               <span className="font-medium text-sm">{posterMinInfo.name}</span>
@@ -745,7 +745,7 @@ function ExploreContent() {
 
           {/* 自分のレベル（応募条件マッチ） */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
               <User className="h-4 w-4 inline mr-2" />
               自分のレベルで応募できる投稿を探す
             </label>
