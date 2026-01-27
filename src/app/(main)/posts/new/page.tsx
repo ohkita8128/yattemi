@@ -49,6 +49,7 @@ export default function NewPostPage() {
           available_times: data.availableTimes,
           specific_dates: data.specificDates,
           images: data.images,
+          deadline_at: data.deadlineAt,  // ← 追加
         })
         .select()
         .single();

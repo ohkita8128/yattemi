@@ -26,6 +26,29 @@ const TIME_LABELS: Record<string, string> = {
   evening: '夜',
 };
 
+// 残り日数を計算（7日以内のみ表示）
+function getDeadlineDisplay(deadlineAt: string | null | undefined): {
+  text: string;
+  className: string;
+} | null {
+  if (!deadlineAt) return null;
+
+  const now = new Date();
+  const deadline = new Date(deadlineAt);
+  const diffMs = deadline.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0 || diffDays > 7) return null;
+
+  if (diffDays === 0) {
+    return { text: '今日まで', className: 'text-red-500' };
+  } else if (diffDays <= 3) {
+    return { text: `あと${diffDays}日`, className: 'text-orange-500' };
+  } else {
+    return { text: `あと${diffDays}日`, className: 'text-gray-400' };
+  }
+}
+
 interface PostCardProps {
   post: {
     id: string;
@@ -46,6 +69,7 @@ interface PostCardProps {
     images?: string[] | null;
     created_at: string;
     status?: string;
+    deadline_at?: string | null;
     profile?: {
       id: string;
       username: string | null;
@@ -82,25 +106,27 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
 
   // 締め切り判定
   const isClosed = post.status === 'closed';
+  // 残り日数（追加）
+  const deadlineDisplay = !isClosed ? getDeadlineDisplay(post.deadline_at) : null;
 
   // 日程を整形
   const formatSchedule = () => {
     const parts: string[] = [];
-    
+
     if (post.available_days && post.available_days.length > 0) {
       const days = post.available_days
         .map(d => DAY_LABELS[d] || d)
         .join('');
       parts.push(days);
     }
-    
+
     if (post.available_times && post.available_times.length > 0) {
       const times = post.available_times
         .map(t => TIME_LABELS[t] || t)
         .join('/');
       parts.push(times);
     }
-    
+
     return parts.length > 0 ? parts.join('・') : null;
   };
 
@@ -303,15 +329,13 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
             {post.images.length === 1 ? (
               <img src={post.images[0]} alt="" className="w-full h-full max-h-[180px] object-cover" />
             ) : (
-              <div className={`grid gap-0.5 h-[180px] ${
-                post.images.length === 2 ? 'grid-cols-2' : 'grid-cols-2'
-              }`}>
+              <div className={`grid gap-0.5 h-[180px] ${post.images.length === 2 ? 'grid-cols-2' : 'grid-cols-2'
+                }`}>
                 {post.images.slice(0, 4).map((url, index) => (
                   <div
                     key={index}
-                    className={`relative overflow-hidden ${
-                      post.images!.length === 3 && index === 0 ? 'row-span-2' : ''
-                    }`}
+                    className={`relative overflow-hidden ${post.images!.length === 3 && index === 0 ? 'row-span-2' : ''
+                      }`}
                   >
                     <img src={url} alt="" className="w-full h-full object-cover" />
                   </div>
@@ -336,16 +360,22 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
               {style.text}
             </span>
           </div>
-          {/* 右側: 質問数 + いいね */}
+          {/* 右側: 締め切り + 質問数 + いいね */}
           <div className="flex items-center gap-3">
-              {/* 質問数 */}
-              <span className="flex items-center gap-1 text-xs text-gray-400">
-                <MessageCircle className="h-4 w-4" />
-                <span>{post.questions_count || 0}</span>
+            {/* 締め切り */}
+            {deadlineDisplay && (
+              <span className={cn('text-xs flex items-center gap-0.5', deadlineDisplay.className)}>
+                ⏰ {deadlineDisplay.text}
               </span>
+            )}
 
+            {/* 質問数 */}
+            <span className="flex items-center gap-1 text-xs text-gray-400">
+              <MessageCircle className="h-4 w-4" />
+              <span>{post.questions_count || 0}</span>
+            </span>
 
-            {/* 右側: いいね */}
+            {/* いいね */}
             <button
               onClick={handleLikeClick}
               disabled={!user || isLoading}

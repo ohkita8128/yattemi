@@ -28,6 +28,11 @@ export const postSchema = z.object({
     .default(1),
   location: z.string().max(100, '場所は100文字以内で入力してください').optional(),
   isOnline: z.boolean().nullable().default(null),
+  // 締め切り日時
+ deadlineAt: z
+  .string()
+  .datetime({ offset: true })
+  .default(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString()),
   // 旧フィールド（後方互換のため残す）
   preferredSchedule: z
     .string()

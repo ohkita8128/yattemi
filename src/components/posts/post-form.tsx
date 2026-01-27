@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { X, ImagePlus, Loader2 } from 'lucide-react';
+import { X, ImagePlus, Loader2, Calendar } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { compressPostImage } from '@/lib/image-compression';
 
@@ -32,6 +32,34 @@ interface PostFormProps {
   isSubmitting?: boolean;
 }
 
+// 締め切りプリセット
+const DEADLINE_PRESETS = [
+  { label: '1週間', days: 7 },
+  { label: '2週間', days: 14 },
+  { label: '1ヶ月', days: 30 },
+] as const;
+
+function getDefaultDeadline(): string {
+  const date = new Date();
+  date.setDate(date.getDate() + 14); // デフォルト2週間
+  return date.toISOString();
+}
+
+function formatDeadlineDisplay(isoString: string): string {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const now = new Date();
+  const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  return `${month}/${day}（あと${diffDays}日）`;
+}
+
+function formatDateForInput(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toISOString().split('T')[0]!;
+}
+
 export function PostForm({
   categories,
   defaultType = 'support',
@@ -58,12 +86,14 @@ export function PostForm({
       availableDays: [],
       availableTimes: [],
       specificDates: [],
+      deadlineAt: getDefaultDeadline(),
       ...defaultValues,
     },
   });
 
   const [images, setImages] = useState<string[]>(defaultValues?.images || []);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -124,6 +154,19 @@ export function PostForm({
     setValue('images', updatedImages);
   };
 
+  const setDeadlineByDays = (days: number) => {
+    const date = new Date();
+    date.setDate(date.getDate() + days);
+    setValue('deadlineAt', date.toISOString());
+    setShowDatePicker(false);
+  };
+
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const date = new Date(e.target.value);
+    date.setHours(23, 59, 59, 999); // 日付の終わりに設定
+    setValue('deadlineAt', date.toISOString());
+  };
+
   const selectedType = watch('type');
   const isOnline = watch('isOnline');
   const myLevel = watch('myLevel') ?? 5;
@@ -133,6 +176,14 @@ export function PostForm({
   const availableTimes = watch('availableTimes') ?? [];
   const specificDates = watch('specificDates') ?? [];
   const maxApplicants = watch('maxApplicants') ?? 1;
+  const watchedDeadline = watch('deadlineAt');
+const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : getDefaultDeadline();
+
+  // 締め切り日の最小・最大
+  const minDate = new Date();
+  minDate.setDate(minDate.getDate() + 1);
+  const maxDate = new Date();
+  maxDate.setDate(maxDate.getDate() + 30);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -258,6 +309,67 @@ export function PostForm({
         {errors.categoryId && (
           <p className="text-sm text-destructive">{errors.categoryId.message}</p>
         )}
+      </div>
+
+      {/* Deadline */}
+      <div className="space-y-2">
+        <Label>募集期限</Label>
+        <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+          {/* プリセットボタン */}
+          <div className="flex gap-2">
+            {DEADLINE_PRESETS.map((preset) => {
+              const presetDate = new Date();
+              presetDate.setDate(presetDate.getDate() + preset.days);
+              const isSelected = Math.abs(new Date(deadlineAt).getTime() - presetDate.getTime()) < 1000 * 60 * 60 * 24;
+              return (
+                <button
+                  key={preset.days}
+                  type="button"
+                  onClick={() => setDeadlineByDays(preset.days)}
+                  className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                    isSelected
+                      ? 'border-orange-500 bg-orange-50 text-orange-700'
+                      : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
+          
+          {/* 現在の設定表示 + カレンダー切り替え */}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-600">
+              締め切り: <span className="font-semibold text-gray-800">{formatDeadlineDisplay(deadlineAt)}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1"
+            >
+              <Calendar className="h-4 w-4" />
+              日付を指定
+            </button>
+          </div>
+
+          {/* カレンダー（日付指定） */}
+          {showDatePicker && (
+            <div className="pt-2 border-t">
+              <input
+                type="date"
+                value={formatDateForInput(deadlineAt ?? getDefaultDeadline())}
+                onChange={handleDateChange}
+                min={formatDateForInput(minDate.toISOString())}
+                max={formatDateForInput(maxDate.toISOString())}
+                className="w-full p-2 border rounded-lg text-sm"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                ※ 1日〜30日後の範囲で設定できます
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* My Level */}
