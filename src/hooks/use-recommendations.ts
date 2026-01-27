@@ -10,7 +10,7 @@ export function useRecommendations(limit: number = 6) {
   const [posts, setPosts] = useState<PostWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const supabaseRef = useRef(getClient());
-  const hasFetched = useRef(false);  // 追加: 一度だけ実行
+  const hasFetched = useRef(false);
 
   useEffect(() => {
     if (!user?.id) {
@@ -18,7 +18,6 @@ export function useRecommendations(limit: number = 6) {
       return;
     }
 
-    // 既に取得済みならスキップ
     if (hasFetched.current) return;
     hasFetched.current = true;
 
@@ -38,7 +37,6 @@ export function useRecommendations(limit: number = 6) {
           ?.map((l: any) => l.post?.category_id)
           .filter(Boolean) || [];
 
-        // 重複を除去
         const uniqueCategories = Array.from(new Set(likedCategories)) as number[];
 
         // 2. おすすめ投稿を取得
@@ -56,7 +54,6 @@ export function useRecommendations(limit: number = 6) {
           .order('likes_count', { ascending: false })
           .limit(limit);
 
-        // カテゴリがあれば絞り込み
         if (uniqueCategories.length > 0) {
           query = query.in('category_id', uniqueCategories);
         }
@@ -66,8 +63,10 @@ export function useRecommendations(limit: number = 6) {
         if (error) throw error;
 
         // 3. 結果が少なければ人気投稿で補完
-        if (!data || data.length < limit) {
-          const existingIds = data?.map((p: any) => p.id) || [];
+        let allPosts = data || [];
+        
+        if (allPosts.length < limit) {
+          const existingIds = allPosts.map((p: any) => p.id);
           
           const { data: popular } = await (supabase as any)
             .from('posts')
@@ -81,12 +80,40 @@ export function useRecommendations(limit: number = 6) {
             .not('id', 'in', `(${existingIds.join(',') || 'null'})`)
             .or(`deadline_at.gt.${now},deadline_at.is.null`)
             .order('likes_count', { ascending: false })
-            .limit(limit - (data?.length || 0));
+            .limit(limit - allPosts.length);
 
-          setPosts([...(data || []), ...(popular || [])]);
-        } else {
-          setPosts(data);
+          allPosts = [...allPosts, ...(popular || [])];
         }
+
+        // 4. ✅ いいね・応募状態を一括取得（N+1回避）
+        if (allPosts.length > 0) {
+          const postIds = allPosts.map((p: any) => p.id);
+
+          const [likesResult, applicationsResult] = await Promise.all([
+            (supabase as any)
+              .from('likes')
+              .select('post_id')
+              .eq('user_id', user.id)
+              .in('post_id', postIds),
+            (supabase as any)
+              .from('applications')
+              .select('post_id')
+              .eq('applicant_id', user.id)
+              .in('post_id', postIds),
+          ]);
+
+          const likedIds = new Set(likesResult.data?.map((l: any) => l.post_id) || []);
+          const appliedIds = new Set(applicationsResult.data?.map((a: any) => a.post_id) || []);
+
+          // 5. 投稿にステータスを付与
+          allPosts = allPosts.map((p: any) => ({
+            ...p,
+            is_liked: likedIds.has(p.id),
+            is_applied: appliedIds.has(p.id),
+          }));
+        }
+
+        setPosts(allPosts);
       } catch (error) {
         console.error('Error fetching recommendations:', error);
         setPosts([]);

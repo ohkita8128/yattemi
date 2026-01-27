@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getClient } from '@/lib/supabase/client';
 import { useAuth } from './use-auth';
 
@@ -14,23 +14,29 @@ export function useFollow(targetUserId: string | undefined) {
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
-  const supabase = getClient();
+  const supabaseRef = useRef(getClient());
+  const hasFetched = useRef(false);
 
   // フォロー状態を取得
   useEffect(() => {
+    // 既に取得済みならスキップ
+    if (hasFetched.current) return;
+
     const checkFollowing = async () => {
       if (!user || !targetUserId || user.id === targetUserId) {
         setIsLoading(false);
         return;
       }
 
+      hasFetched.current = true;
+
       try {
-        const { data } = await (supabase as any)
+        const { data } = await (supabaseRef.current as any)
           .from('follows')
           .select('id')
           .eq('follower_id', user.id)
           .eq('following_id', targetUserId)
-          .single();
+          .maybeSingle();
 
         setIsFollowing(!!data);
       } catch (error) {
@@ -41,7 +47,12 @@ export function useFollow(targetUserId: string | undefined) {
     };
 
     checkFollowing();
-  }, [user, targetUserId, supabase]);
+  }, [user?.id, targetUserId]);
+
+  // targetUserId が変わったらリセット
+  useEffect(() => {
+    hasFetched.current = false;
+  }, [targetUserId]);
 
   // フォロー/アンフォロー切り替え
   const toggleFollow = useCallback(async () => {
@@ -51,7 +62,7 @@ export function useFollow(targetUserId: string | undefined) {
     try {
       if (isFollowing) {
         // アンフォロー
-        await (supabase as any)
+        await (supabaseRef.current as any)
           .from('follows')
           .delete()
           .eq('follower_id', user.id)
@@ -59,7 +70,7 @@ export function useFollow(targetUserId: string | undefined) {
         setIsFollowing(false);
       } else {
         // フォロー
-        await (supabase as any)
+        await (supabaseRef.current as any)
           .from('follows')
           .insert({
             follower_id: user.id,
@@ -72,7 +83,7 @@ export function useFollow(targetUserId: string | undefined) {
     } finally {
       setIsLoading(false);
     }
-  }, [user, targetUserId, isFollowing, supabase]);
+  }, [user, targetUserId, isFollowing]);
 
   return { isFollowing, isLoading, toggleFollow };
 }
@@ -81,17 +92,22 @@ export function useFollow(targetUserId: string | undefined) {
 export function useFollowCounts(userId: string | undefined) {
   const [counts, setCounts] = useState<FollowCounts>({ followers_count: 0, following_count: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = getClient();
+  const supabaseRef = useRef(getClient());
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+
     const fetchCounts = async () => {
       if (!userId) {
         setIsLoading(false);
         return;
       }
 
+      hasFetched.current = true;
+
       try {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await (supabaseRef.current as any)
           .rpc('get_follow_counts', { target_user_id: userId });
 
         if (error) throw error;
@@ -107,7 +123,12 @@ export function useFollowCounts(userId: string | undefined) {
     };
 
     fetchCounts();
-  }, [userId, supabase]);
+  }, [userId]);
+
+  // userId が変わったらリセット
+  useEffect(() => {
+    hasFetched.current = false;
+  }, [userId]);
 
   return { counts, isLoading };
 }
@@ -116,17 +137,22 @@ export function useFollowCounts(userId: string | undefined) {
 export function useFollowers(userId: string | undefined) {
   const [followers, setFollowers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = getClient();
+  const supabaseRef = useRef(getClient());
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+
     const fetchFollowers = async () => {
       if (!userId) {
         setIsLoading(false);
         return;
       }
 
+      hasFetched.current = true;
+
       try {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await (supabaseRef.current as any)
           .from('follows')
           .select(`
             follower:profiles!follower_id(id, username, display_name, avatar_url)
@@ -144,7 +170,12 @@ export function useFollowers(userId: string | undefined) {
     };
 
     fetchFollowers();
-  }, [userId, supabase]);
+  }, [userId]);
+
+  // userId が変わったらリセット
+  useEffect(() => {
+    hasFetched.current = false;
+  }, [userId]);
 
   return { followers, isLoading };
 }
@@ -153,17 +184,22 @@ export function useFollowers(userId: string | undefined) {
 export function useFollowing(userId: string | undefined) {
   const [following, setFollowing] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const supabase = getClient();
+  const supabaseRef = useRef(getClient());
+  const hasFetched = useRef(false);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+
     const fetchFollowing = async () => {
       if (!userId) {
         setIsLoading(false);
         return;
       }
 
+      hasFetched.current = true;
+
       try {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await (supabaseRef.current as any)
           .from('follows')
           .select(`
             following:profiles!following_id(id, username, display_name, avatar_url)
@@ -181,7 +217,12 @@ export function useFollowing(userId: string | undefined) {
     };
 
     fetchFollowing();
-  }, [userId, supabase]);
+  }, [userId]);
+
+  // userId が変わったらリセット
+  useEffect(() => {
+    hasFetched.current = false;
+  }, [userId]);
 
   return { following, isLoading };
 }

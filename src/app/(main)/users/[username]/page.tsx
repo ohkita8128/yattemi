@@ -124,7 +124,7 @@ export default function UserProfilePage() {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
-      // プロフィール取得
+      // プロフィール取得（これは最初に必要）
       const { data: profileData, error: profileError } = await (supabase as any)
         .from('profiles')
         .select('*')
@@ -138,87 +138,91 @@ export default function UserProfilePage() {
 
       setProfile(profileData);
 
-      // プロフィール画像取得
-      const { data: images } = await (supabase as any)
-        .from('profile_images')
-        .select('*')
-        .eq('user_id', profileData.id)
-        .order('position', { ascending: true });
+      // ✅ 残りは並列で取得！
+      const [
+        imagesResult,
+        postsResult,
+        reviewsResult,
+        followersResult,
+        followingResult,
+        followStatusResult,
+      ] = await Promise.all([
+        // プロフィール画像
+        (supabase as any)
+          .from('profile_images')
+          .select('*')
+          .eq('user_id', profileData.id)
+          .order('position', { ascending: true }),
 
-      if (images) {
-        setProfileImages(images);
-      }
-
-      // 投稿取得
-      const { data: postsData } = await (supabase as any)
-        .from('posts')
-        .select(`
+        // 投稿
+        (supabase as any)
+          .from('posts')
+          .select(`
           *,
           profiles (id, username, display_name, avatar_url, university),
           categories (id, name, slug)
         `)
-        .eq('user_id', profileData.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+          .eq('user_id', profileData.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false }),
 
-      if (postsData) {
-        setPosts(postsData);
-      }
-
-      // バッジ取得（エラーハンドリング追加）
-      try {
-        const { data: reviews, error: reviewsError } = await (supabase as any)
+        // レビュー（バッジ用）
+        (supabase as any)
           .from('reviews')
           .select('badges')
-          .eq('reviewee_id', profileData.id);
+          .eq('reviewee_id', profileData.id),
 
-        if (!reviewsError && reviews) {
-          const badgeCounts: Record<string, number> = {};
-          reviews.forEach((review: any) => {
-            if (review.badges && Array.isArray(review.badges)) {
-              review.badges.forEach((badge: string) => {
-                badgeCounts[badge] = (badgeCounts[badge] || 0) + 1;
-              });
-            }
-          });
+        // フォロワー数
+        (supabase as any)
+          .from('follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('following_id', profileData.id),
 
-          const badgeArray = Object.entries(badgeCounts)
-            .map(([badge_type, count]) => ({ badge_type, count }))
-            .sort((a, b) => b.count - a.count);
+        // フォロー数
+        (supabase as any)
+          .from('follows')
+          .select('*', { count: 'exact', head: true })
+          .eq('follower_id', profileData.id),
 
-          setBadges(badgeArray);
-        }
-      } catch (e) {
-        console.log('Reviews table not available');
-      }
-
-      // フォロワー数
-      const { count: followers } = await (supabase as any)
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('following_id', profileData.id);
-
-      setFollowersCount(followers || 0);
-
-      // フォロー数
-      const { count: following } = await (supabase as any)
-        .from('follows')
-        .select('*', { count: 'exact', head: true })
-        .eq('follower_id', profileData.id);
-
-      setFollowingCount(following || 0);
-
-      // フォロー状態（.single()を削除）
-      if (user) {
-        const { data: followData } = await (supabase as any)
+        // フォロー状態
+        user ? (supabase as any)
           .from('follows')
           .select('id')
           .eq('follower_id', user.id)
           .eq('following_id', profileData.id)
-          .maybeSingle();
+          .maybeSingle() : Promise.resolve({ data: null }),
+      ]);
 
-        setIsFollowing(!!followData);
+      // 結果をセット
+      if (imagesResult.data) {
+        setProfileImages(imagesResult.data);
       }
+
+      if (postsResult.data) {
+        setPosts(postsResult.data);
+      }
+
+      // バッジ処理
+      if (reviewsResult.data) {
+        const badgeCounts: Record<string, number> = {};
+        reviewsResult.data.forEach((review: any) => {
+          if (review.badges && Array.isArray(review.badges)) {
+            review.badges.forEach((badge: string) => {
+              badgeCounts[badge] = (badgeCounts[badge] || 0) + 1;
+            });
+          }
+        });
+
+        const badgeArray = Object.entries(badgeCounts)
+          .map(([badge_type, count]) => ({ badge_type, count }))
+          .sort((a, b) => b.count - a.count);
+
+        setBadges(badgeArray);
+      }
+
+      setFollowersCount(followersResult.count || 0);
+      setFollowingCount(followingResult.count || 0);
+      setIsFollowing(!!followStatusResult.data);
 
       setLoading(false);
     };

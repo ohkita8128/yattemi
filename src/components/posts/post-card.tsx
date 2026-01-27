@@ -95,11 +95,16 @@ interface PostCardProps {
   };
   showAuthor?: boolean;
   isApplied?: boolean;
+  isLiked?: boolean;
 }
 
-export function PostCard({ post, showAuthor = true, isApplied = false }: PostCardProps) {
+export function PostCard({ post, showAuthor = true, isApplied = false, isLiked:initialIsLiked}: PostCardProps) {
   const { user } = useAuth();
-  const { likesCount, isLiked, toggleLike, isLoading } = useLikes(post.id, post.likes_count ?? undefined);
+  const { likesCount, isLiked, toggleLike, isLoading } = useLikes(
+    post.id,
+    post.likes_count ?? undefined,
+    initialIsLiked  // ← 追加
+  );
 
   // profile または user から投稿者情報を取得
   const author = post.profile || post.user || post.profiles;
@@ -300,7 +305,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
         {/* 説明 */}
         {post.description && (
           <p className={cn(
-            "text-sm text-gray-600 mt-1",
+            "text-sm text-gray-600 mt-1 whitespace-pare-line",
             post.images && post.images.length > 0 ? "line-clamp-2" : "line-clamp-6"
           )}>
             {post.description}

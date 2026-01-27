@@ -7,6 +7,9 @@ import { useAuthStore } from '@/stores';
 import { ROUTES } from '@/lib/constants';
 import type { Profile } from '@/types';
 
+// ✅ useAuth の外に置く（モジュール全体で共有）
+let isFetching = false;
+
 export function useAuth() {
   const router = useRouter();
   const {
@@ -26,10 +29,24 @@ export function useAuth() {
   // プロフィールを取得
   const fetchProfile = useCallback(
     async (userId: string) => {
-      // console.log('Fetching profile for:', userId);
-      
+      console.log('isFetching:', isFetching);
+
+      // 既にフェッチ中ならスキップ
+      if (isFetching) {
+        console.log('SKIP: Already fetching');
+        return null;
+      }
+
+      const currentProfile = useAuthStore.getState().profile;
+      if (currentProfile && currentProfile.id === userId) {
+        console.log('SKIP: Already have profile');
+        return currentProfile;
+      }
+
+      console.log('FETCH: Starting...');
+      isFetching = true;  // ← ref じゃなく直接代入
+
       try {
-        // Supabase クライアントの代わりに直接 fetch を使う
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${userId}&select=*`,
           {
@@ -39,18 +56,19 @@ export function useAuth() {
             },
           }
         );
-        
+
         const data = await response.json();
-        // console.log('Profile result:', data);
-        
+
         if (data && data.length > 0) {
           return data[0] as Profile;
         }
-        
+
         return null;
       } catch (err) {
         console.error('Profile fetch exception:', err);
         return null;
+      } finally {
+        isFetching = false;  // ← 完了時にリセット
       }
     },
     []
@@ -60,12 +78,13 @@ export function useAuth() {
   useEffect(() => {
     let isMounted = true;
 
-    // Auth状態の変更を監視（これをメインにする）
+    // 既に初期化済みならスキップ
+    if (useAuthStore.getState().isInitialized) return;
+
+    // Auth状態の変更を監視
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // console.log('Auth event:', event, 'Session:', !!session);
-      
       if (!isMounted) return;
 
       if (session?.user) {
@@ -73,15 +92,19 @@ export function useAuth() {
           id: session.user.id,
           email: session.user.email ?? '',
         });
-        
-        const profile = await fetchProfile(session.user.id);
-        if (isMounted) {
-          setProfile(profile);
+
+        // すでにプロフィールがあれば再取得しない
+        const currentProfile = useAuthStore.getState().profile;
+        if (!currentProfile) {
+          const fetchedProfile = await fetchProfile(session.user.id);
+          if (isMounted) {
+            setProfile(fetchedProfile);
+          }
         }
       } else if (event === 'SIGNED_OUT') {
         reset();
       }
-      
+
       if (isMounted) {
         setLoading(false);
         setInitialized(true);
@@ -90,14 +113,12 @@ export function useAuth() {
 
     // 初期状態のチェック（フォールバック）
     const checkInitialSession = async () => {
-      // 少し待ってからチェック（onAuthStateChangeが先に発火する可能性）
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       if (!isMounted) return;
-      
+
       // まだ初期化されてなければ、セッションなしとして処理
-      if (!isInitialized) {
-        console.log('Fallback: No session detected');
+      if (!useAuthStore.getState().isInitialized) {
         setLoading(false);
         setInitialized(true);
       }
@@ -109,7 +130,8 @@ export function useAuth() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [supabase, setUser, setProfile, setLoading, setInitialized, reset, fetchProfile, isInitialized]);
+  }, [supabase, setUser, setProfile, setLoading, setInitialized, reset, fetchProfile]);
+  //  ↑ isInitialized を削除！
 
   // サインイン
   const signIn = async (email: string, password: string) => {
@@ -185,7 +207,7 @@ export function useAuth() {
     if (!user) return null;
 
     const { data, error } = await supabase
-    .from('profiles')
+      .from('profiles')
       // @ts-ignore
       .update(updates)
       .eq('id', user.id)

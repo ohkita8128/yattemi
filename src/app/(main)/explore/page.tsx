@@ -27,6 +27,9 @@ function ExploreContent() {
 
   const [showFilters, setShowFilters] = useState(false);
   const [appliedPostIds, setAppliedPostIds] = useState<Set<string>>(new Set());
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
+  const [statusLoaded, setStatusLoaded] = useState(false);
+  const statusFetchedRef = useRef(false);  // ← 追加
 
   const filters = useExploreFilters(initialSearch, initialType, initialCategory ? Number(initialCategory) : null);
   const { popularTags } = useTags();
@@ -40,24 +43,44 @@ function ExploreContent() {
     includeClosed: filters.includeClosed,
   });
 
-  // 応募済み投稿を取得
+  // 応募済み・いいね済み投稿を取得
   useEffect(() => {
-    const fetchAppliedPosts = async () => {
+    // 既に取得済みならスキップ
+    if (statusFetchedRef.current) return;
+
+    const fetchUserPostStatus = async () => {
       if (!user) {
         setAppliedPostIds(new Set());
+        setLikedPostIds(new Set());
+        setStatusLoaded(true);
         return;
       }
+
+      statusFetchedRef.current = true;  // ← 追加
+
       const supabase = supabaseRef.current;
-      const { data } = await (supabase as any)
-        .from('applications')
-        .select('post_id')
-        .eq('applicant_id', user.id);
-      if (data) {
-        setAppliedPostIds(new Set(data.map((a: any) => a.post_id)));
+
+      const [applicationsResult, likesResult] = await Promise.all([
+        (supabase as any)
+          .from('applications')
+          .select('post_id')
+          .eq('applicant_id', user.id),
+        (supabase as any)
+          .from('likes')
+          .select('post_id')
+          .eq('user_id', user.id),
+      ]);
+
+      if (applicationsResult.data) {
+        setAppliedPostIds(new Set(applicationsResult.data.map((a: any) => a.post_id)));
       }
+      if (likesResult.data) {
+        setLikedPostIds(new Set(likesResult.data.map((l: any) => l.post_id)));
+      }
+      setStatusLoaded(true);
     };
-    fetchAppliedPosts();
-  }, [user]);
+    fetchUserPostStatus();
+  }, [user?.id]);  // ← user → user?.id に変更
 
   // 無限スクロール
   useEffect(() => {
@@ -248,7 +271,7 @@ function ExploreContent() {
       )}
 
       {/* 投稿一覧 */}
-      {isLoading ? (
+      {(isLoading || !statusLoaded) ? (
         <div className="grid gap-1 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <PostCardSkeleton key={i} />
@@ -270,7 +293,12 @@ function ExploreContent() {
           <p className="text-sm text-gray-500 mb-4">{filteredPosts.length}件の投稿</p>
           <div className="grid gap-1 md:grid-cols-2 lg:grid-cols-3">
             {filteredPosts.map((post) => (
-              <PostCard key={post.id} post={post} isApplied={appliedPostIds.has(post.id)} />
+              <PostCard
+                key={post.id}
+                post={post}
+                isApplied={appliedPostIds.has(post.id)}
+                isLiked={statusLoaded ? likedPostIds.has(post.id) : undefined}
+              />
             ))}
           </div>
           <div ref={loadMoreRef} className="py-8 flex flex-col items-center gap-4">

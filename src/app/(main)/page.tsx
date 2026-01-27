@@ -84,6 +84,7 @@ export default function HomePage() {
   const [recentPosts, setRecentPosts] = useState<Post[]>([]);
   const [followingPosts, setFollowingPosts] = useState<Post[]>([]);
   const [appliedPostIds, setAppliedPostIds] = useState<Set<string>>(new Set());
+  const [likedPostIds, setLikedPostIds] = useState<Set<string>>(new Set());
 
   // タブ関連
   const [activeTab, setActiveTab] = useState<TabType>('recommend');
@@ -120,59 +121,73 @@ export default function HomePage() {
       setUser(user);
 
       if (user) {
-        const now = new Date().toISOString();
+        // ✅ RPC関数で1発取得（いいね・応募状態も含む）
+        const [recentResult, followsResult] = await Promise.all([
+          // 新着投稿
+          (supabase as any).rpc('get_feed_posts', {
+            p_user_id: user.id,
+            p_limit: 12,
+            p_offset: 0,
+          }),
+          // フォロー中
+          (supabase as any)
+            .from('follows')
+            .select('following_id')
+            .eq('follower_id', user.id),
+        ]);
 
-        // 新着投稿を取得
-        const { data: recent } = await (supabase as any)
-          .from('posts')
-          .select(`
-            *,
-            profiles (id, username, display_name, avatar_url, university),
-            categories (id, name, slug)
-          `)
-          .eq('status', 'open')
-          .or(`deadline_at.gt.${now},deadline_at.is.null`)
-          .order('created_at', { ascending: false })
-          .limit(12);
+        // 新着セット
+        if (recentResult.data) {
+          const posts = recentResult.data.map((p: any) => ({
+            ...p,
+            profile: {
+              id: p.user_id,
+              username: p.username,
+              display_name: p.display_name,
+              avatar_url: p.avatar_url,
+            },
+            category: p.category_name ? {
+              name: p.category_name,
+              color: p.category_color,
+            } : null,
+          }));
+          setRecentPosts(posts);
 
-        if (recent) {
-          setRecentPosts(recent.map((p: any) => ({ ...p, profile: p.profiles })));
+          // いいね・応募状態もRPCで取れる！
+          setAppliedPostIds(new Set(recentResult.data.filter((p: any) => p.is_applied).map((p: any) => p.id)));
+          setLikedPostIds(new Set(recentResult.data.filter((p: any) => p.is_liked).map((p: any) => p.id)));
         }
 
-        // フォロー中のユーザーの投稿を取得
-        const { data: following } = await (supabase as any)
-          .from('follows')
-          .select('following_id')
-          .eq('follower_id', user.id);
+        // フォロー投稿
+        if (followsResult.data && followsResult.data.length > 0) {
+          const followingIds = followsResult.data.map((f: any) => f.following_id);
 
-        if (following && following.length > 0) {
-          const followingIds = following.map((f: any) => f.following_id);
-          const { data: followPosts } = await (supabase as any)
-            .from('posts')
-            .select(`
-              *,
-              profiles (id, username, display_name, avatar_url, university),
-              categories (id, name, slug)
-            `)
-            .in('user_id', followingIds)
-            .eq('status', 'open')
-            .or(`deadline_at.gt.${now},deadline_at.is.null`)
-            .order('created_at', { ascending: false })
-            .limit(12);
+          // フォロー中ユーザーの投稿もRPCで取得
+          const { data: followPosts } = await (supabase as any).rpc('get_feed_posts', {
+            p_user_id: user.id,
+            p_limit: 12,
+            p_offset: 0,
+          });
 
           if (followPosts) {
-            setFollowingPosts(followPosts.map((p: any) => ({ ...p, profile: p.profiles })));
+            // フォロー中のユーザーでフィルター
+            const filtered = followPosts
+              .filter((p: any) => followingIds.includes(p.user_id))
+              .map((p: any) => ({
+                ...p,
+                profile: {
+                  id: p.user_id,
+                  username: p.username,
+                  display_name: p.display_name,
+                  avatar_url: p.avatar_url,
+                },
+                category: p.category_name ? {
+                  name: p.category_name,
+                  color: p.category_color,
+                } : null,
+              }));
+            setFollowingPosts(filtered);
           }
-        }
-
-        // 応募済み投稿IDを取得
-        const { data: applications } = await (supabase as any)
-          .from('applications')
-          .select('post_id')
-          .eq('applicant_id', user.id);
-
-        if (applications) {
-          setAppliedPostIds(new Set(applications.map((a: any) => a.post_id)));
         }
       }
 
@@ -181,6 +196,28 @@ export default function HomePage() {
 
     checkAuth();
   }, []);
+
+
+  // ✅ recommendedPosts から likedPostIds/appliedPostIds を更新
+  useEffect(() => {
+    if (recommendedPosts.length > 0) {
+      setLikedPostIds(prev => {
+        const newSet = new Set(prev);
+        recommendedPosts.forEach((p: any) => {
+          if (p.is_liked) newSet.add(p.id);
+        });
+        return newSet;
+      });
+      setAppliedPostIds(prev => {
+        const newSet = new Set(prev);
+        recommendedPosts.forEach((p: any) => {
+          if (p.is_applied) newSet.add(p.id);
+        });
+        return newSet;
+      });
+    }
+  }, [recommendedPosts]);
+
 
   // タブに応じた投稿を取得
   const getPostsForTab = (tab: TabType) => {
@@ -283,6 +320,7 @@ export default function HomePage() {
                       key={post.id}
                       post={post}
                       isApplied={appliedPostIds.has(post.id)}
+                      isLiked={likedPostIds.has(post.id)}
                     />
                   ))}
                 </div>
@@ -327,6 +365,7 @@ export default function HomePage() {
                         <PostCard
                           post={post}
                           isApplied={appliedPostIds.has(post.id)}
+                          isLiked={likedPostIds.has(post.id)}
                         />
                       </div>
                     ))}
@@ -356,6 +395,7 @@ export default function HomePage() {
                         <PostCard
                           post={post}
                           isApplied={appliedPostIds.has(post.id)}
+                          isLiked={likedPostIds.has(post.id)}
                         />
                       </div>
                     ))}
@@ -381,6 +421,7 @@ export default function HomePage() {
                         <PostCard
                           post={post}
                           isApplied={appliedPostIds.has(post.id)}
+                          isLiked={likedPostIds.has(post.id)}
                         />
                       </div>
                     ))}
