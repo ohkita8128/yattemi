@@ -305,8 +305,8 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked:i
         {/* 説明 */}
         {post.description && (
           <p className={cn(
-            "text-sm text-gray-600 mt-1 whitespace-pare-line",
-            post.images && post.images.length > 0 ? "line-clamp-2" : "line-clamp-6"
+            "text-sm text-gray-600 mt-1 whitespace-pre-line",
+            post.images && post.images.length > 0 ? "line-clamp-3" : "line-clamp-12"
           )}>
             {post.description}
           </p>
