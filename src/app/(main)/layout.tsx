@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { Header, Footer } from '@/components/layout';
 import { BottomNav } from '@/components/layout/bottom-nav';
+import { ErrorBoundary } from '@/components/common/error-boundary';
 
 export default function MainLayout({
   children,
@@ -26,7 +27,9 @@ export default function MainLayout({
       )}
       
       <main className={`flex-1 ${isChatPage ? 'pb-0' : 'pb-16 md:pb-0'}`}>
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </main>
       
       {!isChatPage && (
