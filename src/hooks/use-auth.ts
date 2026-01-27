@@ -29,17 +29,14 @@ export function useAuth() {
   // プロフィールを取得
   const fetchProfile = useCallback(
     async (userId: string) => {
-      console.log('isFetching:', isFetching);
 
       // 既にフェッチ中ならスキップ
       if (isFetching) {
-        console.log('SKIP: Already fetching');
         return null;
       }
 
       const currentProfile = useAuthStore.getState().profile;
       if (currentProfile && currentProfile.id === userId) {
-        console.log('SKIP: Already have profile');
         return currentProfile;
       }
 

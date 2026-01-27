@@ -131,44 +131,58 @@ export default function DashboardPage() {
         const { data: activeMatches } = await (supabase as any)
           .from('matches')
           .select(`
-            id,
-            post:posts (
-              id,
-              title,
-              type,
-              user_id
-            ),
-            senpai:profiles!matches_senpai_id_fkey (
-              id,
-              avatar_url,
-              display_name
-            ),
-            kouhai:profiles!matches_kouhai_id_fkey (
-              id,
-              avatar_url,
-              display_name
-            )
-          `)
-          .or(`senpai_id.eq.${user.id},kouhai_id.eq.${user.id}`)
+                id,
+                status,
+                application:applications (
+                  id,
+                  applicant_id,
+                  post:posts (
+                    id,
+                    title,
+                    type,
+                    user_id,
+                    owner:profiles!posts_user_id_fkey (
+                      id,
+                      avatar_url,
+                      display_name
+                    )
+                  ),
+                  applicant:profiles!applications_applicant_id_fkey (
+                    id,
+                    avatar_url,
+                    display_name
+                  )
+                )
+              `)
           .eq('status', 'active');
 
-        const myMatches: DashboardMatch[] = (activeMatches || []).map((match: any) => {
-          const isOwner = match.post?.user_id === user.id;
-          const isSenpai = match.senpai?.id === user.id;
-          const partner = isSenpai ? match.kouhai : match.senpai;
+        const myMatches: DashboardMatch[] = (activeMatches || [])
+          .filter((match: any) => {
+            const postOwnerId = match.application?.post?.user_id;
+            const applicantId = match.application?.applicant_id;
+            return postOwnerId === user.id || applicantId === user.id;
+          })
+          .map((match: any) => {
+            const post = match.application?.post;
+            const applicant = match.application?.applicant;
+            const owner = post?.owner;
+            const isOwner = post?.user_id === user.id;
 
-          return {
-            id: match.id,
-            post_title: match.post?.title || '',
-            post_type: match.post?.type || 'support',
-            partner: {
-              id: partner?.id || '',
-              avatar_url: partner?.avatar_url || null,
-              display_name: partner?.display_name || '',
-            },
-            is_owner: isOwner,
-          };
-        });
+            // 自分が投稿者なら応募者が相手、自分が応募者なら投稿者が相手
+            const partner = isOwner ? applicant : owner;
+
+            return {
+              id: match.id,
+              post_title: post?.title || '',
+              post_type: post?.type || 'support',
+              partner: {
+                id: partner?.id || '',
+                avatar_url: partner?.avatar_url || null,
+                display_name: partner?.display_name || '',
+              },
+              is_owner: isOwner,
+            };
+          });
 
         setDashboardData({
           myPosts,

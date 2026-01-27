@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Users, Zap, Shield, Star, Loader2 } from 'lucide-react';
+import { ArrowRight, Sparkles, Users, Target, Palette, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { PostCard } from '@/components/posts';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
 import { getClient } from '@/lib/supabase/client';
@@ -14,33 +13,33 @@ import { cn } from '@/lib/utils';
 const features = [
   {
     icon: Sparkles,
-    title: '新しい出会い',
-    description: '趣味や技術を通じて、同じ興味を持つ仲間と出会えます。',
+    title: '好きを届ける',
+    description: '自分の好きや得意を、誰かに届けられる。教えることで自分も成長。',
+  },
+  {
+    icon: Target,
+    title: '気軽にチャレンジ',
+    description: '新しい趣味・スキルに気軽に挑戦。初心者歓迎の投稿がたくさん。',
+  },
+  {
+    icon: Palette,
+    title: 'なんでもOK',
+    description: '料理、楽器、伝統工芸、推し活...ジャンルは無限大。',
   },
   {
     icon: Users,
-    title: 'スキルシェア',
-    description: 'サポートすることで自分も成長。チャレンジすることで新しい世界が広がります。',
-  },
-  {
-    icon: Zap,
-    title: 'かんたん3ステップ',
-    description: '投稿して、マッチして、つながる。シンプルな仕組みです。',
-  },
-  {
-    icon: Shield,
-    title: '安心のコミュニティ',
-    description: '大学生を中心とした、安心できるコミュニティです。',
+    title: '新しい出会い',
+    description: '同じ興味を持つ人とつながれる。スキルが縁を結ぶ。',
   },
 ];
 
 const categories = [
   { name: 'プログラミング', emoji: '💻', color: 'bg-blue-100 text-blue-700' },
-  { name: 'デザイン', emoji: '🎨', color: 'bg-pink-100 text-pink-700' },
   { name: '音楽', emoji: '🎵', color: 'bg-purple-100 text-purple-700' },
-  { name: 'スポーツ', emoji: '⚽', color: 'bg-green-100 text-green-700' },
-  { name: '語学', emoji: '🌍', color: 'bg-yellow-100 text-yellow-700' },
   { name: '料理', emoji: '🍳', color: 'bg-red-100 text-red-700' },
+  { name: '伝統工芸', emoji: '🏺', color: 'bg-amber-100 text-amber-700' },
+  { name: '推し活', emoji: '💖', color: 'bg-pink-100 text-pink-700' },
+  { name: '語学', emoji: '🌍', color: 'bg-yellow-100 text-yellow-700' },
 ];
 
 type Post = {
@@ -435,7 +434,7 @@ export default function HomePage() {
     );
   }
 
-  // 未ログインユーザー向けLP（変更なし）
+  // 未ログインユーザー向けLP
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -445,11 +444,6 @@ export default function HomePage() {
 
         <div className="container relative mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center space-y-8">
-            <Badge variant="secondary" className="px-4 py-1.5">
-              <Star className="w-3.5 h-3.5 mr-1.5 fill-yellow-400 text-yellow-400" />
-              大学生のためのスキルシェア
-            </Badge>
-
             <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
               「やってみたい」を
               <br />
@@ -458,10 +452,10 @@ export default function HomePage() {
               </span>に
             </h1>
 
-            <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto">
-              サポートしたいスキルがある人と、チャレンジしたい人をマッチング。
+            <p className="text-lg md:text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
+              好きを広めたい人と、新しいことを始めたい人を繋ぐ。
               <br className="hidden md:block" />
-              同じ大学生だから、気軽に始められる。
+              あなたの得意で、誰かのチャレンジを応援しよう。
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -616,10 +610,10 @@ export default function HomePage() {
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
             さあ、始めよう
           </h2>
-          <p className="text-white/90 mb-8 max-w-xl mx-auto">
-            登録は無料。今すぐアカウントを作成して、
+          <p className="text-white/90 mb-8 max-w-xl mx-auto leading-relaxed">
+            好きを広めよう。新しいことを始めよう。
             <br className="hidden md:block" />
-            新しいスキルと仲間を見つけましょう。
+            あなたの「やってみたい」を応援します。
           </p>
           <Link
             href={ROUTES.REGISTER}
