@@ -2,7 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import {useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
@@ -17,12 +17,11 @@ import { getAuthErrorMessage } from '@/lib/utils/errors';
 import { ROUTES } from '@/lib/constants';
 
 function LoginContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const rawRedirect = searchParams.get('redirect');
   const redirect = (rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//'))
     ? rawRedirect
-    : ROUTES.DASHBOARD;
+    : ROUTES.HOME;
   const { signIn, signInWithOAuth, isLoading } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -38,7 +37,7 @@ function LoginContent() {
     try {
       await signIn(data.email, data.password);
       toast.success('ログインしました');
-      router.push(redirect);
+      window.location.href = redirect;
     } catch (error: unknown) {
       const errorCode = (error as { code?: string })?.code || 'unknown';
       toast.error(getAuthErrorMessage(errorCode));

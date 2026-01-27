@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { getClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores';
 import { ROUTES } from '@/lib/constants';
@@ -11,7 +10,6 @@ import type { Profile } from '@/types';
 let isFetching = false;
 
 export function useAuth() {
-  const router = useRouter();
   const {
     user,
     profile,
@@ -196,7 +194,7 @@ export function useAuth() {
       throw error;
     }
 
-    router.push(ROUTES.HOME);
+    window.location.href = ROUTES.HOME;
   };
 
   // プロフィール更新
