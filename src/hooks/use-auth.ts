@@ -152,9 +152,9 @@ export function useAuth() {
   };
 
   // OAuth サインイン
-  const signInWithOAuth = async (provider: 'google' | 'github') => {
+  const signInWithOAuth = async (provider: 'google') => {
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: provider,
       options: {
         redirectTo: `${window.location.origin}/api/auth/callback`,
       },

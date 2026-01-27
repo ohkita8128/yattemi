@@ -37,6 +37,29 @@ const TIMES_LABEL: Record<string, string> = {
   morning: '午前', afternoon: '午後', evening: '夜',
 };
 
+// 締め切り日をフォーマット
+function formatDeadline(deadlineAt: string | null | undefined): string | null {
+  if (!deadlineAt) return null;
+
+  const deadline = new Date(deadlineAt);
+  const now = new Date();
+  const diffMs = deadline.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  const month = deadline.getMonth() + 1;
+  const day = deadline.getDate();
+
+  if (diffDays < 0) {
+    return `${month}/${day}（終了）`;
+  } else if (diffDays === 0) {
+    return `${month}/${day}（今日まで）`;
+  } else if (diffDays <= 7) {
+    return `${month}/${day}（あと${diffDays}日）`;
+  } else {
+    return `${month}/${day}`;
+  }
+}
+
 export default function PostDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -241,8 +264,8 @@ export default function PostDetailPage() {
             {/* Badges */}
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <span className={`px-3 py-1 rounded-full text-sm font-medium ${post.type === 'support'
-                  ? 'bg-purple-100 text-purple-700'
-                  : 'bg-cyan-100 text-cyan-700'
+                ? 'bg-purple-100 text-purple-700'
+                : 'bg-cyan-100 text-cyan-700'
                 }`}>
                 {POST_TYPES[post.type].emoji} {POST_TYPES[post.type].label}
               </span>
@@ -362,6 +385,15 @@ export default function PostDetailPage() {
               </div>
             </div>
 
+            {/* Deadline */}
+            {postAny.deadline_at && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-orange-50 rounded-lg text-sm">
+                <Clock className="h-4 w-4 text-orange-500" />
+                <span className="text-orange-700">
+                  締め切り: {formatDeadline(postAny.deadline_at)}
+                </span>
+              </div>
+            )}
             {/* Schedule */}
             {(availableDays.length > 0 || availableTimes.length > 0) && (
               <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-lg text-sm">
@@ -394,8 +426,8 @@ export default function PostDetailPage() {
               <button
                 onClick={handleLike}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-full transition-colors ${isLiked
-                    ? 'text-red-500 hover:bg-red-50'
-                    : 'text-gray-500 hover:bg-gray-100'
+                  ? 'text-red-500 hover:bg-red-50'
+                  : 'text-gray-500 hover:bg-gray-100'
                   }`}
               >
                 <Heart className={`h-5 w-5 ${isLiked ? 'fill-current' : ''}`} />
@@ -457,7 +489,7 @@ export default function PostDetailPage() {
         onClose={() => setIsApplyDialogOpen(false)}
         onSuccess={() => { }}
       />
-      
+
       {/* Report Dialog */}
       <ReportDialog
         isOpen={isReportOpen}
@@ -465,7 +497,7 @@ export default function PostDetailPage() {
         type="post"
         targetId={post.id}
       />
-      
+
     </div>
   );
 }
