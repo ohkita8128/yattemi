@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { PostCard } from '@/components/posts';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
 import { getClient } from '@/lib/supabase/client';
+import { useRecommendations } from '@/hooks';
+import { cn } from '@/lib/utils';
 
 const features = [
   {
@@ -52,6 +54,7 @@ type Post = {
   views: number;
   created_at: string;
   status?: string;
+  deadline_at?: string | null;
   profile?: {
     id: string;
     username: string;
@@ -66,6 +69,14 @@ type Post = {
   } | null;
 };
 
+type TabType = 'recommend' | 'recent' | 'following';
+
+const TABS: { key: TabType; label: string; emoji: string }[] = [
+  { key: 'recommend', label: 'おすすめ', emoji: '🎯' },
+  { key: 'recent', label: '新着', emoji: '🔥' },
+  { key: 'following', label: 'フォロー中', emoji: '👥' },
+];
+
 export default function HomePage() {
   const supabaseRef = useRef(getClient());
   const [user, setUser] = useState<any>(null);
@@ -74,6 +85,34 @@ export default function HomePage() {
   const [followingPosts, setFollowingPosts] = useState<Post[]>([]);
   const [appliedPostIds, setAppliedPostIds] = useState<Set<string>>(new Set());
 
+  // タブ関連
+  const [activeTab, setActiveTab] = useState<TabType>('recommend');
+  const [showTabs, setShowTabs] = useState(true);
+  const lastScrollY = useRef(0);
+
+  // おすすめフック
+  const { posts: recommendedPosts, isLoading: recommendLoading } = useRecommendations(12);
+
+  // スクロールでタブ出入り（スマホのみ）
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY > lastScrollY.current && currentScrollY > 100) {
+        // 下スクロール → 隠す
+        setShowTabs(false);
+      } else {
+        // 上スクロール → 表示
+        setShowTabs(true);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = supabaseRef.current;
@@ -81,6 +120,8 @@ export default function HomePage() {
       setUser(user);
 
       if (user) {
+        const now = new Date().toISOString();
+
         // 新着投稿を取得
         const { data: recent } = await (supabase as any)
           .from('posts')
@@ -89,9 +130,10 @@ export default function HomePage() {
             profiles (id, username, display_name, avatar_url, university),
             categories (id, name, slug)
           `)
-          .eq('is_active', true)
+          .eq('status', 'open')
+          .or(`deadline_at.gt.${now},deadline_at.is.null`)
           .order('created_at', { ascending: false })
-          .limit(6);
+          .limit(12);
 
         if (recent) {
           setRecentPosts(recent.map((p: any) => ({ ...p, profile: p.profiles })));
@@ -113,9 +155,10 @@ export default function HomePage() {
               categories (id, name, slug)
             `)
             .in('user_id', followingIds)
-            .eq('is_active', true)
+            .eq('status', 'open')
+            .or(`deadline_at.gt.${now},deadline_at.is.null`)
             .order('created_at', { ascending: false })
-            .limit(6);
+            .limit(12);
 
           if (followPosts) {
             setFollowingPosts(followPosts.map((p: any) => ({ ...p, profile: p.profiles })));
@@ -139,6 +182,25 @@ export default function HomePage() {
     checkAuth();
   }, []);
 
+  // タブに応じた投稿を取得
+  const getPostsForTab = (tab: TabType) => {
+    switch (tab) {
+      case 'recommend':
+        return recommendedPosts;
+      case 'recent':
+        return recentPosts;
+      case 'following':
+        return followingPosts;
+      default:
+        return [];
+    }
+  };
+
+  const isTabLoading = (tab: TabType): boolean => {
+    if (tab === 'recommend') return recommendLoading;
+    return loading;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -149,86 +211,190 @@ export default function HomePage() {
 
   // ログイン済みユーザー向けホーム
   if (user) {
+    const currentPosts = getPostsForTab(activeTab);
+    const currentLoading = isTabLoading(activeTab);
+
     return (
       <div className="min-h-screen bg-[#fcfcfc]">
-        <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto px-4 py-4">
           {/* ウェルカムバナー */}
-          <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl p-6 mb-8 text-white">
-            <h1 className="text-2xl font-bold mb-2">おかえりなさい！ 👋</h1>
-            <p className="opacity-90 mb-4">今日も新しいスキルを見つけましょう</p>
-            <div className="flex gap-1">
+          <div className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg p-4 mb-4 text-white">
+            <h1 className="text-xl font-bold mb-1">おかえりなさい！ 👋</h1>
+            <p className="opacity-90 text-sm mb-3">今日も新しいスキルを見つけましょう</p>
+            <div className="flex gap-2">
               <Link
                 href={ROUTES.POST_NEW}
-                className="inline-flex items-center px-4 py-2 bg-white text-orange-600 rounded-xl font-semibold hover:bg-gray-100 transition"
+                className="inline-flex items-center px-3 py-1.5 bg-white text-orange-600 rounded-lg font-semibold text-sm hover:bg-gray-100 transition"
               >
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Sparkles className="h-4 w-4 mr-1" />
                 投稿する
               </Link>
               <Link
                 href={ROUTES.EXPLORE}
-                className="inline-flex items-center px-4 py-2 bg-white/20 text-white rounded-xl font-semibold hover:bg-white/30 transition"
+                className="inline-flex items-center px-3 py-1.5 bg-white/20 text-white rounded-lg font-semibold text-sm hover:bg-white/30 transition"
               >
                 探す
-                <ArrowRight className="h-4 w-4 ml-2" />
+                <ArrowRight className="h-4 w-4 ml-1" />
               </Link>
             </div>
           </div>
 
-          {/* 新着投稿 */}
-          <section className="mb-10">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">🔥 新着の投稿</h2>
-              <Link href={ROUTES.EXPLORE} className="text-orange-500 hover:underline text-sm flex items-center">
-                もっと見る
-                <ArrowRight className="h-4 w-4 ml-1" />
-              </Link>
+          {/* スマホ: タブ切り替え */}
+          <div className="md:hidden">
+            {/* スティッキータブ */}
+            <div
+              className={cn(
+                'sticky top-16 z-10 bg-[#fcfcfc] -mx-4 px-4 transition-transform duration-300',
+                showTabs ? 'translate-y-0' : '-translate-y-full'
+              )}
+            >
+              <div className="flex border-b">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={cn(
+                      'flex-1 py-3 text-sm font-medium text-center transition-colors relative',
+                      activeTab === tab.key
+                        ? 'text-orange-600'
+                        : 'text-gray-500 hover:text-gray-700'
+                    )}
+                  >
+                    <span className="mr-1">{tab.emoji}</span>
+                    {tab.label}
+                    {activeTab === tab.key && (
+                      <span className="absolute bottom-0 left-1/4 right-1/4 h-0.5 bg-orange-500 rounded-full" />
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
-            {recentPosts.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-                {recentPosts.map(post => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    isApplied={appliedPostIds.has(post.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="p-8 text-center">
-                <p className="text-gray-500 mb-4">まだ投稿がありません</p>
-                <Link
-                  href={ROUTES.POST_NEW}
-                  className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition"
-                >
-                  最初の投稿を作成
-                </Link>
-              </Card>
-            )}
-          </section>
 
-          {/* フォロー中の投稿 */}
-          {followingPosts.length > 0 && (
+            {/* タブコンテンツ */}
+            <div className="pt-4">
+              {currentLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+                </div>
+              ) : currentPosts.length > 0 ? (
+                <div className="space-y-3">
+                  {currentPosts.map((post) => (
+                    <PostCard
+                      key={post.id}
+                      post={post}
+                      isApplied={appliedPostIds.has(post.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-8 text-center">
+                  <p className="text-gray-500 mb-4">
+                    {activeTab === 'following'
+                      ? 'フォロー中のユーザーの投稿がありません'
+                      : '表示できる投稿がありません'}
+                  </p>
+                  <Link
+                    href={ROUTES.EXPLORE}
+                    className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition"
+                  >
+                    投稿を探す
+                  </Link>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {/* PC: 横スクロール3段 */}
+          <div className="hidden md:block space-y-8">
+            {/* おすすめ */}
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">👥 フォロー中の投稿</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-bold text-gray-900">🎯 あなたへのおすすめ</h2>
+                <Link href={ROUTES.EXPLORE} className="text-orange-500 hover:underline text-sm flex items-center">
+                  もっと見る
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-                {followingPosts.map(post => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
-                    isApplied={appliedPostIds.has(post.id)}
-                  />
-                ))}
-              </div>
+              {recommendLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+                </div>
+              ) : recommendedPosts.length > 0 ? (
+                <div className="overflow-x-auto -mx-4 px-4 pb-2">
+                  <div className="flex gap-4 items-stretch" style={{ minWidth: 'max-content' }}>
+                    {recommendedPosts.map((post) => (
+                      <div key={post.id} className="w-80 flex-shrink-0">
+                        <PostCard
+                          post={post}
+                          isApplied={appliedPostIds.has(post.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Card className="p-6 text-center">
+                  <p className="text-gray-500">いいねするとおすすめが表示されます</p>
+                </Card>
+              )}
             </section>
-          )}
+
+            {/* 新着 */}
+            <section>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-bold text-gray-900">🔥 新着の投稿</h2>
+                <Link href={ROUTES.EXPLORE} className="text-orange-500 hover:underline text-sm flex items-center">
+                  もっと見る
+                  <ArrowRight className="h-4 w-4 ml-1" />
+                </Link>
+              </div>
+              {recentPosts.length > 0 ? (
+                <div className="overflow-x-auto -mx-4 px-4 pb-2">
+                  <div className="flex gap-4 items-stretch" style={{ minWidth: 'max-content' }}>
+                    {recentPosts.map((post) => (
+                      <div key={post.id} className="w-80 flex-shrink-0">
+                        <PostCard
+                          post={post}
+                          isApplied={appliedPostIds.has(post.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <Card className="p-6 text-center">
+                  <p className="text-gray-500">まだ投稿がありません</p>
+                </Card>
+              )}
+            </section>
+
+            {/* フォロー中 */}
+            {followingPosts.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xl font-bold text-gray-900">👥 フォロー中の投稿</h2>
+                </div>
+                <div className="overflow-x-auto -mx-4 px-4 pb-2">
+                  <div className="flex gap-4 items-stretch" style={{ minWidth: 'max-content' }}>
+                    {followingPosts.map((post) => (
+                      <div key={post.id} className="w-80 flex-shrink-0">
+                        <PostCard
+                          post={post}
+                          isApplied={appliedPostIds.has(post.id)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+            )}
+          </div>
         </div>
       </div>
     );
   }
 
-  // 未ログインユーザー向けLP
+  // 未ログインユーザー向けLP（変更なし）
   return (
     <div className="flex flex-col">
       {/* Hero Section */}

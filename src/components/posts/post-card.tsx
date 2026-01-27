@@ -170,7 +170,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
     <Link
       href={'/posts/' + post.id}
       className={cn(
-        "block bg-white rounded-md border hover:bg-gray-50 transition-colors",
+        "block bg-white rounded-md border hover:bg-gray-50 transition-colors overflow-hidden h-full flex flex-col",
         isClosed && "opacity-60"
       )}
     >
@@ -291,7 +291,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
       )}
 
       {/* 本文 */}
-      <div className="px-3 py-2">
+      <div className="px-3 py-2 overflow-hidden min-w-0 flex-1">
         {/* タイトル */}
         <h3 className="font-semibold text-base line-clamp-2">
           {post.title}
@@ -299,7 +299,10 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
 
         {/* 説明 */}
         {post.description && (
-          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+          <p className={cn(
+            "text-sm text-gray-600 mt-1",
+            post.images && post.images.length > 0 ? "line-clamp-2" : "line-clamp-6"
+          )}>
             {post.description}
           </p>
         )}
@@ -325,72 +328,80 @@ export function PostCard({ post, showAuthor = true, isApplied = false }: PostCar
 
         {/* 画像 */}
         {post.images && post.images.length > 0 && (
-          <div className="mt-2 rounded-md overflow-hidden max-h-[180px]">
+          <div className="mt-2">
             {post.images.length === 1 ? (
-              <img src={post.images[0]} alt="" className="w-full h-full max-h-[180px] object-cover" />
+              <div className="rounded-md overflow-hidden">
+                <img
+                  src={post.images[0]}
+                  alt=""
+                  className="w-full h-[200px] object-cover"
+                />
+              </div>
             ) : (
-              <div className={`grid gap-0.5 h-[180px] ${post.images.length === 2 ? 'grid-cols-2' : 'grid-cols-2'
-                }`}>
+              <div className={cn(
+                "grid gap-1 rounded-md overflow-hidden",
+                post.images.length === 2 ? "grid-cols-2 h-[150px]" : "grid-cols-2 grid-rows-2 h-[200px]"
+              )}>
                 {post.images.slice(0, 4).map((url, index) => (
-                  <div
-                    key={index}
-                    className={`relative overflow-hidden ${post.images!.length === 3 && index === 0 ? 'row-span-2' : ''
-                      }`}
-                  >
-                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  <div key={index} className="overflow-hidden">
+                    <img
+                      src={url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
                   </div>
                 ))}
               </div>
             )}
           </div>
         )}
+      </div>
 
-        {/* メタ情報 + いいね */}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t">
-          {/* 左側: レベル、日程、形式 */}
-          <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-            {level && (
-              <span className="font-medium">{level}</span>
-            )}
-            {schedule && (
-              <span>📅 {schedule}</span>
-            )}
-            <span className="flex items-center gap-0.5">
-              <StyleIcon className="h-3 w-3" />
-              {style.text}
+      {/* メタ情報 + いいね（本文の外に出す） */}
+      <div className="px-3 py-2 border-t flex items-center justify-between">
+        {/* 左側: レベル、日程、形式 */}
+        <div className="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+          {level && (
+            <span className="font-medium">{level}</span>
+          )}
+          {schedule && (
+            <span>📅 {schedule}</span>
+          )}
+          <span className="flex items-center gap-0.5">
+            <StyleIcon className="h-3 w-3" />
+            {style.text}
+          </span>
+        </div>
+        {/* 右側: 締め切り + 質問数 + いいね */}
+        <div className="flex items-center gap-3">
+          {/* 締め切り */}
+          {deadlineDisplay && (
+            <span className={cn('text-xs flex items-center gap-0.5', deadlineDisplay.className)}>
+              ⏰ {deadlineDisplay.text}
             </span>
-          </div>
-          {/* 右側: 締め切り + 質問数 + いいね */}
-          <div className="flex items-center gap-3">
-            {/* 締め切り */}
-            {deadlineDisplay && (
-              <span className={cn('text-xs flex items-center gap-0.5', deadlineDisplay.className)}>
-                ⏰ {deadlineDisplay.text}
-              </span>
+          )}
+
+          {/* 質問数 */}
+          <span className="flex items-center gap-1 text-xs text-gray-400">
+            <MessageCircle className="h-4 w-4" />
+            <span>{post.questions_count || 0}</span>
+          </span>
+
+          {/* いいね */}
+          <button
+            onClick={handleLikeClick}
+            disabled={!user || isLoading}
+            className={cn(
+              'flex items-center gap-1 text-xs transition-colors',
+              isLiked
+                ? 'text-red-500'
+                : 'text-gray-400 hover:text-red-400',
+              !user && 'cursor-not-allowed opacity-50'
             )}
-
-            {/* 質問数 */}
-            <span className="flex items-center gap-1 text-xs text-gray-400">
-              <MessageCircle className="h-4 w-4" />
-              <span>{post.questions_count || 0}</span>
-            </span>
-
-            {/* いいね */}
-            <button
-              onClick={handleLikeClick}
-              disabled={!user || isLoading}
-              className={cn(
-                'flex items-center gap-1 text-xs transition-colors',
-                isLiked
-                  ? 'text-red-500'
-                  : 'text-gray-400 hover:text-red-400',
-                !user && 'cursor-not-allowed opacity-50'
-              )}
-            >
-              <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
-              <span>{likesCount}</span>
-            </button>
-          </div>
+          >
+            <Heart className={cn('h-4 w-4', isLiked && 'fill-current')} />
+            <span>{likesCount}</span>
+          </button>
         </div>
       </div>
     </Link>

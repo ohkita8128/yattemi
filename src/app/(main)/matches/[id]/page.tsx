@@ -40,41 +40,29 @@ export default function ChatPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // マッチング情報を取得
+  // マッチング情報を取得（1回のクエリで全て取得）
   const fetchMatchInfo = async () => {
     const { data } = await (supabase as any)
       .from('matches')
       .select(`
+      *,
+      application:applications(
         *,
-        application:applications(
-          *,
-          post:posts(id, title, description, type, user_id, category_id, is_online, location, preferred_schedule),
-          applicant:profiles!applicant_id(id, username, display_name, avatar_url)
-        )
-      `)
+        post:posts(
+          id, title, description, type, user_id, category_id, is_online, location, preferred_schedule,
+          profile:profiles!user_id(id, username, display_name, avatar_url),
+          category:categories(name, slug, icon, color)
+        ),
+        applicant:profiles!applicant_id(id, username, display_name, avatar_url)
+      )
+    `)
       .eq('id', matchId)
       .single();
 
     if (data) {
       setMatchInfo(data);
-
-      // 投稿者情報を取得
-      const { data: owner } = await (supabase as any)
-        .from('profiles')
-        .select('id, username, display_name, avatar_url')
-        .eq('id', data.application.post.user_id)
-        .single();
-
-      setPostOwner(owner);
-
-      // カテゴリ情報を取得
-      const { data: cat } = await (supabase as any)
-        .from('categories')
-        .select('name, slug, icon, color')
-        .eq('id', data.application.post.category_id)
-        .single();
-
-      setCategory(cat);
+      setPostOwner(data.application.post.profile);
+      setCategory(data.application.post.category);
     }
   };
 
@@ -205,7 +193,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[100dvh] md:h-[calc(100vh-4rem)]">
       {/* Header */}
       <div className="border-b bg-white px-4 py-3">
         <div className="container mx-auto max-w-2xl flex items-center gap-3">

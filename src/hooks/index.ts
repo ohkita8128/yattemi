@@ -9,3 +9,4 @@ export * from './use-challenges';
 export * from './use-follow';
 export * from './use-report';
 export * from './use-tags';
+export * from './use-recommendations';
