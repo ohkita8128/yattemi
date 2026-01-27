@@ -28,7 +28,7 @@ export function usePosts(options: UsePostsOptions = {}) {
 
   // オプションが変わったらリセット
   useEffect(() => {
-    const optionsChanged = 
+    const optionsChanged =
       optionsRef.current.type !== options.type ||
       optionsRef.current.categoryId !== options.categoryId ||
       optionsRef.current.search !== options.search ||
@@ -45,7 +45,7 @@ export function usePosts(options: UsePostsOptions = {}) {
 
   const fetchPosts = useCallback(async (pageNum: number, append: boolean = false) => {
     const supabase = supabaseRef.current;
-    
+
     if (append) {
       setIsLoadingMore(true);
     } else {
@@ -67,7 +67,10 @@ export function usePosts(options: UsePostsOptions = {}) {
 
       // 締め切りを含めない場合（デフォルト）
       if (!options.includeClosed) {
-        query = query.eq('status', 'open');
+        const now = new Date().toISOString();
+        query = query
+          .eq('status', 'open')
+          .or(`deadline_at.gt.${now},deadline_at.is.null`);
       }
 
       if (options.type && options.type !== 'all') {
@@ -91,7 +94,7 @@ export function usePosts(options: UsePostsOptions = {}) {
       if (fetchError) throw fetchError;
 
       const newPosts = data as PostWithRelations[];
-      
+
       if (append) {
         // 重複を防ぐ
         setPosts(prev => {
