@@ -343,6 +343,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
         )}
 
         {/* 画像 */}
+        {/* 画像 */}
         {post.images && post.images.length > 0 && post.images[0] && (
           <div className="mt-2">
             {post.images.length === 1 ? (
@@ -362,7 +363,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
               )}>
                 {post.images.slice(0, 4).map((url, index) => (
                   url && (
-                    <div key={index} className="overflow-hidden relative">
+                    <div key={index} className="overflow-hidden relative h-full">
                       <Image
                         src={url}
                         alt=""
@@ -377,6 +378,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
             )}
           </div>
         )}
+
       </div>
 
       {/* メタ情報 + いいね（本文の外に出す） */}
