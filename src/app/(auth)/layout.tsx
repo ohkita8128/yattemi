@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Sparkles, Target, Palette } from 'lucide-react';
 import { ROUTES } from '@/lib/constants';
+import Image from 'next/image';
 
 const features = [
   { icon: Sparkles, text: '自分の好きを、誰かに届ける' },
@@ -27,29 +28,36 @@ export default function AuthLayout({
         <div className="absolute top-20 left-10 w-32 h-32 bg-white/10 rounded-full blur-xl" />
         <div className="absolute bottom-32 right-20 w-48 h-48 bg-white/10 rounded-full blur-xl" />
         <div className="absolute top-1/2 left-1/4 w-24 h-24 bg-white/10 rounded-full blur-lg" />
-        
+
         {/* コンテンツ */}
         <div className="relative z-10 flex flex-col justify-center px-12 xl:px-20 text-white">
           {/* ロゴ（大きめ） */}
           <Link href={ROUTES.HOME} className="flex items-center gap-4 mb-12">
-            <img src="/logo.png" alt="YatteMi!" className="h-14 w-14" />
+            <Image
+              src="/logo-56.png"
+              alt="YatteMi!"
+              width={56}
+              height={56}
+              priority           // ← LCP要素なので最優先
+              className="h-14 w-14"
+            />
             <span className="text-4xl font-bold">YatteMi!</span>
           </Link>
-          
+
           {/* キャッチコピー */}
           <h1 className="text-4xl xl:text-5xl font-bold leading-tight mb-6">
             「やってみたい」を
             <br />
             「やってみた」に
           </h1>
-          
+
           {/* サブコピー */}
           <p className="text-lg text-white/90 mb-10 max-w-lg leading-relaxed">
             好きを広めたい人と、新しいことを始めたい人を繋ぐ。
             <br />
             あなたの得意で、誰かのチャレンジを応援しよう。
           </p>
-          
+
           {/* 特徴 */}
           <div className="space-y-4">
             {features.map((feature, index) => (
@@ -73,7 +81,14 @@ export default function AuthLayout({
               href={ROUTES.HOME}
               className="flex items-center gap-2 font-display text-xl font-bold"
             >
-              <img src="/logo.png" alt="YatteMi!" className="h-10 w-10" />
+              <Image
+                src="/logo-40.png"
+                alt="YatteMi!"
+                width={40}
+                height={40}
+                priority
+                className="h-10 w-10"
+              />
               <span className="bg-gradient-to-r from-orange-500 to-amber-500 bg-clip-text text-transparent text-2xl">
                 YatteMi!
               </span>
