@@ -163,7 +163,7 @@ export function PostForm({
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const date = new Date(e.target.value);
-    date.setHours(23, 59, 59, 999); // 日付の終わりに設定
+    date.setHours(23, 59, 59, 999);
     setValue('deadlineAt', date.toISOString());
   };
 
@@ -177,26 +177,25 @@ export function PostForm({
   const specificDates = watch('specificDates') ?? [];
   const maxApplicants = watch('maxApplicants') ?? 1;
   const watchedDeadline = watch('deadlineAt');
-const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : getDefaultDeadline();
+  const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : getDefaultDeadline();
 
-  // 締め切り日の最小・最大
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
   const maxDate = new Date();
   maxDate.setDate(maxDate.getDate() + 30);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Type Selection */}
-      <div className="space-y-2">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {/* Type Selection - コンパクト */}
+      <div className="space-y-1.5">
         <Label required>投稿タイプ</Label>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-2">
           {(['support', 'challenge'] as const).map((type) => (
             <button
               key={type}
               type="button"
               onClick={() => setValue('type', type)}
-              className={`p-4 rounded-xl border-2 text-left transition-all ${
+              className={`p-3 rounded-xl border-2 text-left transition-all ${
                 selectedType === type
                   ? type === 'support'
                     ? 'border-purple-500 bg-purple-50'
@@ -204,11 +203,10 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
-              <span className="text-2xl mb-2 block">{POST_TYPES[type].emoji}</span>
-              <span className="font-semibold block">{POST_TYPES[type].label}</span>
-              <span className="text-sm text-muted-foreground">
-                {POST_TYPES[type].description}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{POST_TYPES[type].emoji}</span>
+                <span className="font-semibold text-sm">{POST_TYPES[type].label}</span>
+              </div>
             </button>
           ))}
         </div>
@@ -218,10 +216,8 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
       </div>
 
       {/* Title */}
-      <div className="space-y-2">
-        <Label htmlFor="title" required>
-          タイトル
-        </Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="title" required>タイトル</Label>
         <Input
           id="title"
           placeholder="例: Pythonの基礎を教えます！"
@@ -234,14 +230,12 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
       </div>
 
       {/* Description */}
-      <div className="space-y-2">
-        <Label htmlFor="description" required>
-          詳細
-        </Label>
+      <div className="space-y-1.5">
+        <Label htmlFor="description" required>詳細</Label>
         <Textarea
           id="description"
-          placeholder="どんなことをサポートしたい/チャレンジしたいですか？具体的に書くとマッチングしやすくなります。"
-          className="min-h-[150px]"
+          placeholder="どんなことをサポート/チャレンジしたいですか？"
+          className="min-h-[100px]"
           error={!!errors.description}
           {...register('description')}
         />
@@ -250,31 +244,28 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
         )}
       </div>
 
-      {/* Images */}
-      <div className="space-y-2">
+      {/* Images - コンパクト */}
+      <div className="space-y-1.5">
         <Label>画像（最大4枚）</Label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-4 gap-2">
           {images.map((url, index) => (
-            <div key={index} className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
+            <div key={index} className="relative aspect-square rounded-lg overflow-hidden bg-gray-100">
               <img src={url} alt="" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => removeImage(index)}
-                className="absolute top-2 right-2 p-1 bg-black/50 rounded-full text-white hover:bg-black/70 transition-colors"
+                className="absolute top-1 right-1 p-0.5 bg-black/50 rounded-full text-white hover:bg-black/70"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3" />
               </button>
             </div>
           ))}
           {images.length < 4 && (
-            <label className="aspect-video rounded-lg border-2 border-dashed border-gray-300 hover:border-orange-400 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50 hover:bg-orange-50">
+            <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 hover:border-orange-400 flex flex-col items-center justify-center cursor-pointer transition-colors bg-gray-50 hover:bg-orange-50">
               {uploadingImages ? (
-                <Loader2 className="h-8 w-8 text-gray-400 animate-spin" />
+                <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
               ) : (
-                <>
-                  <ImagePlus className="h-8 w-8 text-gray-400" />
-                  <span className="text-sm text-gray-500 mt-2">追加</span>
-                </>
+                <ImagePlus className="h-5 w-5 text-gray-400" />
               )}
               <input
                 type="file"
@@ -290,11 +281,9 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
       </div>
 
       {/* Category */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label required>カテゴリ</Label>
-        <Select
-          onValueChange={(v) => setValue('categoryId', parseInt(v))}
-        >
+        <Select onValueChange={(v) => setValue('categoryId', parseInt(v))}>
           <SelectTrigger error={!!errors.categoryId}>
             <SelectValue placeholder="カテゴリを選択" />
           </SelectTrigger>
@@ -311,12 +300,11 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
         )}
       </div>
 
-      {/* Deadline */}
-      <div className="space-y-2">
+      {/* Deadline - コンパクト */}
+      <div className="space-y-1.5">
         <Label>募集期限</Label>
-        <div className="p-4 bg-gray-50 rounded-xl space-y-3">
-          {/* プリセットボタン */}
-          <div className="flex gap-2">
+        <div className="p-3 bg-gray-50 rounded-xl space-y-2">
+          <div className="flex gap-1.5">
             {DEADLINE_PRESETS.map((preset) => {
               const presetDate = new Date();
               presetDate.setDate(presetDate.getDate() + preset.days);
@@ -326,7 +314,7 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
                   key={preset.days}
                   type="button"
                   onClick={() => setDeadlineByDays(preset.days)}
-                  className={`flex-1 py-2 px-3 rounded-lg border-2 text-sm font-medium transition-all ${
+                  className={`flex-1 py-1.5 px-2 rounded-lg border-2 text-xs font-medium transition-all ${
                     isSelected
                       ? 'border-orange-500 bg-orange-50 text-orange-700'
                       : 'border-gray-200 hover:border-gray-300 text-gray-600'
@@ -338,22 +326,20 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
             })}
           </div>
           
-          {/* 現在の設定表示 + カレンダー切り替え */}
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-gray-600">
-              締め切り: <span className="font-semibold text-gray-800">{formatDeadlineDisplay(deadlineAt)}</span>
-            </div>
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-600">
+              締切: <span className="font-medium text-gray-800">{formatDeadlineDisplay(deadlineAt)}</span>
+            </span>
             <button
               type="button"
               onClick={() => setShowDatePicker(!showDatePicker)}
-              className="text-sm text-orange-600 hover:text-orange-700 flex items-center gap-1"
+              className="text-xs text-orange-600 hover:text-orange-700 flex items-center gap-1"
             >
-              <Calendar className="h-4 w-4" />
-              日付を指定
+              <Calendar className="h-3.5 w-3.5" />
+              日付指定
             </button>
           </div>
 
-          {/* カレンダー（日付指定） */}
           {showDatePicker && (
             <div className="pt-2 border-t">
               <input
@@ -364,121 +350,91 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
                 max={formatDateForInput(maxDate.toISOString())}
                 className="w-full p-2 border rounded-lg text-sm"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                ※ 1日〜30日後の範囲で設定できます
-              </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* My Level */}
-      <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
-        <LevelSlider
-          value={myLevel}
-          onChange={(v) => setValue('myLevel', v)}
-          label={selectedType === 'support' ? 'あなたのレベル（サポーターとして）' : 'あなたの現在レベル'}
-        />
-      </div>
-
-      {/* Target Level Range */}
-      <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
-        <LevelRangeSlider
-          minValue={targetLevelMin}
-          maxValue={targetLevelMax}
-          onMinChange={(v) => setValue('targetLevelMin', v)}
-          onMaxChange={(v) => setValue('targetLevelMax', v)}
-          label={selectedType === 'support' ? 'サポートしたい相手のレベル' : '希望するサポーターのレベル'}
-        />
-      </div>
-
-      {/* Schedule Selector */}
-      <div className="space-y-2 p-4 bg-gray-50 rounded-xl">
-        <Label>希望日程</Label>
-        <ScheduleSelector
-          availableDays={availableDays}
-          availableTimes={availableTimes}
-          specificDates={specificDates}
-          onDaysChange={(days) => setValue('availableDays', days as any)}
-          onTimesChange={(times) => setValue('availableTimes', times as any)}
-          onDatesChange={(dates) => setValue('specificDates', dates)}
-        />
-      </div>
-
-      {/* Max Applicants - Stepper */}
-      <div className="space-y-2">
-        <Label>募集人数</Label>
-        <div className="flex items-center justify-center gap-4 p-4 bg-gray-50 rounded-xl">
-          <button
-            type="button"
-            onClick={() => {
-              if (maxApplicants > 1) setValue('maxApplicants', maxApplicants - 1);
-            }}
-            disabled={maxApplicants <= 1}
-            className="w-12 h-12 rounded-xl border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-2xl font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-600"
-          >
-            −
-          </button>
-          <div className="w-24 text-center">
-            <span className="text-3xl font-bold text-gray-800">{maxApplicants}</span>
-            <span className="text-lg text-gray-500 ml-1">人</span>
+      {/* Level - 1つのカードにまとめる */}
+      <div className="space-y-1.5">
+        <Label>レベル設定</Label>
+        <div className="p-3 bg-gray-50 rounded-xl space-y-4">
+          <LevelSlider
+            value={myLevel}
+            onChange={(v) => setValue('myLevel', v)}
+            label={selectedType === 'support' ? 'あなたのレベル' : '現在のレベル'}
+          />
+          <div className="border-t pt-3">
+            <LevelRangeSlider
+              minValue={targetLevelMin}
+              maxValue={targetLevelMax}
+              onMinChange={(v) => setValue('targetLevelMin', v)}
+              onMaxChange={(v) => setValue('targetLevelMax', v)}
+              label={selectedType === 'support' ? '相手のレベル' : '希望サポーターのレベル'}
+            />
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              if (maxApplicants < 10) setValue('maxApplicants', maxApplicants + 1);
-            }}
-            disabled={maxApplicants >= 10}
-            className="w-12 h-12 rounded-xl border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-2xl font-medium text-gray-600 hover:text-orange-500 hover:bg-orange-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:bg-transparent disabled:hover:text-gray-600"
-          >
-            +
-          </button>
         </div>
       </div>
 
-      {/* Online/Offline */}
-      <div className="space-y-2">
-        <Label>実施形式</Label>
-        <div className="grid grid-cols-3 gap-3">
-          <button
-            type="button"
-            onClick={() => setValue('isOnline', null)}
-            className={`p-3 rounded-xl border-2 transition-all ${
-              isOnline === null
-                ? 'border-orange-500 bg-orange-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
+      {/* Max Applicants + Online/Offline - 横並び */}
+      <div className="grid grid-cols-2 gap-3">
+        {/* 募集人数 - インライン */}
+        <div className="space-y-1.5">
+          <Label>募集人数</Label>
+          <div className="flex items-center justify-center gap-2 p-2 bg-gray-50 rounded-xl">
+            <button
+              type="button"
+              onClick={() => {
+                if (maxApplicants > 1) setValue('maxApplicants', maxApplicants - 1);
+              }}
+              disabled={maxApplicants <= 1}
+              className="w-8 h-8 rounded-lg border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-lg font-medium text-gray-600 hover:text-orange-500 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              −
+            </button>
+            <div className="w-12 text-center">
+              <span className="text-xl font-bold">{maxApplicants}</span>
+              <span className="text-xs text-gray-500">人</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (maxApplicants < 10) setValue('maxApplicants', maxApplicants + 1);
+              }}
+              disabled={maxApplicants >= 10}
+              className="w-8 h-8 rounded-lg border-2 border-gray-300 hover:border-orange-500 flex items-center justify-center text-lg font-medium text-gray-600 hover:text-orange-500 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        {/* 実施形式 - セレクト風 */}
+        <div className="space-y-1.5">
+          <Label>実施形式</Label>
+          <Select
+            value={isOnline === null ? 'both' : isOnline ? 'online' : 'offline'}
+            onValueChange={(v) => {
+              if (v === 'both') setValue('isOnline', null);
+              else if (v === 'online') setValue('isOnline', true);
+              else setValue('isOnline', false);
+            }}
           >
-            <span className="block font-medium">🤝 どちらでも</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setValue('isOnline', true)}
-            className={`p-3 rounded-xl border-2 transition-all ${
-              isOnline === true
-                ? 'border-orange-500 bg-orange-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <span className="block font-medium">🌐 オンライン</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setValue('isOnline', false)}
-            className={`p-3 rounded-xl border-2 transition-all ${
-              isOnline === false
-                ? 'border-orange-500 bg-orange-50'
-                : 'border-gray-200 hover:border-gray-300'
-            }`}
-          >
-            <span className="block font-medium">📍 対面</span>
-          </button>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="both">🤝 どちらでも</SelectItem>
+              <SelectItem value="online">🌐 オンライン</SelectItem>
+              <SelectItem value="offline">📍 対面</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
       {/* Location (if offline) */}
       {isOnline === false && (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="location">場所</Label>
           <Input
             id="location"
@@ -487,6 +443,21 @@ const deadlineAt: string = watchedDeadline !== undefined ? watchedDeadline : get
           />
         </div>
       )}
+
+      {/* Schedule Selector */}
+      <div className="space-y-1.5">
+        <Label>希望日程</Label>
+        <div className="p-3 bg-gray-50 rounded-xl">
+          <ScheduleSelector
+            availableDays={availableDays}
+            availableTimes={availableTimes}
+            specificDates={specificDates}
+            onDaysChange={(days) => setValue('availableDays', days as any)}
+            onTimesChange={(times) => setValue('availableTimes', times as any)}
+            onDatesChange={(dates) => setValue('specificDates', dates)}
+          />
+        </div>
+      </div>
 
       {/* Submit */}
       <Button type="submit" className="w-full" size="lg" isLoading={isSubmitting}>
