@@ -15,12 +15,14 @@ export default function MainLayout({
   // チャットページは独自レイアウト
   if (isChatPage) {
     return (
-      <>
-        <div className="hidden md:block">
+      <div className="h-screen flex flex-col">
+        <div className="hidden md:block flex-none">
           <Header />
         </div>
-        {children}
-      </>
+        <div className="flex-1 min-h-0">
+          {children}
+        </div>
+      </div>
     );
   }
 
