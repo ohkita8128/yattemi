@@ -347,9 +347,9 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
 
         {/* 画像 */}
         {post.images && post.images.length > 0 && post.images[0] && (
-          <div className="mt-2">
+          <div className="mt-2 flex-none">
             {post.images.length === 1 ? (
-              <div className="rounded-md overflow-hidden h-[180px]">
+              <div className="rounded-md overflow-hidden" style={{ height: '180px' }}>
                 <Image
                   src={post.images[0]}
                   alt=""
@@ -359,10 +359,13 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
                 />
               </div>
             ) : (
-              <div className={cn(
-                "grid gap-1 rounded-md overflow-hidden",
-                post.images.length === 2 ? "grid-cols-2 h-[100px]" : "grid-cols-2 grid-rows-2 h-[180px]"
-              )}>
+              <div
+                className={cn(
+                  "grid gap-1 rounded-md overflow-hidden",
+                  post.images.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
+                )}
+                style={{ height: post.images.length === 2 ? '100px' : '180px' }}
+              >
                 {post.images.slice(0, 4).map((url, index) => (
                   url && (
                     <div key={index} className="overflow-hidden">
@@ -380,7 +383,6 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
             )}
           </div>
         )}
-
       </div>
 
       {/* メタ情報 + いいね（本文の外に出す） */}
