@@ -29,6 +29,7 @@ export default function ChatPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [showStatusBar, setShowStatusBar] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const supabase = getClient();
@@ -84,6 +85,12 @@ export default function ChatPage() {
     }
   }, [messages, markAsRead]);
 
+  // スクロール監視
+  const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    setShowStatusBar(scrollTop < 50);
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || isSending) return;
@@ -104,7 +111,6 @@ export default function ChatPage() {
     if (!user || isUpdating) return;
 
     setIsUpdating(true);
-    setIsMenuOpen(false);
     try {
       const { error } = await (supabase as any)
         .from('matches')
@@ -130,7 +136,6 @@ export default function ChatPage() {
     if (!user || isUpdating) return;
 
     setIsUpdating(true);
-    setIsMenuOpen(false);
     try {
       const { error } = await (supabase as any)
         .from('matches')
@@ -183,23 +188,17 @@ export default function ChatPage() {
   const iCompletedIt = matchInfo?.completed_by === user?.id;
   const partnerCompletedIt = hasCompletedBy && !iCompletedIt;
 
-  if (authLoading || isLoading || !matchInfo) {
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
-        <Skeleton className="h-12 w-full mb-4" />
-        <Skeleton className="h-96 w-full" />
-      </div>
-    );
-  }
+  // 完了ボタンのレンダリング
+  const renderCompletionButton = (fullWidth = false) => {
+    const baseClass = fullWidth 
+      ? "flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-medium transition-colors"
+      : "flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium transition-colors";
 
-  // メニュー内の完了関連アクションを取得
-  const getCompletionMenuItem = () => {
     if (isCompleted) {
       return (
         <Link
           href={getReviewPath()}
-          onClick={() => setIsMenuOpen(false)}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm text-orange-600 hover:bg-orange-50 w-full text-left"
+          className={`${baseClass} bg-orange-500 text-white hover:bg-orange-600`}
         >
           <Star className="h-4 w-4" />
           レビューを書く
@@ -211,7 +210,7 @@ export default function ChatPage() {
         <button
           onClick={handleConfirm}
           disabled={isUpdating}
-          className="flex items-center gap-2 px-4 py-2.5 text-sm text-green-600 hover:bg-green-50 w-full text-left disabled:opacity-50"
+          className={`${baseClass} bg-green-500 text-white hover:bg-green-600 disabled:opacity-50`}
         >
           <CheckCircle className="h-4 w-4" />
           完了を承認する
@@ -220,7 +219,7 @@ export default function ChatPage() {
     }
     if (iCompletedIt) {
       return (
-        <div className="flex items-center gap-2 px-4 py-2.5 text-sm text-yellow-600">
+        <div className={`${baseClass} bg-yellow-50 text-yellow-700`}>
           <Clock className="h-4 w-4" />
           相手の承認待ち
         </div>
@@ -230,13 +229,22 @@ export default function ChatPage() {
       <button
         onClick={handleComplete}
         disabled={isUpdating}
-        className="flex items-center gap-2 px-4 py-2.5 text-sm text-blue-600 hover:bg-blue-50 w-full text-left disabled:opacity-50"
+        className={`${baseClass} bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-50`}
       >
         <CheckCircle className="h-4 w-4" />
-        完了報告する
+        完了報告
       </button>
     );
   };
+
+  if (authLoading || isLoading || !matchInfo) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <Skeleton className="h-12 w-full mb-4" />
+        <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)]">
@@ -275,7 +283,7 @@ export default function ChatPage() {
                 </p>
               </div>
 
-              {/* メニューボタン - 完了報告もここに */}
+              {/* メニューボタン - 通報のみ */}
               <div className="relative">
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -289,13 +297,7 @@ export default function ChatPage() {
                       className="fixed inset-0 z-10"
                       onClick={() => setIsMenuOpen(false)}
                     />
-                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-xl shadow-lg border py-1 z-20">
-                      {/* 完了関連アクション */}
-                      {getCompletionMenuItem()}
-                      
-                      <div className="border-t my-1" />
-                      
-                      {/* 通報 */}
+                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border py-1 z-20">
                       <button
                         onClick={() => {
                           setIsMenuOpen(false);
@@ -388,14 +390,55 @@ export default function ChatPage() {
               >
                 投稿の詳細を見る →
               </Link>
+
+              {/* 完了報告ボタン - 投稿詳細内 */}
+              <div className="pt-2 border-t">
+                {renderCompletionButton(true)}
+              </div>
             </div>
           )}
         </div>
       </div>
 
+      {/* 完了ステータスバー - 初回表示時のみ（スクロールで消える） */}
+      {showStatusBar && (
+        <div className="flex-none border-b bg-white px-4 py-3">
+          <div className="max-w-2xl mx-auto">
+            {isCompleted ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="font-medium">完了しました！</span>
+                </div>
+                {renderCompletionButton()}
+              </div>
+            ) : partnerCompletedIt ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-blue-600">
+                  <Clock className="h-5 w-5" />
+                  <span className="font-medium text-sm">{partner?.display_name}さんが完了報告</span>
+                </div>
+                {renderCompletionButton()}
+              </div>
+            ) : iCompletedIt ? (
+              <div className="flex items-center gap-2 text-yellow-600">
+                <Clock className="h-5 w-5" />
+                <span className="font-medium text-sm">完了報告済み - 相手の承認待ち</span>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">作業が終わったら完了報告しましょう</p>
+                {renderCompletionButton()}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Messages - スクロール領域 */}
       <div 
         ref={messagesContainerRef} 
+        onScroll={handleMessagesScroll}
         className="flex-1 overflow-y-auto overscroll-none bg-white"
       >
         <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">

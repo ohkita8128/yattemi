@@ -11,7 +11,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  
+
   // チャットページ判定
   const isChatPage = pathname.startsWith('/matches/') && pathname !== '/matches';
 
@@ -25,19 +25,21 @@ export default function MainLayout({
       ) : (
         <Header />
       )}
-      
+
       <main className={`flex-1 ${isChatPage ? 'pb-0' : 'pb-16 md:pb-0'}`}>
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
       </main>
-      
+
       {!isChatPage && (
         <div className="hidden md:block">
           <Footer />
         </div>
       )}
-      <BottomNav />
+
+      {/* チャットページではBottomNavも非表示 */}
+      {!isChatPage && <BottomNav />}
     </div>
   );
 }
