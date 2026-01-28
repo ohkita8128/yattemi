@@ -355,7 +355,8 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
                   alt=""
                   width={400}
                   height={200}
-                  className="w-full h-full object-cover"
+                  className="object-cover"
+                  style={{ width: '100%', height: '100%' }}
                 />
               </div>
             ) : (
@@ -371,7 +372,8 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
                         alt=""
                         width={200}
                         height={200}
-                        className="w-full h-full object-cover"
+                        className="object-cover"
+                        style={{ width: '100%', height: '100%' }}
                       />
                     </div>
                   )
