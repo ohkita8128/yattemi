@@ -5,7 +5,7 @@ import { getClient } from '@/lib/supabase/client';
 import { useAuth } from './use-auth';
 
 export function useLikes(postId: string, initialCount?: number, initialIsLiked?: boolean) {
-  const [likesCount, setLikesCount] = useState(initialCount ?? 0);
+  const [likesCount, setLikesCount] = useState(Math.max(0, initialCount ?? 0));
   const [isLiked, setIsLiked] = useState(false);
   const [isLoading, setIsLoading] = useState(initialIsLiked === undefined);
   const { user } = useAuth();
@@ -18,7 +18,7 @@ export function useLikes(postId: string, initialCount?: number, initialIsLiked?:
   // initialCountが変わったら更新
   useEffect(() => {
     if (initialCount !== undefined) {
-      setLikesCount(initialCount);
+      setLikesCount(Math.max(0, initialCount));
     }
   }, [initialCount]);
 
@@ -48,7 +48,7 @@ export function useLikes(postId: string, initialCount?: number, initialIsLiked?:
             .eq('post_id', postId);
 
           if (!countError) {
-            setLikesCount(count || 0);
+            setLikesCount(Math.max(0, count || 0));
           }
         }
 
