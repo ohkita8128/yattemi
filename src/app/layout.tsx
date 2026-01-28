@@ -34,20 +34,20 @@ export const metadata: Metadata = {
     siteName: APP_CONFIG.name,
     title: APP_CONFIG.name,
     description: APP_CONFIG.description,
-    images: [
-      {
-        url: '/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'YatteMi! - スキルシェアプラットフォーム',
-      },
-    ],
+     images: [
+    {
+      url: 'https://yattemi.vercel.app/og-image.png',  // ← 絶対URL
+      width: 1200,
+      height: 630,
+      alt: 'YatteMi! - 好きを広めたい人と、新しいことを始めたい人を繋ぐ',
+    },
+  ],
   },
   twitter: {
     card: 'summary_large_image',
     title: APP_CONFIG.name,
     description: APP_CONFIG.description,
-    images: ['/og-image.png'],
+    images: ['https://yattemi.vercel.app/og-image.png'],
   },
   robots: {
     index: true,
