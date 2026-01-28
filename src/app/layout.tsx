@@ -1,36 +1,19 @@
-// src/app/layout.tsx（最終版・全改善適用）
-// Phase 1 + Phase 2 + アクセシビリティ改善
+// src/app/layout.tsx
+// 🚀 LCP最適化版 - フォント1つに統一
 
 import type { Metadata, Viewport } from 'next';
-import { Inter, Noto_Sans_JP, Outfit } from 'next/font/google';
+import { Noto_Sans_JP } from 'next/font/google';
 import { Toaster } from 'sonner';
 import '@/styles/globals.css';
 import { APP_CONFIG } from '@/lib/constants';
 
-// 🚀 改善1: フォント最適化
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',           // FOIT（Flash of Invisible Text）を防止
-  preload: true,             // 最優先でプリロード
-  fallback: ['sans-serif'],  // フォールバック指定
-});
-
+// ✅ フォント1つだけ、3ウェイトのみ
 const notoSansJP = Noto_Sans_JP({
   subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  display: 'swap',
+  preload: true,
   variable: '--font-noto-sans',
-  display: 'swap',
-  weight: ['400', '500', '700'], // 必要なウェイトのみ指定でサイズ削減
-  preload: false,            // サブフォントはプリロード不要
-  fallback: ['sans-serif'],
-});
-
-const outfit = Outfit({
-  subsets: ['latin'],
-  variable: '--font-outfit',
-  display: 'swap',
-  preload: false,
-  fallback: ['sans-serif'],
 });
 
 export const metadata: Metadata = {
@@ -72,11 +55,10 @@ export const metadata: Metadata = {
   },
 };
 
-// 🚀 改善2: アクセシビリティ改善（ズーム可能に）
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,  // ← 1から5に変更（視覚障害者対応）
+  maximumScale: 5,
   themeColor: '#f97316',
 };
 
@@ -88,32 +70,18 @@ export default function RootLayout({
   return (
     <html
       lang="ja"
-      className={`${inter.variable} ${notoSansJP.variable} ${outfit.variable}`}
+      className={notoSansJP.variable}
       suppressHydrationWarning
     >
       <head>
-        {/* 🚀 改善3: クリティカルCSSをインライン（LCP改善） */}
         <style dangerouslySetInnerHTML={{ __html: `
-          :root {
-            --font-inter: ${inter.style.fontFamily};
-            --font-noto-sans: ${notoSansJP.style.fontFamily};
-          }
           body { 
             margin: 0; 
-            font-family: var(--font-inter), sans-serif;
+            font-family: var(--font-noto-sans), 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
             background-color: #fafafa;
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
           }
-          /* ファーストビューに必要な最小限のクラス */
           .min-h-screen { min-height: 100vh; }
-          .flex { display: flex; }
-          .items-center { align-items: center; }
-          .justify-center { justify-content: center; }
-          /* 認証ページのグラデーション（LCP要素） */
-          .auth-gradient {
-            background: linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%);
-          }
         ` }} />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
