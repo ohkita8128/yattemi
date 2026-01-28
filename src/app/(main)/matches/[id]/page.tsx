@@ -193,9 +193,9 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] md:h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[100dvh] md:h-[calc(100vh-4rem)] overflow-hidden">
       {/* Header */}
-      <div className="border-b bg-white px-4 py-3">
+      <div className="flex-shrink-0 border-b bg-white px-4 py-3">
         <div className="container mx-auto max-w-2xl flex items-center gap-3">
           <Link
             href={ROUTES.MATCHES}
@@ -264,7 +264,7 @@ export default function ChatPage() {
       </div>
 
       {/* 投稿情報カード */}
-      <div className="border-b bg-gray-50">
+      <div className="flex-shrink-0 border-b bg-gray-50">
         <div className="container mx-auto max-w-2xl px-4">
           <button
             onClick={() => setShowPostDetail(!showPostDetail)}
@@ -348,7 +348,7 @@ export default function ChatPage() {
       </div>
 
       {/* 完了ステータスバー */}
-      <div className="border-b bg-white px-4 py-3">
+      <div className="flex-shrink-0 border-b bg-white px-4 py-3">
         <div className="container mx-auto max-w-2xl">
           {isCompleted ? (
             // 完了済み → レビューを書くボタン
@@ -405,7 +405,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 pb-24 bg-white">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-none px-4 py-4 pb-24 bg-white">
         <div className="container mx-auto max-w-2xl space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-8">
