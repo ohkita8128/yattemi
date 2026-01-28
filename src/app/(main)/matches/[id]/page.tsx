@@ -29,6 +29,7 @@ export default function ChatPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
+  const [showStatusBar, setShowStatusBar] = useState(true); // ← 追加
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const supabase = getClient();
@@ -83,6 +84,12 @@ export default function ChatPage() {
       markAsRead();
     }
   }, [messages, markAsRead]);
+
+  // スクロール監視でステータスバー表示/非表示
+  const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    setShowStatusBar(scrollTop < 50);
+  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,7 +200,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] md:h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="fixed inset-0 top-16 flex flex-col bg-white z-10">
       {/* Header */}
       <div className="flex-shrink-0 border-b bg-white px-4 py-3">
         <div className="container mx-auto max-w-2xl flex items-center gap-3">
@@ -347,65 +354,67 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* 完了ステータスバー */}
-      <div className="flex-shrink-0 border-b bg-white px-4 py-3">
-        <div className="container mx-auto max-w-2xl">
-          {isCompleted ? (
-            // 完了済み → レビューを書くボタン
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-green-600">
-                <CheckCircle className="h-5 w-5" />
-                <span className="font-medium">完了しました！</span>
+      {/* 完了ステータスバー - スクロール前のみ表示 */}
+      {showStatusBar && (
+        <div className="flex-shrink-0 border-b bg-white px-4 py-3">
+          <div className="container mx-auto max-w-2xl">
+            {isCompleted ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-green-600">
+                  <CheckCircle className="h-5 w-5" />
+                  <span className="font-medium">完了しました！</span>
+                </div>
+                <Link
+                  href={getReviewPath()}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors"
+                >
+                  <Star className="h-4 w-4" />
+                  レビューを書く
+                </Link>
               </div>
-              <Link
-                href={getReviewPath()}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 transition-colors"
-              >
-                <Star className="h-4 w-4" />
-                レビューを書く
-              </Link>
-            </div>
-          ) : partnerCompletedIt ? (
-            // 相手が完了報告済み → 承認ボタン
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-blue-600">
+            ) : partnerCompletedIt ? (
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-blue-600">
+                  <Clock className="h-5 w-5" />
+                  <span className="font-medium text-sm">{partner?.display_name}さんが完了報告</span>
+                </div>
+                <button
+                  onClick={handleConfirm}
+                  disabled={isUpdating}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-500 text-white font-medium hover:bg-green-600 disabled:opacity-50 transition-colors"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  承認
+                </button>
+              </div>
+            ) : iCompletedIt ? (
+              <div className="flex items-center gap-2 text-yellow-600">
                 <Clock className="h-5 w-5" />
-                <span className="font-medium">{partner?.display_name}さんが完了報告しました</span>
+                <span className="font-medium text-sm">完了報告済み - 承認待ち</span>
               </div>
-              <button
-                onClick={handleConfirm}
-                disabled={isUpdating}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-green-500 text-white font-medium hover:bg-green-600 disabled:opacity-50 transition-colors"
-              >
-                <CheckCircle className="h-4 w-4" />
-                完了を承認
-              </button>
-            </div>
-          ) : iCompletedIt ? (
-            // 自分が完了報告済み → 待機中
-            <div className="flex items-center gap-2 text-yellow-600">
-              <Clock className="h-5 w-5" />
-              <span className="font-medium">完了報告済み - {partner?.display_name}さんの承認待ち</span>
-            </div>
-          ) : (
-            // まだ完了報告なし → 完了報告ボタン
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">作業が終わったら完了報告しましょう</p>
-              <button
-                onClick={handleComplete}
-                disabled={isUpdating}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
-              >
-                <CheckCircle className="h-4 w-4" />
-                完了報告
-              </button>
-            </div>
-          )}
+            ) : (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-500">作業が終わったら完了報告</p>
+                <button
+                  onClick={handleComplete}
+                  disabled={isUpdating}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-500 text-white font-medium hover:bg-blue-600 disabled:opacity-50 transition-colors"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  完了報告
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Messages */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto overscroll-none px-4 py-4 pb-24 bg-white">
+      <div 
+        ref={messagesContainerRef} 
+        onScroll={handleMessagesScroll}
+        className="flex-1 overflow-y-auto overscroll-none px-4 py-4 bg-white"
+      >
         <div className="container mx-auto max-w-2xl space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-8">
@@ -445,8 +454,50 @@ export default function ChatPage() {
         </div>
       </div>
 
+      {/* FAB - スクロール後に表示 */}
+      {!showStatusBar && (
+        <>
+          {isCompleted ? (
+            // 完了済み → レビューFAB
+            <Link
+              href={getReviewPath()}
+              className="fixed bottom-28 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-orange-500 text-white font-medium shadow-lg hover:bg-orange-600 transition-colors z-30"
+            >
+              <Star className="h-5 w-5" />
+              レビュー
+            </Link>
+          ) : partnerCompletedIt ? (
+            // 相手が完了報告済み → 承認FAB
+            <button
+              onClick={handleConfirm}
+              disabled={isUpdating}
+              className="fixed bottom-28 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-green-500 text-white font-medium shadow-lg hover:bg-green-600 disabled:opacity-50 transition-colors z-30"
+            >
+              <CheckCircle className="h-5 w-5" />
+              承認
+            </button>
+          ) : iCompletedIt ? (
+            // 自分が完了報告済み → 待機中バッジ
+            <div className="fixed bottom-28 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-yellow-100 text-yellow-700 font-medium shadow-lg z-30">
+              <Clock className="h-5 w-5" />
+              承認待ち
+            </div>
+          ) : (
+            // まだ完了報告なし → 完了報告FAB
+            <button
+              onClick={handleComplete}
+              disabled={isUpdating}
+              className="fixed bottom-28 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-blue-500 text-white font-medium shadow-lg hover:bg-blue-600 disabled:opacity-50 transition-colors z-30"
+            >
+              <CheckCircle className="h-5 w-5" />
+              完了報告
+            </button>
+          )}
+        </>
+      )}
+
       {/* Input */}
-      <div className="fixed bottom-0 left-0 right-0 border-t bg-white px-4 py-3 z-20">
+      <div className="flex-shrink-0 border-t bg-white px-4 py-3 pb-20 md:pb-3">
         <form
           onSubmit={handleSend}
           className="flex gap-2 w-full"
