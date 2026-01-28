@@ -188,9 +188,12 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
             {/* アバター（小さく） */}
             <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
               {author.avatar_url ? (
-                <img
+                // ✅ 修正
+                <Image
                   src={author.avatar_url}
                   alt={author.display_name || 'ユーザー'}
+                  width={36}
+                  height={36}
                   className="h-9 w-9 object-cover"
                 />
               ) : (
