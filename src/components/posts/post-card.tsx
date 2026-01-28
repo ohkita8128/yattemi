@@ -176,7 +176,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
     <Link
       href={'/posts/' + post.id}
       className={cn(
-        "block bg-white rounded-md border hover:bg-gray-50 transition-colors overflow-hidden h-full flex flex-col",
+        "block bg-white rounded-md border hover:bg-gray-50 transition-colors overflow-hidden flex flex-col h-full",
         isClosed && "opacity-60"
       )}
     >
@@ -344,38 +344,37 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
         )}
       </div>
 
-      {/* 画像（本文の外に移動！） */}
+      {/* 画像 */}
       {post.images && post.images.length > 0 && post.images[0] && (
         <div className="px-3 pb-2">
           {post.images.length === 1 ? (
-            <div className="relative w-full rounded-md overflow-hidden"style={{ paddingTop: '66.666%' }}>
+            <div className="rounded-md overflow-hidden relative" style={{ paddingBottom: '66.67%' }}>
               <Image
                 src={post.images[0]}
                 alt=""
                 fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 400px"
+                className="absolute inset-0 object-cover"
               />
             </div>
           ) : (
             <div
               className={cn(
-                "grid gap-1 rounded-md overflow-hidden",
-                post.images.length === 2
-                  ? "grid-cols-2 aspect-[3/1]"
-                  : "grid-cols-2 grid-rows-2 aspect-[4/3]"
+                "grid gap-1 rounded-md overflow-hidden relative",
+                post.images.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
               )}
+              style={{ paddingBottom: post.images.length === 2 ? '33.33%' : '75%' }}
             >
               {post.images.slice(0, 4).map((url, index) => (
-                <div key={index} className="relative overflow-hidden">
-                  <Image
-                    src={url}
-                    alt=""
-                    fill
-                    className="object-cover"
-                    sizes="200px"
-                  />
-                </div>
+                url && (
+                  <div key={index} className="relative overflow-hidden">
+                    <Image
+                      src={url}
+                      alt=""
+                      fill
+                      className="absolute inset-0 object-cover"
+                    />
+                  </div>
+                )
               ))}
             </div>
           )}
