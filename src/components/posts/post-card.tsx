@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks';
 import { getLevelEmoji } from '@/lib/levels';
 import { formatRelativeTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 // 曜日の変換マップ
 const DAY_LABELS: Record<string, string> = {
@@ -342,14 +343,16 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
         )}
 
         {/* 画像 */}
-        {post.images && post.images.length > 0 && (
+        {post.images && post.images.length > 0 && post.images[0] && (
           <div className="mt-2">
             {post.images.length === 1 ? (
-              <div className="rounded-md overflow-hidden">
-                <img
+              <div className="rounded-md overflow-hidden relative h-[200px]">
+                <Image
                   src={post.images[0]}
                   alt=""
-                  className="w-full h-[200px] object-cover"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 400px"
+                  className="object-cover"
                 />
               </div>
             ) : (
@@ -358,13 +361,17 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
                 post.images.length === 2 ? "grid-cols-2 h-[150px]" : "grid-cols-2 grid-rows-2 h-[200px]"
               )}>
                 {post.images.slice(0, 4).map((url, index) => (
-                  <div key={index} className="overflow-hidden">
-                    <img
-                      src={url}
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
+                  url && (
+                    <div key={index} className="overflow-hidden relative">
+                      <Image
+                        src={url}
+                        alt=""
+                        fill
+                        sizes="200px"
+                        className="object-cover"
+                      />
+                    </div>
+                  )
                 ))}
               </div>
             )}
