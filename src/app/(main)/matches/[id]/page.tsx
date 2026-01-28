@@ -405,7 +405,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 bg-white">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 pb-24 bg-white">
         <div className="container mx-auto max-w-2xl space-y-4">
           {messages.length === 0 ? (
             <div className="text-center py-8">
@@ -446,7 +446,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="border-t bg-white px-4 py-3">
+      <div className="fixed bottom-0 left-0 right-0 border-t bg-white px-4 py-3 z-20">
         <form
           onSubmit={handleSend}
           className="flex gap-2 w-full"
