@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Send, User, MapPin, Monitor, Calendar, ChevronDown, ChevronUp, CheckCircle, Clock, Star, MoreHorizontal, Flag, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks';
@@ -29,9 +30,7 @@ export default function ChatPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const [showStatusBar, setShowStatusBar] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const supabase = getClient();
 
   // 認証チェック
@@ -71,14 +70,11 @@ export default function ChatPage() {
     if (matchId) fetchMatchInfo();
   }, [matchId, supabase]);
 
-  // スクロール（メッセージエリア内のみ）- 初回ロード時も最新へ
+  // スクロール
   useEffect(() => {
-    if (messagesContainerRef.current && messages.length > 0) {
-      // 少し遅延させてDOMレンダリング完了後にスクロール
+    if (messagesEndRef.current && messages.length > 0) {
       setTimeout(() => {
-        if (messagesContainerRef.current) {
-          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-        }
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
   }, [messages, matchInfo]);
@@ -89,12 +85,6 @@ export default function ChatPage() {
       markAsRead();
     }
   }, [messages, markAsRead]);
-
-  // スクロール監視
-  const handleMessagesScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const scrollTop = e.currentTarget.scrollTop;
-    setShowStatusBar(scrollTop < 50);
-  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -114,9 +104,7 @@ export default function ChatPage() {
   // テンプレメッセージを送信
   const handleSendTemplate = async () => {
     if (isSending) return;
-
     const templateMessage = 'はじめまして！よろしくお願いします 😊';
-
     setIsSending(true);
     try {
       await sendMessage(templateMessage);
@@ -130,7 +118,6 @@ export default function ChatPage() {
   // 完了報告
   const handleComplete = async () => {
     if (!user || isUpdating) return;
-
     setIsUpdating(true);
     try {
       const { error } = await (supabase as any)
@@ -140,7 +127,6 @@ export default function ChatPage() {
           completed_at: new Date().toISOString()
         })
         .eq('id', matchId);
-
       if (error) throw error;
       toast.success('完了報告しました！相手の承認をお待ちください');
       fetchMatchInfo();
@@ -155,7 +141,6 @@ export default function ChatPage() {
   // 完了承認
   const handleConfirm = async () => {
     if (!user || isUpdating) return;
-
     setIsUpdating(true);
     try {
       const { error } = await (supabase as any)
@@ -166,7 +151,6 @@ export default function ChatPage() {
           status: 'completed'
         })
         .eq('id', matchId);
-
       if (error) throw error;
       toast.success('完了しました！レビューを書きましょう');
       fetchMatchInfo();
@@ -190,7 +174,6 @@ export default function ChatPage() {
     if (!matchInfo || !user) return null;
     const isPostOwner = matchInfo.application.post.user_id === user.id;
     const postType = matchInfo.application.post.type;
-
     if (isPostOwner) {
       return postType === 'support' ? '教える側' : '学ぶ側';
     } else {
@@ -268,199 +251,163 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh]">
-      {/* Header - 固定 */}
-      <div className="flex-none border-b bg-white px-4 py-3">
-        <div className="max-w-2xl mx-auto flex items-center gap-3">
-          <Link
-            href={ROUTES.MATCHES}
-            className="p-2 -ml-2 rounded-lg hover:bg-gray-100"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
+    <div className="bg-white">
+      {/* ========== ヘッダー - 固定 ========== */}
+      <header className="fixed top-0 left-0 right-0 z-30 border-b bg-white">
+        <div className="px-4 py-3">
+          <div className="max-w-2xl mx-auto flex items-center gap-3">
+            <Link
+              href={ROUTES.MATCHES}
+              className="p-2 -ml-2 rounded-lg hover:bg-gray-100"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
 
-          {partner && (
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <Link
-                href={`/users/${partner.username}`}
-                className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-orange-300 transition-all"
-              >
-                {partner.avatar_url ? (
-                  <img
-                    src={partner.avatar_url}
-                    alt={partner.display_name}
-                    className="h-10 w-10 object-cover"
-                  />
-                ) : (
-                  <User className="h-5 w-5 text-orange-500" />
-                )}
-              </Link>
-              <div className="flex-1 min-w-0">
-                <Link href={`/users/${partner.username}`} className="font-medium truncate block hover:text-orange-500">
-                  {partner.display_name}
-                </Link>
-                <p className="text-xs text-gray-500">
-                  あなたは{myRole}
-                </p>
-              </div>
-
-              {/* メニューボタン - 通報のみ */}
-              <div className="relative">
-                <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            {partner && (
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <Link
+                  href={`/users/${partner.username}`}
+                  className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-orange-300 transition-all"
                 >
-                  <MoreHorizontal className="h-5 w-5 text-gray-500" />
-                </button>
-                {isMenuOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setIsMenuOpen(false)}
+                  {partner.avatar_url ? (
+                    <Image
+                      src={partner.avatar_url}
+                      alt={partner.display_name || 'ユーザー'}
+                      width={80}
+                      height={80}
+                      className="h-10 w-10 object-cover"
                     />
-                    <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border py-1 z-20">
-                      <button
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          setIsReportOpen(true);
-                        }}
-                        className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left"
-                      >
-                        <Flag className="h-4 w-4" />
-                        相手を通報
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 投稿情報カード - 固定 */}
-      <div className="flex-none border-b bg-gray-50">
-        <div className="max-w-2xl mx-auto px-4">
-          <button
-            onClick={() => setShowPostDetail(!showPostDetail)}
-            className="w-full py-2.5 flex items-center justify-between text-left"
-          >
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${post?.type === 'support'
-                ? 'bg-purple-100 text-purple-700'
-                : 'bg-cyan-100 text-cyan-700'
-                }`}>
-                {post?.type === 'support' ? 'サポート' : 'チャレンジ'}
-              </span>
-              <span className="font-medium text-sm truncate">
-                {post?.title}
-              </span>
-            </div>
-
-            {showPostDetail ? (
-              <ChevronUp className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
-            )}
-          </button>
-
-          {showPostDetail && (
-            <div className="pb-3 space-y-2">
-              <div className="flex flex-wrap gap-1.5 text-xs">
-                {category && (
-                  <span
-                    className="px-2 py-0.5 rounded-full"
-                    style={{
-                      backgroundColor: `${category.color}15`,
-                      color: category.color
-                    }}
-                  >
-                    {category.name}
-                  </span>
-                )}
-
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                  {post?.is_online ? (
-                    <>
-                      <Monitor className="h-3 w-3" />
-                      オンライン
-                    </>
                   ) : (
+                    <User className="h-5 w-5 text-orange-500" />
+                  )}
+                </Link>
+                <div className="flex-1 min-w-0">
+                  <Link href={`/users/${partner.username}`} className="font-medium truncate block hover:text-orange-500">
+                    {partner.display_name}
+                  </Link>
+                  <p className="text-xs text-gray-500">
+                    あなたは{myRole}
+                  </p>
+                </div>
+
+                {/* メニューボタン */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsMenuOpen(!isMenuOpen)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <MoreHorizontal className="h-5 w-5 text-gray-500" />
+                  </button>
+                  {isMenuOpen && (
                     <>
-                      <MapPin className="h-3 w-3" />
-                      {post?.location || '対面'}
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setIsMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-lg border py-1 z-20">
+                        <button
+                          onClick={() => {
+                            setIsMenuOpen(false);
+                            setIsReportOpen(true);
+                          }}
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                        >
+                          <Flag className="h-4 w-4" />
+                          相手を通報
+                        </button>
+                      </div>
                     </>
                   )}
-                </span>
-
-                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                  <Calendar className="h-3 w-3" />
-                  {formatRelativeTime(matchInfo.matched_at)}にマッチ
-                </span>
-              </div>
-
-              {post?.description && (
-                <p className="text-sm text-gray-600 line-clamp-2">
-                  {post.description}
-                </p>
-              )}
-
-              <Link
-                href={`/posts/${post?.id}`}
-                className="inline-block text-xs text-orange-500 hover:underline"
-              >
-                投稿の詳細を見る →
-              </Link>
-
-              {/* 完了報告ボタン - 投稿詳細内 */}
-              <div className="pt-2 border-t">
-                {renderCompletionButton(true)}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 完了ステータスバー - メッセージがある時＆初回表示時のみ */}
-      {showStatusBar && messages.length > 0 && (
-        <div className="flex-none border-b bg-white px-4 py-3">
-          <div className="max-w-2xl mx-auto">
-            {isCompleted ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle className="h-5 w-5" />
-                  <span className="font-medium">完了しました！</span>
                 </div>
-                {renderCompletionButton()}
-              </div>
-            ) : partnerCompletedIt ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-blue-600">
-                  <Clock className="h-5 w-5" />
-                  <span className="font-medium text-sm">{partner?.display_name}さんが完了報告</span>
-                </div>
-                {renderCompletionButton()}
-              </div>
-            ) : iCompletedIt ? (
-              <div className="flex items-center gap-2 text-yellow-600">
-                <Clock className="h-5 w-5" />
-                <span className="font-medium text-sm">完了報告済み - 相手の承認待ち</span>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-500">作業が終わったら完了報告しましょう</p>
-                {renderCompletionButton()}
               </div>
             )}
           </div>
         </div>
-      )}
 
-      {/* Messages - スクロール領域 */}
-      <div
-        ref={messagesContainerRef}
-        onScroll={handleMessagesScroll}
-        className="flex-1 overflow-y-auto overscroll-none bg-white"
+        {/* 投稿情報カード */}
+        <div className="border-t bg-gray-50">
+          <div className="max-w-2xl mx-auto px-4">
+            <button
+              onClick={() => setShowPostDetail(!showPostDetail)}
+              className="w-full py-2.5 flex items-center justify-between text-left"
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <span className={`flex-shrink-0 px-2 py-0.5 rounded-full text-xs font-medium ${post?.type === 'support'
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'bg-cyan-100 text-cyan-700'
+                  }`}>
+                  {post?.type === 'support' ? 'サポート' : 'チャレンジ'}
+                </span>
+                <span className="font-medium text-sm truncate">
+                  {post?.title}
+                </span>
+              </div>
+              {showPostDetail ? (
+                <ChevronUp className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0 ml-2" />
+              )}
+            </button>
+
+            {showPostDetail && (
+              <div className="pb-3 space-y-2">
+                <div className="flex flex-wrap gap-1.5 text-xs">
+                  {category && (
+                    <span
+                      className="px-2 py-0.5 rounded-full"
+                      style={{
+                        backgroundColor: `${category.color}15`,
+                        color: category.color
+                      }}
+                    >
+                      {category.name}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                    {post?.is_online ? (
+                      <>
+                        <Monitor className="h-3 w-3" />
+                        オンライン
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="h-3 w-3" />
+                        {post?.location || '対面'}
+                      </>
+                    )}
+                  </span>
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                    <Calendar className="h-3 w-3" />
+                    {formatRelativeTime(matchInfo.matched_at)}にマッチ
+                  </span>
+                </div>
+                {post?.description && (
+                  <p className="text-sm text-gray-600 line-clamp-2">
+                    {post.description}
+                  </p>
+                )}
+                <Link
+                  href={`/posts/${post?.id}`}
+                  className="inline-block text-xs text-orange-500 hover:underline"
+                >
+                  投稿の詳細を見る →
+                </Link>
+                <div className="pt-2 border-t">
+                  {renderCompletionButton(true)}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* ========== メッセージエリア - スクロール ========== */}
+      <main 
+        className="min-h-screen overflow-y-auto bg-white"
+        style={{ 
+          paddingTop: showPostDetail ? '220px' : '120px',
+          paddingBottom: '80px' 
+        }}
       >
         <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
           {messages.length === 0 ? (
@@ -474,7 +421,6 @@ export default function ChatPage() {
                 </p>
               </div>
 
-              {/* 流れの説明 */}
               <div className="bg-gray-50 rounded-xl p-4 mb-4">
                 <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
                   <span className="text-lg">📝</span>
@@ -500,7 +446,6 @@ export default function ChatPage() {
                 </ol>
               </div>
 
-              {/* ヒント */}
               <div className="bg-blue-50 rounded-xl p-4 mb-4">
                 <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
                   <span className="text-lg">💡</span>
@@ -515,7 +460,6 @@ export default function ChatPage() {
                 </p>
               </div>
 
-              {/* 注意書き */}
               <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
                 <h4 className="font-medium text-yellow-800 mb-2 flex items-center gap-2">
                   <span className="text-lg">⚠️</span>
@@ -529,7 +473,6 @@ export default function ChatPage() {
                 </ul>
               </div>
 
-              {/* テンプレートボタン */}
               <button
                 onClick={handleSendTemplate}
                 disabled={isSending}
@@ -555,8 +498,7 @@ export default function ChatPage() {
                   >
                     <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                     <p
-                      className={`text-xs mt-1 ${isMe ? 'text-orange-100' : 'text-gray-400'
-                        }`}
+                      className={`text-xs mt-1 ${isMe ? 'text-orange-100' : 'text-gray-400'}`}
                     >
                       {formatRelativeTime(message.created_at)}
                     </p>
@@ -567,13 +509,13 @@ export default function ChatPage() {
           )}
           <div ref={messagesEndRef} />
         </div>
-      </div>
+      </main>
 
-      {/* Input - 固定 */}
-      <div className="flex-none border-t bg-white px-4 py-2">
+      {/* ========== 入力欄 - 固定 ========== */}
+      <footer className="fixed bottom-0 left-0 right-0 z-30 border-t bg-white">
         <form
           onSubmit={handleSend}
-          className="flex gap-2 max-w-2xl mx-auto"
+          className="flex gap-2 max-w-2xl mx-auto px-4 py-3"
         >
           <input
             type="text"
@@ -590,7 +532,7 @@ export default function ChatPage() {
             <Send className="h-5 w-5" />
           </button>
         </form>
-      </div>
+      </footer>
 
       {partner && (
         <ReportDialog
