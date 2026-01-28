@@ -268,7 +268,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[100dvh] md:h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-full">
       {/* Header - 固定 */}
       <div className="flex-none border-b bg-white px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
@@ -585,7 +585,7 @@ export default function ChatPage() {
           <button
             type="submit"
             disabled={!newMessage.trim() || isSending}
-            className="h-11 w-11 rounded-full bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="h-11 w-11 rounded-xl bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="h-5 w-5" />
           </button>
