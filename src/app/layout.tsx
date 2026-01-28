@@ -15,11 +15,6 @@ export const metadata: Metadata = {
   keywords: ['スキルシェア', 'マッチング', '大学生', '趣味', '技術', '学習'],
   authors: [{ name: 'YatteMi! Team' }],
   manifest: '/manifest.json',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: 'default',
-    title: 'YatteMi!',
-  },
   verification: {
     google: 'az41pO7j5s4vekrMtcOrXfsDFjf91w2e34xmmRL6C88',
   },
@@ -67,7 +62,9 @@ export default function RootLayout({
     <html lang="ja" suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/logo.png" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        <meta name="apple-mobile-web-app-title" content="YatteMi!" />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         {children}
