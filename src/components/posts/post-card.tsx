@@ -348,7 +348,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
       {post.images && post.images.length > 0 && post.images[0] && (
         <div className="px-3 pb-2">
           {post.images.length === 1 ? (
-            <div className="relative w-full rounded-md overflow-hidden aspect-[3/2]">
+            <div className="relative w-full rounded-md overflow-hidden"style={{ paddingTop: '66.666%' }}>
               <Image
                 src={post.images[0]}
                 alt=""
