@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Send, User, MapPin, Monitor, Calendar, ChevronDown, ChevronUp, CheckCircle, Clock, Star, MoreHorizontal, Flag } from 'lucide-react';
+import { ArrowLeft, Send, User, MapPin, Monitor, Calendar, ChevronDown, ChevronUp, CheckCircle, Clock, Star, MoreHorizontal, Flag, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks';
 import { useMessages } from '@/hooks/use-messages';
@@ -71,12 +71,17 @@ export default function ChatPage() {
     if (matchId) fetchMatchInfo();
   }, [matchId, supabase]);
 
-  // スクロール（メッセージエリア内のみ）
+  // スクロール（メッセージエリア内のみ）- 初回ロード時も最新へ
   useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    if (messagesContainerRef.current && messages.length > 0) {
+      // 少し遅延させてDOMレンダリング完了後にスクロール
+      setTimeout(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      }, 100);
     }
-  }, [messages]);
+  }, [messages, matchInfo]);
 
   // 既読にする
   useEffect(() => {
@@ -99,6 +104,22 @@ export default function ChatPage() {
     try {
       await sendMessage(newMessage);
       setNewMessage('');
+    } catch (error) {
+      console.error('Error:', error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  // テンプレメッセージを送信
+  const handleSendTemplate = async () => {
+    if (isSending) return;
+
+    const templateMessage = 'はじめまして！よろしくお願いします 😊';
+
+    setIsSending(true);
+    try {
+      await sendMessage(templateMessage);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -248,6 +269,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col h-[100dvh] md:h-[calc(100vh-4rem)]">
+      {/* Header - 固定 */}
       <div className="flex-none border-b bg-white px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Link
@@ -399,8 +421,8 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* 完了ステータスバー - 初回表示時のみ（スクロールで消える） */}
-      {showStatusBar && (
+      {/* 完了ステータスバー - メッセージがある時＆初回表示時のみ */}
+      {showStatusBar && messages.length > 0 && (
         <div className="flex-none border-b bg-white px-4 py-3">
           <div className="max-w-2xl mx-auto">
             {isCompleted ? (
@@ -442,12 +464,80 @@ export default function ChatPage() {
       >
         <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
           {messages.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-3">👋</div>
-              <p className="text-gray-500 mb-2">マッチングおめでとう！</p>
-              <p className="text-sm text-gray-400">
-                まずは挨拶から始めてみましょう
-              </p>
+            // ガイダンス表示
+            <div className="py-4">
+              <div className="text-center mb-6">
+                <div className="text-5xl mb-3">🎉</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">マッチングおめでとう！</h3>
+                <p className="text-sm text-gray-500">
+                  {partner?.display_name}さんとつながりました
+                </p>
+              </div>
+
+              {/* 流れの説明 */}
+              <div className="bg-gray-50 rounded-xl p-4 mb-4">
+                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                  <span className="text-lg">📝</span>
+                  こんな流れで進めましょう
+                </h4>
+                <ol className="space-y-2 text-sm text-gray-600">
+                  <li className="flex gap-2">
+                    <span className="font-medium text-orange-500">1.</span>
+                    まずは挨拶！自己紹介してみよう
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-medium text-orange-500">2.</span>
+                    都合の良い日時・場所を相談
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-medium text-orange-500">3.</span>
+                    連絡先を交換してもOK
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="font-medium text-orange-500">4.</span>
+                    実際に会って（またはオンラインで）活動！
+                  </li>
+                </ol>
+              </div>
+
+              {/* ヒント */}
+              <div className="bg-blue-50 rounded-xl p-4 mb-4">
+                <h4 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                  <span className="text-lg">💡</span>
+                  ヒント
+                </h4>
+                <p className="text-sm text-blue-700 leading-relaxed">
+                  仲良くなったら連絡先交換もOK！
+                  <br />
+                  実際のやり取りはLINE、Discord、Zoomなど
+                  <br />
+                  目的に合わせてお互いが使いやすいツールで！
+                </p>
+              </div>
+
+              {/* 注意書き */}
+              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6">
+                <h4 className="font-medium text-yellow-800 mb-2 flex items-center gap-2">
+                  <span className="text-lg">⚠️</span>
+                  安全にご利用ください
+                </h4>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• 初めて会う時は公共の場所で</li>
+                  <li>• 個人情報は信頼できる相手にのみ</li>
+                  <li>• 金銭のやり取りはトラブルの元</li>
+                  <li>• 不審に感じたら通報してください</li>
+                </ul>
+              </div>
+
+              {/* テンプレートボタン */}
+              <button
+                onClick={handleSendTemplate}
+                disabled={isSending}
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-orange-500 text-white font-medium hover:bg-orange-600 disabled:opacity-50 transition-colors"
+              >
+                <MessageCircle className="h-5 w-5" />
+                「はじめまして！よろしくお願いします 😊」を送る
+              </button>
             </div>
           ) : (
             messages.map((message) => {
