@@ -381,15 +381,6 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
               </div>
             </div>
           )}
-          ```
-
-          ### 構造
-          ```
-          親div (relative, padding-bottom: 75%)
-          └── グリッドdiv (absolute inset-0) ← 親の高さを埋める
-          ├── 子div (relative) ← グリッドセルの高さを自動で持つ
-          │     └── Image (fill)
-          └── ...
         </div>
       )}
 
