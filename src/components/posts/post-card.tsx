@@ -98,7 +98,7 @@ interface PostCardProps {
   isLiked?: boolean;
 }
 
-export function PostCard({ post, showAuthor = true, isApplied = false, isLiked:initialIsLiked}: PostCardProps) {
+export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: initialIsLiked }: PostCardProps) {
   const { user } = useAuth();
   const { likesCount, isLiked, toggleLike, isLoading } = useLikes(
     post.id,
@@ -182,68 +182,78 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked:i
       {/* ヘッダー */}
       {showAuthor && author && (
         <div className="px-3 py-2 border-b">
-          {/* 1行目: アバター + 名前 + 時間 */}
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
+          {/* ヘッダー: アバター + 2行 */}
+          <div className="flex items-start gap-2.5">
+            {/* アバター（小さく） */}
+            <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden flex-shrink-0">
               {author.avatar_url ? (
                 <img
                   src={author.avatar_url}
                   alt={author.display_name || 'ユーザー'}
-                  className="h-10 w-10 object-cover"
+                  className="h-9 w-9 object-cover"
                 />
               ) : (
-                <span className="text-orange-600 font-medium">
+                <span className="text-orange-600 font-medium text-sm">
                   {(author.display_name || 'U')[0]}
                 </span>
               )}
             </div>
+
+            {/* 右側: 2行 */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1 text-sm">
+              {/* 1行目: 名前 + 時間 */}
+              <div className="flex items-center gap-1.5 text-sm">
                 <span className="font-semibold truncate">{author.display_name}</span>
-                <span className="text-gray-400 truncate">@{author.username}</span>
+                <span className="text-gray-400 text-xs truncate">@{author.username}</span>
+                <span className="text-gray-400 text-xs flex-shrink-0 ml-auto">
+                  {formatRelativeTime(post.created_at)}
+                </span>
+              </div>
+
+              {/* 2行目: タイプ + カテゴリ + バッジ */}
+              <div className="flex items-center justify-between mt-1">
+                {/* 左: タイプ + カテゴリ */}
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      'px-1.5 py-0.5 rounded-full text-xs font-medium',
+                      post.type === 'support'
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-orange-100 text-orange-700'
+                    )}
+                  >
+                    {post.type === 'support' ? '🎓 サポート' : '📚 チャレンジ'}
+                  </span>
+
+                  {post.category && (
+                    <span
+                      className="px-1.5 py-0.5 rounded-full text-xs"
+                      style={{
+                        backgroundColor: post.category.color + '20',
+                        color: post.category.color,
+                      }}
+                    >
+                      {post.category.name}
+                    </span>
+                  )}
+                </div>
+
+                {/* 右: ステータスバッジ */}
+                <div className="flex items-center gap-1.5">
+                  {isClosed && (
+                    <span className="px-1.5 py-0.5 rounded-md text-xs font-bold bg-red-500 text-white">
+                      締切
+                    </span>
+                  )}
+
+                  {isApplied && !isClosed && (
+                    <span className="px-1.5 py-0.5 rounded-md text-xs font-bold bg-green-500 text-white">
+                      ✓ 応募済
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
-            <span className="text-gray-400 text-xs flex-shrink-0">
-              {formatRelativeTime(post.created_at)}
-            </span>
-          </div>
-
-          {/* 2行目: タイプ + カテゴリ + 締め切り/応募済み */}
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            <span
-              className={cn(
-                'px-2 py-0.5 rounded-full text-xs font-medium',
-                post.type === 'support'
-                  ? 'bg-green-100 text-green-700'
-                  : 'bg-orange-100 text-orange-700'
-              )}
-            >
-              {post.type === 'support' ? '🎓 サポートしたい' : '📚 チャレンジしたい'}
-            </span>
-
-            {post.category && (
-              <span
-                className="px-2 py-0.5 rounded-full text-xs"
-                style={{
-                  backgroundColor: post.category.color + '20',
-                  color: post.category.color,
-                }}
-              >
-                {post.category.name}
-              </span>
-            )}
-
-            {isClosed && (
-              <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-red-500 text-white">
-                締め切り
-              </span>
-            )}
-
-            {isApplied && !isClosed && (
-              <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-green-500 text-white">
-                ✓ 応募済み
-              </span>
-            )}
           </div>
         </div>
       )}

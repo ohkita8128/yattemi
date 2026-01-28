@@ -290,7 +290,6 @@ function ExploreContent() {
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500 mb-4">{filteredPosts.length}件の投稿</p>
           <div className="grid gap-1 md:grid-cols-2 lg:grid-cols-3">
             {filteredPosts.map((post) => (
               <PostCard
