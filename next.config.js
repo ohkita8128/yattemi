@@ -10,7 +10,7 @@ const nextConfig = {
     
     // デバイスごとの画像サイズ
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 100],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     
     // 既存の設定を保持 + Supabaseの設定を改善
     remotePatterns: [

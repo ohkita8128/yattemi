@@ -348,32 +348,34 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
       {post.images && post.images.length > 0 && post.images[0] && (
         <div className="px-3 pb-2">
           {post.images.length === 1 ? (
-            <div className="rounded-md overflow-hidden aspect-[3/2]">
+            <div className="relative rounded-md overflow-hidden aspect-[3/2]">
               <Image
                 src={post.images[0]}
                 alt=""
-                width={400}
-                height={270}
-                className="w-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 400px"
               />
             </div>
           ) : (
-            <div className={cn(
-              "grid gap-1 rounded-md overflow-hidden",
-              post.images.length === 2 ? "grid-cols-2 aspect-[3/1]" : "grid-cols-2 grid-rows-2 aspect-[4/3]"
-            )}>
+            <div
+              className={cn(
+                "grid gap-1 rounded-md overflow-hidden",
+                post.images.length === 2
+                  ? "grid-cols-2 aspect-[3/1]"
+                  : "grid-cols-2 grid-rows-2 aspect-[4/3]"
+              )}
+            >
               {post.images.slice(0, 4).map((url, index) => (
-                url && (
-                  <div key={index} className="overflow-hidden">
-                    <Image
-                      src={url}
-                      alt=""
-                      width={200}
-                      height={150}
-                      className="w-full object-cover"
-                    />
-                  </div>
-                )
+                <div key={index} className="relative overflow-hidden">
+                  <Image
+                    src={url}
+                    alt=""
+                    fill
+                    className="object-cover"
+                    sizes="200px"
+                  />
+                </div>
               ))}
             </div>
           )}
