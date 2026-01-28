@@ -27,6 +27,9 @@ export const metadata: Metadata = {
   description: APP_CONFIG.description,
   keywords: ['スキルシェア', 'マッチング', '大学生', '趣味', '技術', '学習'],
   authors: [{ name: 'YatteMi! Team' }],
+  verification: {
+    google: 'az41pO7j5s4vekrMtcOrXfsDFjf91w2e34xmmRL6C88',
+  },
   openGraph: {
     type: 'website',
     locale: 'ja_JP',
@@ -34,14 +37,14 @@ export const metadata: Metadata = {
     siteName: APP_CONFIG.name,
     title: APP_CONFIG.name,
     description: APP_CONFIG.description,
-     images: [
-    {
-      url: 'https://yattemi.vercel.app/og-image.png',  // ← 絶対URL
-      width: 1200,
-      height: 630,
-      alt: 'YatteMi! - 好きを広めたい人と、新しいことを始めたい人を繋ぐ',
-    },
-  ],
+    images: [
+      {
+        url: 'https://yattemi.vercel.app/og-image.png',  // ← 絶対URL
+        width: 1200,
+        height: 630,
+        alt: 'YatteMi! - 好きを広めたい人と、新しいことを始めたい人を繋ぐ',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
