@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
+import Image from 'next/image';
 
 interface DashboardPost {
   id: string;
@@ -276,7 +277,7 @@ export default function DashboardPage() {
                                 className="h-8 w-8 rounded-full border-2 border-white bg-gray-300 overflow-hidden"
                               >
                                 {applicant.avatar_url ? (
-                                  <img src={applicant.avatar_url} alt="" className="h-full w-full object-cover" />
+                                  <Image src={applicant.avatar_url} alt="" width={72} height={72} className="h-full w-full object-cover" />
                                 ) : (
                                   <div className="h-full w-full bg-orange-400 flex items-center justify-center text-white text-[10px] font-bold">
                                     {applicant.display_name?.[0] || '?'}
@@ -363,7 +364,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <div className="h-8 w-8 rounded-full border-2 border-white bg-gray-300 overflow-hidden">
                           {match.partner.avatar_url ? (
-                            <img src={match.partner.avatar_url} alt="" className="h-full w-full object-cover" />
+                            <Image src={match.partner.avatar_url} alt="" width={72} height={72} className="h-full w-full object-cover" />
                           ) : (
                             <div className="h-full w-full bg-green-400 flex items-center justify-center text-white text-[10px] font-bold">
                               {match.partner.display_name?.[0] || '?'}
@@ -424,7 +425,7 @@ export default function DashboardPage() {
                                 className="h-8 w-8 rounded-full border-2 border-white bg-gray-300 overflow-hidden"
                               >
                                 {applicant.avatar_url ? (
-                                  <img src={applicant.avatar_url} alt="" className="h-full w-full object-cover" />
+                                  <Image src={applicant.avatar_url} alt="" width={72} height={72} className="h-full w-full object-cover" />
                                 ) : (
                                   <div className="h-full w-full bg-cyan-400 flex items-center justify-center text-white text-[10px] font-bold">
                                     {applicant.display_name?.[0] || '?'}
@@ -511,7 +512,7 @@ export default function DashboardPage() {
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <div className="h-8 w-8 rounded-full border-2 border-white bg-gray-300 overflow-hidden">
                           {match.partner.avatar_url ? (
-                            <img src={match.partner.avatar_url} alt="" className="h-full w-full object-cover" />
+                            <Image src={match.partner.avatar_url} alt="" width={72} height={72} className="h-full w-full object-cover" />
                           ) : (
                             <div className="h-full w-full bg-purple-400 flex items-center justify-center text-white text-[10px] font-bold">
                               {match.partner.display_name?.[0] || '?'}

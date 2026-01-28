@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
 import { formatRelativeTime } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
+import Image from 'next/image'
 
 type FilterType = 'all' | 'active' | 'completed';
 
@@ -150,8 +151,8 @@ export default function MatchesPage() {
         <button
           onClick={() => setFilter('all')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === 'all'
-              ? 'bg-orange-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            ? 'bg-orange-500 text-white'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
         >
           <Filter className="h-4 w-4" />
@@ -161,8 +162,8 @@ export default function MatchesPage() {
         <button
           onClick={() => setFilter('active')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === 'active'
-              ? 'bg-green-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            ? 'bg-green-500 text-white'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
         >
           <Clock className="h-4 w-4" />
@@ -174,8 +175,8 @@ export default function MatchesPage() {
         <button
           onClick={() => setFilter('completed')}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === 'completed'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            ? 'bg-blue-500 text-white'
+            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
         >
           <CheckCircle className="h-4 w-4" />
@@ -230,9 +231,11 @@ export default function MatchesPage() {
                 >
                   <div className="h-12 w-12 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-orange-300 transition-all">
                     {partner?.avatar_url ? (
-                      <img
-                        src={partner.avatar_url}
-                        alt={partner.display_name}
+                      <Image
+                        src={partner.avatar_url!}
+                        alt={partner.display_name || 'ユーザー'}
+                        width={96}
+                        height={96}
                         className="h-12 w-12 object-cover"
                       />
                     ) : (
@@ -249,14 +252,14 @@ export default function MatchesPage() {
                       {partner?.display_name}
                     </p>
                     <span className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded ${postType === 'support'
-                        ? 'bg-purple-100 text-purple-600'
-                        : 'bg-cyan-100 text-cyan-600'
+                      ? 'bg-purple-100 text-purple-600'
+                      : 'bg-cyan-100 text-cyan-600'
                       }`}>
                       {postType === 'support' ? 'サポート' : 'チャレンジ'}
                     </span>
                     <span className={`flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded ${match.status === 'active'
-                        ? 'bg-green-100 text-green-600'
-                        : 'bg-gray-100 text-gray-500'
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-gray-100 text-gray-500'
                       }`}>
                       {match.status === 'active' ? '進行中' : '完了'}
                     </span>

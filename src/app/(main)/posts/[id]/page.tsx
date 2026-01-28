@@ -28,6 +28,7 @@ import { getLevelEmoji } from '@/lib/levels';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
 import { PostQuestions } from '@/components/posts/post-questions';
 import { ReportDialog } from '@/components/common/report-dialog';
+import Image from 'next/image';
 
 const DAYS_LABEL: Record<string, string> = {
   mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土', sun: '日',
@@ -189,9 +190,11 @@ export default function PostDetailPage() {
             <Link href={`/users/${post.profile.username}`}>
               <div className="h-12 w-12 rounded-full bg-gradient-to-br from-orange-400 to-pink-400 flex items-center justify-center text-white font-bold overflow-hidden flex-shrink-0">
                 {post.profile.avatar_url ? (
-                  <img
+                  <Image
                     src={post.profile.avatar_url}
                     alt={post.profile.display_name}
+                    width={72}
+                    height={72}
                     className="h-12 w-12 object-cover"
                   />
                 ) : (
@@ -314,9 +317,11 @@ export default function PostDetailPage() {
               <div className={`rounded-xl overflow-hidden border ${images.length === 1 ? '' : 'grid gap-0.5 ' + (images.length === 2 ? 'grid-cols-2' : 'grid-cols-2')
                 }`}>
                 {images.length === 1 ? (
-                  <img
-                    src={images[0]}
+                  <Image
+                    src={images[0]!}
                     alt=""
+                    width={800}
+                    height={600}
                     className="w-full max-h-[350px] object-cover cursor-pointer hover:opacity-95 transition-opacity"
                     onClick={() => setSelectedImage(images[0] || null)}
                   />
@@ -327,9 +332,11 @@ export default function PostDetailPage() {
                       className={`relative overflow-hidden ${images.length === 3 && index === 0 ? 'row-span-2' : ''
                         }`}
                     >
-                      <img
+                      <Image
                         src={url}
                         alt=""
+                        width={400}
+                        height={300}
                         className={`w-full object-cover cursor-pointer hover:opacity-95 transition-opacity ${images.length === 3 && index === 0 ? 'h-full' : 'h-[150px]'
                           }`}
                         onClick={() => setSelectedImage(url || null)}
@@ -473,9 +480,11 @@ export default function PostDetailPage() {
           className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
         >
-          <img
+          <Image
             src={selectedImage}
             alt=""
+            width={1200}
+            height={900}
             className="max-w-full max-h-full object-contain"
           />
         </div>

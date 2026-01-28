@@ -192,8 +192,8 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
                 <Image
                   src={author.avatar_url}
                   alt={author.display_name || 'ユーザー'}
-                  width={36}
-                  height={36}
+                  width={72}
+                  height={72}
                   className="h-9 w-9 object-cover"
                 />
               ) : (

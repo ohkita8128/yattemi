@@ -190,9 +190,11 @@ export function Header() {
                   )}
                   <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center overflow-hidden">
                     {profile?.avatar_url ? (
-                      <img
+                      <Image
                         src={profile.avatar_url}
-                        alt={profile.display_name}
+                        alt={profile.display_name || 'ユーザー'}
+                        width={72}
+                        height={72}
                         className="h-9 w-9 rounded-full object-cover"
                       />
                     ) : (
