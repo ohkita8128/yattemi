@@ -29,7 +29,7 @@ export default function ChatPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
-  const [showStatusBar, setShowStatusBar] = useState(true); // ← 追加
+  const [showStatusBar, setShowStatusBar] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const supabase = getClient();
@@ -41,7 +41,7 @@ export default function ChatPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // マッチング情報を取得（1回のクエリで全て取得）
+  // マッチング情報を取得
   const fetchMatchInfo = async () => {
     const { data } = await (supabase as any)
       .from('matches')
@@ -177,14 +177,12 @@ export default function ChatPage() {
     }
   };
 
-  // レビューページのパスを取得
   const getReviewPath = () => `/matches/${matchId}/review`;
 
   const partner = getPartner();
   const myRole = getMyRole();
   const post = matchInfo?.application?.post;
 
-  // 完了ステータスの判定
   const isCompleted = matchInfo?.status === 'completed';
   const hasCompletedBy = !!matchInfo?.completed_by;
   const iCompletedIt = matchInfo?.completed_by === user?.id;
@@ -200,7 +198,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="fixed inset-0 top-16 flex flex-col bg-white z-10">
+    <div className="flex flex-col h-[calc(100dvh-4rem)] overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 border-b bg-white px-4 py-3">
         <div className="container mx-auto max-w-2xl flex items-center gap-3">
@@ -454,53 +452,49 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* FAB - スクロール後に表示 */}
+      {/* FAB - スクロール後に表示（スマホのみ） */}
       {!showStatusBar && (
-        <>
+        <div className="md:hidden">
           {isCompleted ? (
-            // 完了済み → レビューFAB
             <Link
               href={getReviewPath()}
-              className="fixed bottom-28 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-orange-500 text-white font-medium shadow-lg hover:bg-orange-600 transition-colors z-30"
+              className="fixed bottom-24 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-orange-500 text-white font-medium shadow-lg hover:bg-orange-600 transition-colors z-30"
             >
               <Star className="h-5 w-5" />
               レビュー
             </Link>
           ) : partnerCompletedIt ? (
-            // 相手が完了報告済み → 承認FAB
             <button
               onClick={handleConfirm}
               disabled={isUpdating}
-              className="fixed bottom-28 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-green-500 text-white font-medium shadow-lg hover:bg-green-600 disabled:opacity-50 transition-colors z-30"
+              className="fixed bottom-24 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-green-500 text-white font-medium shadow-lg hover:bg-green-600 disabled:opacity-50 transition-colors z-30"
             >
               <CheckCircle className="h-5 w-5" />
               承認
             </button>
           ) : iCompletedIt ? (
-            // 自分が完了報告済み → 待機中バッジ
-            <div className="fixed bottom-28 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-yellow-100 text-yellow-700 font-medium shadow-lg z-30">
+            <div className="fixed bottom-24 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-yellow-100 text-yellow-700 font-medium shadow-lg z-30">
               <Clock className="h-5 w-5" />
               承認待ち
             </div>
           ) : (
-            // まだ完了報告なし → 完了報告FAB
             <button
               onClick={handleComplete}
               disabled={isUpdating}
-              className="fixed bottom-28 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-blue-500 text-white font-medium shadow-lg hover:bg-blue-600 disabled:opacity-50 transition-colors z-30"
+              className="fixed bottom-24 right-4 flex items-center gap-2 px-4 py-3 rounded-full bg-blue-500 text-white font-medium shadow-lg hover:bg-blue-600 disabled:opacity-50 transition-colors z-30"
             >
               <CheckCircle className="h-5 w-5" />
               完了報告
             </button>
           )}
-        </>
+        </div>
       )}
 
       {/* Input */}
-      <div className="flex-shrink-0 border-t bg-white px-4 py-3 pb-20 md:pb-3">
+      <div className="flex-shrink-0 border-t bg-white px-4 py-3">
         <form
           onSubmit={handleSend}
-          className="flex gap-2 w-full"
+          className="flex gap-2 w-full max-w-2xl mx-auto"
         >
           <input
             type="text"
@@ -512,7 +506,7 @@ export default function ChatPage() {
           <button
             type="submit"
             disabled={!newMessage.trim() || isSending}
-            className="h-12 w-12 rounded-xl bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 disabled:bg-orange-500 disabled:cursor-not-allowed"
+            className="h-12 w-12 rounded-xl bg-orange-500 text-white flex items-center justify-center hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="h-5 w-5" />
           </button>
