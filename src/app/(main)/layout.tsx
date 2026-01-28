@@ -1,5 +1,4 @@
 'use client';
-
 import { usePathname } from 'next/navigation';
 import { Header, Footer } from '@/components/layout';
 import { BottomNav } from '@/components/layout/bottom-nav';
@@ -11,12 +10,11 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
   // チャットページ判定
   const isChatPage = pathname.startsWith('/matches/') && pathname !== '/matches';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#fcfcfc]">
+    <div className={`flex flex-col bg-[#fcfcfc] ${isChatPage ? 'h-screen' : 'min-h-screen'}`}>
       {/* チャットページ: スマホは非表示、PCは表示 */}
       {isChatPage ? (
         <div className="hidden md:block">
@@ -26,7 +24,7 @@ export default function MainLayout({
         <Header />
       )}
 
-      <main className={`flex-1 ${isChatPage ? 'pb-0' : 'pb-16 md:pb-0'}`}>
+      <main className={`flex-1 ${isChatPage ? 'overflow-hidden' : 'pb-16 md:pb-0'}`}>
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
