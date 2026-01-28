@@ -349,19 +349,19 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
         {post.images && post.images.length > 0 && post.images[0] && (
           <div className="mt-2">
             {post.images.length === 1 ? (
-              <div className="rounded-md overflow-hidden h-[200px]">
+              <div className="rounded-md overflow-hidden h-[180px]">
                 <Image
                   src={post.images[0]}
                   alt=""
                   width={400}
-                  height={200}
+                  height={180}
                   className="w-full h-full object-cover"
                 />
               </div>
             ) : (
               <div className={cn(
                 "grid gap-1 rounded-md overflow-hidden",
-                post.images.length === 2 ? "grid-cols-2 h-[120px]" : "grid-cols-2 grid-rows-2 h-[200px]"
+                post.images.length === 2 ? "grid-cols-2 h-[100px]" : "grid-cols-2 grid-rows-2 h-[180px]"
               )}>
                 {post.images.slice(0, 4).map((url, index) => (
                   url && (
@@ -370,7 +370,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
                         src={url}
                         alt=""
                         width={200}
-                        height={150}
+                        height={100}
                         className="w-full h-full object-cover"
                       />
                     </div>
