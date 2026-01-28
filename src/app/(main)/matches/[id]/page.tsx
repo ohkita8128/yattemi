@@ -190,7 +190,7 @@ export default function ChatPage() {
 
   // 完了ボタンのレンダリング
   const renderCompletionButton = (fullWidth = false) => {
-    const baseClass = fullWidth 
+    const baseClass = fullWidth
       ? "flex items-center justify-center gap-2 w-full py-2.5 rounded-xl font-medium transition-colors"
       : "flex items-center gap-1.5 px-4 py-2 rounded-xl font-medium transition-colors";
 
@@ -247,8 +247,7 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-4rem)] md:h-[calc(100vh-4rem)]">
-      {/* Header - 固定 */}
+    <div className="flex flex-col h-[100dvh] md:h-[calc(100vh-4rem)]">
       <div className="flex-none border-b bg-white px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <Link
@@ -436,8 +435,8 @@ export default function ChatPage() {
       )}
 
       {/* Messages - スクロール領域 */}
-      <div 
-        ref={messagesContainerRef} 
+      <div
+        ref={messagesContainerRef}
         onScroll={handleMessagesScroll}
         className="flex-1 overflow-y-auto overscroll-none bg-white"
       >
