@@ -34,7 +34,7 @@ export default function AuthLayout({
           {/* ロゴ（大きめ） */}
           <Link href={ROUTES.HOME} className="flex items-center gap-4 mb-12">
             <Image
-              src="/logo-56.png"
+              src="/logo.png"
               alt="YatteMi!"
               width={56}
               height={56}
@@ -82,7 +82,7 @@ export default function AuthLayout({
               className="flex items-center gap-2 font-display text-xl font-bold"
             >
               <Image
-                src="/logo-40.png"
+                src="/logo.png"
                 alt="YatteMi!"
                 width={40}
                 height={40}

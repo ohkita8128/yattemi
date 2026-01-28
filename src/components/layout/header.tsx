@@ -23,6 +23,7 @@ import { useUIStore, useNotificationStore } from '@/stores';
 import { ROUTES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { getClient } from '@/lib/supabase/client';
+import Image from 'next/image';
 
 const navItems = [
   { label: 'ホーム', href: ROUTES.HOME },
@@ -68,21 +69,21 @@ export function Header() {
 
     const fetchNotifications = async () => {
       const supabase = getClient();
-      
+
       const { data } = await (supabase as any)
         .from('notifications')
         .select('*')
         .eq('user_id', profile.id)
         .order('created_at', { ascending: false })
         .limit(50);
-      
+
       if (data) {
         setNotifications(data);
       }
     };
 
     fetchNotifications();
-    
+
     // 30秒ごとに更新
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
@@ -117,7 +118,14 @@ export function Header() {
           className="flex items-center gap-1.5 text-xl font-bold"
           onClick={closeMobileNav}
         >
-          <img src="/logo.png" alt="YatteMi!" className="h-10 w-10" />
+          <Image
+            src="/logo.png"
+            alt="YatteMi!"
+            width={56}
+            height={56}
+            priority
+            className="h-14 w-14"
+          />
           <span className="bg-gradient-to-r from-orange-500 to-orange-600 bg-clip-text text-transparent">
             YatteMi!
           </span>
