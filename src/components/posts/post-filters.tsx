@@ -54,10 +54,10 @@ export function PostFilters({
             すべて
           </TabsTrigger>
           <TabsTrigger value="support" className="flex-1">
-            🎓 サポートしたい
+            🎓 サポート
           </TabsTrigger>
           <TabsTrigger value="challenge" className="flex-1">
-            📘 教えてほしい
+            📘 チャレンジ
           </TabsTrigger>
         </TabsList>
       </Tabs>
