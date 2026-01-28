@@ -315,7 +315,6 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
         <h3 className="font-semibold text-base line-clamp-2">
           {post.title}
         </h3>
-
         {/* 説明 */}
         {post.description && (
           <p className={cn(
@@ -325,7 +324,6 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
             {post.description}
           </p>
         )}
-
         {/* タグ */}
         {post.tags && post.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
@@ -344,46 +342,43 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
             )}
           </div>
         )}
-
-        {/* 画像 */}
-        {post.images && post.images.length > 0 && post.images[0] && (
-          <div className="mt-2 flex-none">
-            {post.images.length === 1 ? (
-              <div className="rounded-md overflow-hidden" style={{ height: '180px' }}>
-                <Image
-                  src={post.images[0]}
-                  alt=""
-                  width={400}
-                  height={180}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            ) : (
-              <div
-                className={cn(
-                  "grid gap-1 rounded-md overflow-hidden",
-                  post.images.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
-                )}
-                style={{ height: post.images.length === 2 ? '100px' : '180px' }}
-              >
-                {post.images.slice(0, 4).map((url, index) => (
-                  url && (
-                    <div key={index} className="overflow-hidden">
-                      <Image
-                        src={url}
-                        alt=""
-                        width={200}
-                        height={100}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  )
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      {/* 画像（本文の外に移動！） */}
+      {post.images && post.images.length > 0 && post.images[0] && (
+        <div className="px-3 pb-2">
+          {post.images.length === 1 ? (
+            <div className="rounded-md overflow-hidden aspect-[3/2]">
+              <Image
+                src={post.images[0]}
+                alt=""
+                width={400}
+                height={270}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          ) : (
+            <div className={cn(
+              "grid gap-1 rounded-md overflow-hidden",
+              post.images.length === 2 ? "grid-cols-2 aspect-[3/1]" : "grid-cols-2 grid-rows-2 aspect-[4/3]"
+            )}>
+              {post.images.slice(0, 4).map((url, index) => (
+                url && (
+                  <div key={index} className="overflow-hidden">
+                    <Image
+                      src={url}
+                      alt=""
+                      width={200}
+                      height={150}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* メタ情報 + いいね（本文の外に出す） */}
       <div className="px-3 py-2 border-t flex items-center justify-between">
