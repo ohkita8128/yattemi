@@ -349,14 +349,12 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
         {post.images && post.images.length > 0 && post.images[0] && (
           <div className="mt-2">
             {post.images.length === 1 ? (
-              <div className="rounded-md overflow-hidden aspect-[3/2]">
+              <div className="rounded-md overflow-hidden aspect-[3/2] relative">
                 <Image
                   src={post.images[0]}
                   alt=""
-                  width={400}
-                  height={200}
+                  fill
                   className="object-cover"
-                  style={{ width: '100%', height: '100%' }}
                 />
               </div>
             ) : (
@@ -366,14 +364,12 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
               )}>
                 {post.images.slice(0, 4).map((url, index) => (
                   url && (
-                    <div key={index} className="overflow-hidden h-full">
+                    <div key={index} className="relative overflow-hidden">
                       <Image
                         src={url}
                         alt=""
-                        width={200}
-                        height={200}
+                        fill
                         className="object-cover"
-                        style={{ width: '100%', height: '100%' }}
                       />
                     </div>
                   )
