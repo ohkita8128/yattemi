@@ -346,17 +346,16 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
         )}
 
         {/* 画像 */}
-        {/* 画像 */}
         {post.images && post.images.length > 0 && post.images[0] && (
           <div className="mt-2">
             {post.images.length === 1 ? (
-              <div className="rounded-md overflow-hidden relative h-[200px]">
+              <div className="rounded-md overflow-hidden h-[200px]">
                 <Image
                   src={post.images[0]}
                   alt=""
-                  fill
-                  sizes="(max-width: 768px) 100vw, 400px"
-                  className="object-cover"
+                  width={400}
+                  height={200}
+                  className="w-full h-full object-cover"
                 />
               </div>
             ) : (
@@ -366,13 +365,13 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
               )}>
                 {post.images.slice(0, 4).map((url, index) => (
                   url && (
-                    <div key={index} className="overflow-hidden relative h-full">
+                    <div key={index} className="overflow-hidden">
                       <Image
                         src={url}
                         alt=""
-                        fill
-                        sizes="200px"
-                        className="object-cover"
+                        width={200}
+                        height={200}
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   )
