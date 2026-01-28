@@ -354,7 +354,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
                 alt=""
                 width={400}
                 height={270}
-                className="w-full h-full object-cover"
+                className="w-full object-cover"
               />
             </div>
           ) : (
@@ -370,7 +370,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
                       alt=""
                       width={200}
                       height={150}
-                      className="w-full h-full object-cover"
+                      className="w-full object-cover"
                     />
                   </div>
                 )
