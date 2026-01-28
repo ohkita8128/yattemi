@@ -10,8 +10,16 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        // ✅ Noto Sans JPのみ使用
-        sans: ['var(--font-noto-sans)', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'sans-serif'],
+        // ✅ システムフォントスタック（高速、美しい）
+        sans: [
+          '-apple-system',           // iOS/macOS
+          'BlinkMacSystemFont',      // macOS Chrome
+          'Hiragino Sans',           // macOS 日本語
+          'Hiragino Kaku Gothic ProN', // macOS 日本語（旧）
+          'Yu Gothic UI',            // Windows 日本語
+          'Meiryo',                  // Windows 日本語
+          'sans-serif',              // フォールバック
+        ],
       },
       colors: {
         border: 'hsl(var(--border))',

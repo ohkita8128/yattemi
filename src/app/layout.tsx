@@ -1,20 +1,12 @@
 // src/app/layout.tsx
-// 🚀 LCP最適化版 - フォント1つに統一
+// 🚀 LCP最適化版 - システムフォント使用（Google Fonts削除）
 
 import type { Metadata, Viewport } from 'next';
-import { Noto_Sans_JP } from 'next/font/google';
 import { Toaster } from 'sonner';
 import '@/styles/globals.css';
 import { APP_CONFIG } from '@/lib/constants';
 
-// ✅ フォント1つだけ、3ウェイトのみ
-const notoSansJP = Noto_Sans_JP({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
-  display: 'swap',
-  preload: true,
-  variable: '--font-noto-sans',
-});
+// ✅ Google Fontsを使わない = フォントファイル0個
 
 export const metadata: Metadata = {
   title: {
@@ -68,22 +60,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="ja"
-      className={notoSansJP.variable}
-      suppressHydrationWarning
-    >
-      <head>
-        <style dangerouslySetInnerHTML={{ __html: `
-          body { 
-            margin: 0; 
-            font-family: var(--font-noto-sans), 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', sans-serif;
-            background-color: #fafafa;
-            -webkit-font-smoothing: antialiased;
-          }
-          .min-h-screen { min-height: 100vh; }
-        ` }} />
-      </head>
+    <html lang="ja" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
         {children}
         <Toaster
