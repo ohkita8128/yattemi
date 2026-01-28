@@ -358,26 +358,38 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
             </div>
           ) : (
             <div
-              className={cn(
-                "grid gap-1 rounded-md overflow-hidden relative",
-                post.images.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
-              )}
+              className="rounded-md overflow-hidden relative"
               style={{ paddingBottom: post.images.length === 2 ? '33.33%' : '75%' }}
             >
-              {post.images.slice(0, 4).map((url, index) => (
-                url && (
-                  <div key={index} className="relative overflow-hidden">
-                    <Image
-                      src={url}
-                      alt=""
-                      fill
-                      className="absolute inset-0 object-cover"
-                    />
-                  </div>
-                )
-              ))}
+              {/* グリッドを absolute で配置 */}
+              <div className={cn(
+                "absolute inset-0 grid gap-1",
+                post.images.length === 2 ? "grid-cols-2" : "grid-cols-2 grid-rows-2"
+              )}>
+                {post.images.slice(0, 4).map((url, index) => (
+                  url && (
+                    <div key={index} className="relative overflow-hidden">
+                      <Image
+                        src={url}
+                        alt=""
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                  )
+                ))}
+              </div>
             </div>
           )}
+          ```
+
+          ### 構造
+          ```
+          親div (relative, padding-bottom: 75%)
+          └── グリッドdiv (absolute inset-0) ← 親の高さを埋める
+          ├── 子div (relative) ← グリッドセルの高さを自動で持つ
+          │     └── Image (fill)
+          └── ...
         </div>
       )}
 
