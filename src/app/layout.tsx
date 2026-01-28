@@ -1,12 +1,10 @@
 // src/app/layout.tsx
-// 🚀 LCP最適化版 - システムフォント使用（Google Fonts削除）
+// 🚀 LCP最適化版 + PWA対応
 
 import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'sonner';
 import '@/styles/globals.css';
 import { APP_CONFIG } from '@/lib/constants';
-
-// ✅ Google Fontsを使わない = フォントファイル0個
 
 export const metadata: Metadata = {
   title: {
@@ -16,6 +14,12 @@ export const metadata: Metadata = {
   description: APP_CONFIG.description,
   keywords: ['スキルシェア', 'マッチング', '大学生', '趣味', '技術', '学習'],
   authors: [{ name: 'YatteMi! Team' }],
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'YatteMi!',
+  },
   verification: {
     google: 'az41pO7j5s4vekrMtcOrXfsDFjf91w2e34xmmRL6C88',
   },
@@ -61,6 +65,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ja" suppressHydrationWarning>
+      <head>
+        <link rel="apple-touch-icon" href="/logo.png" />
+      </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         {children}
         <Toaster
