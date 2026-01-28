@@ -26,7 +26,15 @@ export function useRecommendations(limit: number = 6) {
       setIsLoading(true);
 
       try {
-        // 1. ユーザーがいいねした投稿のカテゴリを取得
+        // 1. ユーザーの興味カテゴリを取得（user_interests テーブルから）
+        const { data: userInterests } = await (supabase as any)
+          .from('user_interests')
+          .select('category_id')
+          .eq('user_id', user.id);
+
+        const interestCategories = userInterests?.map((i: any) => i.category_id) || [];
+
+        // 2. いいねした投稿のカテゴリも取得（行動ベース）
         const { data: likedPosts } = await (supabase as any)
           .from('likes')
           .select('post:posts(category_id)')
@@ -37,9 +45,10 @@ export function useRecommendations(limit: number = 6) {
           ?.map((l: any) => l.post?.category_id)
           .filter(Boolean) || [];
 
-        const uniqueCategories = Array.from(new Set(likedCategories)) as number[];
+        // 3. 両方を組み合わせて重複排除
+        const allCategories = Array.from(new Set([...interestCategories, ...likedCategories])) as number[];
 
-        // 2. おすすめ投稿を取得
+        // 4. おすすめ投稿を取得
         const now = new Date().toISOString();
         let query = (supabase as any)
           .from('posts')
@@ -51,23 +60,26 @@ export function useRecommendations(limit: number = 6) {
           .eq('status', 'open')
           .neq('user_id', user.id)
           .or(`deadline_at.gt.${now},deadline_at.is.null`)
-          .order('likes_count', { ascending: false })
           .limit(limit);
 
-        if (uniqueCategories.length > 0) {
-          query = query.in('category_id', uniqueCategories);
+        // 興味カテゴリがあればフィルター
+        if (allCategories.length > 0) {
+          query = query.in('category_id', allCategories);
         }
+
+        // 新しい順（興味カテゴリ内で）
+        query = query.order('created_at', { ascending: false });
 
         const { data, error } = await query;
 
         if (error) throw error;
 
-        // 3. 結果が少なければ人気投稿で補完
+        // 5. 結果が少なければ人気投稿で補完
         let allPosts = data || [];
-        
+
         if (allPosts.length < limit) {
           const existingIds = allPosts.map((p: any) => p.id);
-          
+
           const { data: popular } = await (supabase as any)
             .from('posts')
             .select(`
@@ -85,7 +97,7 @@ export function useRecommendations(limit: number = 6) {
           allPosts = [...allPosts, ...(popular || [])];
         }
 
-        // 4. ✅ いいね・応募状態を一括取得（N+1回避）
+        // 6. いいね・応募状態を一括取得
         if (allPosts.length > 0) {
           const postIds = allPosts.map((p: any) => p.id);
 
@@ -105,7 +117,7 @@ export function useRecommendations(limit: number = 6) {
           const likedIds = new Set(likesResult.data?.map((l: any) => l.post_id) || []);
           const appliedIds = new Set(applicationsResult.data?.map((a: any) => a.post_id) || []);
 
-          // 5. 投稿にステータスを付与
+          // 投稿にステータスを付与
           allPosts = allPosts.map((p: any) => ({
             ...p,
             is_liked: likedIds.has(p.id),
