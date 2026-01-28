@@ -365,7 +365,7 @@ export function PostCard({ post, showAuthor = true, isApplied = false, isLiked: 
               )}>
                 {post.images.slice(0, 4).map((url, index) => (
                   url && (
-                    <div key={index} className="overflow-hidden">
+                    <div key={index} className="overflow-hidden h-full">
                       <Image
                         src={url}
                         alt=""
