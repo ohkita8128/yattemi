@@ -10,34 +10,33 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  // チャットページ判定
   const isChatPage = pathname.startsWith('/matches/') && pathname !== '/matches';
 
-  return (
-    <div className={`flex flex-col bg-[#fcfcfc] ${isChatPage ? 'h-screen' : 'min-h-screen'}`}>
-      {/* チャットページ: スマホは非表示、PCは表示 */}
-      {isChatPage ? (
+  // チャットページは独自レイアウト
+  if (isChatPage) {
+    return (
+      <>
         <div className="hidden md:block">
           <Header />
         </div>
-      ) : (
-        <Header />
-      )}
+        {children}
+      </>
+    );
+  }
 
-      <main className={`flex-1 ${isChatPage ? 'overflow-hidden' : 'pb-16 md:pb-0'}`}>
+  // 通常ページ
+  return (
+    <div className="min-h-screen flex flex-col bg-[#fcfcfc]">
+      <Header />
+      <main className="flex-1 pb-16 md:pb-0">
         <ErrorBoundary>
           {children}
         </ErrorBoundary>
       </main>
-
-      {!isChatPage && (
-        <div className="hidden md:block">
-          <Footer />
-        </div>
-      )}
-
-      {/* チャットページではBottomNavも非表示 */}
-      {!isChatPage && <BottomNav />}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
+      <BottomNav />
     </div>
   );
 }
