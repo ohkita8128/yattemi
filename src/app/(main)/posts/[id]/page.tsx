@@ -314,7 +314,11 @@ export default function PostDetailPage() {
           {/* Images */}
           {images.length > 0 && (
             <div className="px-4 pb-4">
-              <div className={`rounded-xl overflow-hidden border ${images.length === 1 ? '' : 'grid gap-0.5 ' + (images.length === 2 ? 'grid-cols-2' : 'grid-cols-2')
+              <div className={`rounded-xl overflow-hidden border ${images.length === 1
+                  ? ''
+                  : images.length === 2
+                    ? 'grid gap-0.5 grid-cols-2 aspect-[2/1]'
+                    : 'grid gap-0.5 grid-cols-2 grid-rows-2 aspect-[4/3]'
                 }`}>
                 {images.length === 1 ? (
                   <Image
@@ -337,8 +341,7 @@ export default function PostDetailPage() {
                         alt=""
                         width={400}
                         height={300}
-                        className={`w-full object-cover cursor-pointer hover:opacity-95 transition-opacity ${images.length === 3 && index === 0 ? 'h-full' : 'h-[150px]'
-                          }`}
+                        className="w-full h-full object-cover cursor-pointer hover:opacity-95 transition-opacity"
                         onClick={() => setSelectedImage(url || null)}
                       />
                     </div>
