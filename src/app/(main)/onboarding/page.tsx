@@ -54,15 +54,6 @@ const GRADES = [
   { value: 'other', label: 'その他' },
 ];
 
-// 画像を中央でクロップする初期設定
-function centerAspectCrop(mediaWidth: number, mediaHeight: number, aspect: number) {
-  return centerCrop(
-    makeAspectCrop({ unit: '%', width: 90 }, aspect, mediaWidth, mediaHeight),
-    mediaWidth,
-    mediaHeight
-  );
-}
-
 export default function OnboardingPage() {
   const router = useRouter();
   const supabaseRef = useRef(getClient());
@@ -163,6 +154,10 @@ export default function OnboardingPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // crop状態をリセット
+    setCrop(undefined);
+    setCompletedCrop(undefined);
+
     const reader = new FileReader();
     reader.onload = () => {
       setImgSrc(reader.result as string);
@@ -176,19 +171,30 @@ export default function OnboardingPage() {
 
   // 画像ロード時にクロップ領域を設定
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const { width, height } = e.currentTarget;
-    const initialCrop = centerAspectCrop(width, height, 1);
-    setCrop(initialCrop);
+    const img = e.currentTarget;
+    const { width, height } = img;
     
-    // 初期状態でcompletedCropも設定（これが重要！）
-    const pixelCrop: PixelCrop = {
+    // 幅の90%を使用、アスペクト比1:1で中央配置
+    const cropSize = Math.min(width, height) * 0.9;
+    const x = (width - cropSize) / 2;
+    const y = (height - cropSize) / 2;
+    
+    const newCrop: Crop = {
       unit: 'px',
-      x: (initialCrop.x / 100) * width,
-      y: (initialCrop.y / 100) * height,
-      width: (initialCrop.width / 100) * width,
-      height: (initialCrop.height / 100) * height,
+      x,
+      y,
+      width: cropSize,
+      height: cropSize,
     };
-    setCompletedCrop(pixelCrop);
+    
+    setCrop(newCrop);
+    setCompletedCrop({
+      unit: 'px',
+      x,
+      y,
+      width: cropSize,
+      height: cropSize,
+    });
   }, []);
 
   // クロップ確定
@@ -642,15 +648,16 @@ export default function OnboardingPage() {
 
       {/* 画像切り取りモーダル */}
       {showCropModal && (
-        <div 
+        <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
           style={{ touchAction: 'none' }}
+          onClick={() => setShowCropModal(false)}
         >
-          <div 
-            className="bg-white rounded-2xl max-w-md w-full p-4 max-h-[90vh] overflow-hidden flex flex-col"
+          <div
+            className="bg-white rounded-2xl w-full max-w-sm p-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-4 flex-shrink-0">
+            <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-lg">画像を調整</h3>
               <button
                 onClick={() => setShowCropModal(false)}
@@ -661,40 +668,37 @@ export default function OnboardingPage() {
             </div>
 
             {/* 切り取りエリア */}
-            <div 
-              className="flex-1 overflow-hidden flex items-center justify-center mb-4 min-h-0"
+            <div
+              className="relative bg-gray-100 rounded-lg overflow-hidden mb-4"
               style={{ touchAction: 'none' }}
             >
               <ReactCrop
                 crop={crop}
-                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onChange={(c) => setCrop(c)}
                 onComplete={(c) => setCompletedCrop(c)}
                 aspect={1}
                 circularCrop
-                style={{ maxHeight: '100%', touchAction: 'none' }}
+                className="max-w-full"
               >
                 <img
                   ref={imgRef}
                   src={imgSrc}
                   alt="Crop"
                   onLoad={onImageLoad}
-                  style={{ 
-                    maxHeight: '50vh',
-                    maxWidth: '100%',
-                    touchAction: 'none'
-                  }}
+                  className="max-w-full max-h-[50vh] mx-auto block"
+                  style={{ touchAction: 'none' }}
                   draggable={false}
                 />
               </ReactCrop>
             </div>
 
             {/* ヒント */}
-            <p className="text-xs text-gray-500 text-center mb-3 flex-shrink-0">
+            <p className="text-xs text-gray-500 text-center mb-3">
               円をドラッグして調整できます
             </p>
 
             {/* ボタン */}
-            <div className="flex gap-2 flex-shrink-0">
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 onClick={() => setShowCropModal(false)}
