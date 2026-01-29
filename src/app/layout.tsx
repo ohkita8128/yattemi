@@ -5,6 +5,7 @@ import type { Metadata, Viewport } from 'next';
 import { Toaster } from 'sonner';
 import '@/styles/globals.css';
 import { APP_CONFIG } from '@/lib/constants';
+import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
 
 export const metadata: Metadata = {
   title: {
@@ -68,6 +69,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="YatteMi!" />
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
+        <ServiceWorkerRegister />
         {children}
         <Toaster
           position="top-center"
