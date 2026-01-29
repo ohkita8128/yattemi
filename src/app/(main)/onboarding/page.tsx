@@ -498,7 +498,7 @@ export default function OnboardingPage() {
                     🎓
                   </div>
                   <div>
-                    <p className="font-bold text-lg">教えたい！</p>
+                    <p className="font-bold text-lg">サポート！</p>
                     <p className="text-sm text-gray-500">得意なことを活かしたい</p>
                   </div>
                   {preference === 'support' && <Check className="h-6 w-6 text-green-500 ml-auto" />}
@@ -518,7 +518,7 @@ export default function OnboardingPage() {
                     📚
                   </div>
                   <div>
-                    <p className="font-bold text-lg">学びたい！</p>
+                    <p className="font-bold text-lg">チャレンジ！</p>
                     <p className="text-sm text-gray-500">新しいことに挑戦したい</p>
                   </div>
                   {preference === 'challenge' && <Check className="h-6 w-6 text-orange-500 ml-auto" />}
@@ -539,7 +539,7 @@ export default function OnboardingPage() {
                   </div>
                   <div>
                     <p className="font-bold text-lg">両方！</p>
-                    <p className="text-sm text-gray-500">教えたり学んだりしたい</p>
+                    <p className="text-sm text-gray-500">どっちもやりたい</p>
                   </div>
                   {preference === 'both' && <Check className="h-6 w-6 text-purple-500 ml-auto" />}
                 </div>
@@ -551,7 +551,7 @@ export default function OnboardingPage() {
           {currentStep === 4 && (
             <div className="space-y-4">
               <p className="text-sm text-gray-500 text-center mb-2">
-                同じ大学の人とマッチングしやすくなるよ
+                同じ大学の人だと安心？
               </p>
 
               <div>
