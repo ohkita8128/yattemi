@@ -98,6 +98,21 @@ export default function OnboardingPage() {
     grade: '',
   });
 
+  // モーダル表示時にbodyのスクロールを無効化
+  useEffect(() => {
+    if (showCropModal) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [showCropModal]);
+
   // 認証チェック & カテゴリ取得
   useEffect(() => {
     const init = async () => {
@@ -162,7 +177,18 @@ export default function OnboardingPage() {
   // 画像ロード時にクロップ領域を設定
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
-    setCrop(centerAspectCrop(width, height, 1));
+    const initialCrop = centerAspectCrop(width, height, 1);
+    setCrop(initialCrop);
+    
+    // 初期状態でcompletedCropも設定（これが重要！）
+    const pixelCrop: PixelCrop = {
+      unit: 'px',
+      x: (initialCrop.x / 100) * width,
+      y: (initialCrop.y / 100) * height,
+      width: (initialCrop.width / 100) * width,
+      height: (initialCrop.height / 100) * height,
+    };
+    setCompletedCrop(pixelCrop);
   }, []);
 
   // クロップ確定
@@ -242,75 +268,70 @@ export default function OnboardingPage() {
   // 送信
   const handleSubmit = async () => {
     setLoading(true);
-    const supabase = supabaseRef.current;
 
     try {
-      if (!userId) throw new Error('ログインが必要です');
+      const supabase = supabaseRef.current;
 
-      let avatar_url = null;
-
-      // アバターをアップロード
-      if (croppedAvatar) {
-        const fileName = `${userId}-${Date.now()}.jpg`;
-
-        const { error: uploadError } = await supabase.storage
+      // 画像アップロード
+      let avatarUrl = null;
+      if (croppedAvatar && userId) {
+        const fileName = `${userId}/avatar-${Date.now()}.jpg`;
+        const { error: uploadError } = await (supabase as any).storage
           .from('avatars')
-          .upload(fileName, croppedAvatar);
+          .upload(fileName, croppedAvatar, {
+            cacheControl: '3600',
+            upsert: true,
+          });
 
         if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage
+          const { data: { publicUrl } } = (supabase as any).storage
             .from('avatars')
             .getPublicUrl(fileName);
-          avatar_url = publicUrl;
+          avatarUrl = publicUrl;
         }
       }
 
       // プロフィール更新
-      const updateData: Record<string, any> = {
-        display_name: displayName,
-        university: formData.university || null,
-        faculty: formData.faculty || null,
-        grade: formData.grade || null,
-        preference: preference,
+      const updateData: any = {
+        display_name: displayName.trim(),
         onboarding_completed: true,
-        updated_at: new Date().toISOString(),
+        preference: preference,
       };
 
-      if (avatar_url) {
-        updateData.avatar_url = avatar_url;
+      if (avatarUrl) {
+        updateData.avatar_url = avatarUrl;
       }
 
-      const { error: profileError } = await (supabase as any)
+      if (formData.university) {
+        updateData.university = formData.university;
+      }
+      if (formData.faculty) {
+        updateData.faculty = formData.faculty;
+      }
+      if (formData.grade) {
+        updateData.grade = formData.grade;
+      }
+
+      await (supabase as any)
         .from('profiles')
         .update(updateData)
         .eq('id', userId);
 
-      if (profileError) throw profileError;
-
-      // 興味カテゴリを保存
+      // user_interests に保存
       if (selectedCategories.length > 0) {
-        // 既存を削除
-        await (supabase as any)
-          .from('user_interests')
-          .delete()
-          .eq('user_id', userId);
-
-        // 新規追加
-        const interestData = selectedCategories.map(categoryId => ({
+        const interestRows = selectedCategories.map(categoryId => ({
           user_id: userId,
           category_id: categoryId,
         }));
 
-        const { error: interestError } = await (supabase as any)
+        await (supabase as any)
           .from('user_interests')
-          .insert(interestData);
-
-        if (interestError) throw interestError;
+          .upsert(interestRows, { onConflict: 'user_id,category_id' });
       }
 
       router.push('/explore');
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Onboarding error:', error);
       alert('エラーが発生しました。もう一度お試しください。');
     } finally {
       setLoading(false);
@@ -319,7 +340,7 @@ export default function OnboardingPage() {
 
   if (checkingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
       </div>
     );
@@ -328,10 +349,9 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white py-8 px-4">
       <div className="max-w-md mx-auto">
-        {/* ヘッダー */}
+        {/* ロゴ */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">ようこそ！🎉</h1>
-          <p className="text-gray-600 mt-1">あと少しで準備完了</p>
+          <h1 className="text-2xl font-bold text-orange-500">YatteMi!</h1>
         </div>
 
         {/* プログレスバー */}
@@ -340,35 +360,19 @@ export default function OnboardingPage() {
             {STEPS.map((step) => (
               <div
                 key={step.id}
-                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all ${
-                  step.id < currentStep
-                    ? 'bg-orange-500 text-white'
-                    : step.id === currentStep
-                    ? 'bg-orange-500 text-white scale-110'
-                    : 'bg-gray-200 text-gray-500'
+                className={`flex-1 h-1 mx-0.5 rounded-full transition-colors ${
+                  step.id <= currentStep ? 'bg-orange-500' : 'bg-gray-200'
                 }`}
-              >
-                {step.id < currentStep ? <Check className="h-5 w-5" /> : step.id}
-              </div>
+              />
             ))}
           </div>
-          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div
-              className="h-2 bg-orange-500 rounded-full transition-all duration-500"
-              style={{ width: `${((currentStep) / STEPS.length) * 100}%` }}
-            />
-          </div>
-          <p className="text-center text-sm text-gray-600 mt-2 font-medium">
-            {STEPS[currentStep - 1]?.title}
-          </p>
-          <p className="text-center text-xs text-gray-500">
-            {STEPS[currentStep - 1]?.description}
+          <p className="text-center text-sm text-gray-600">
+            {STEPS[currentStep - 1]?.title} - {STEPS[currentStep - 1]?.description}
           </p>
         </div>
 
-        {/* フォーム */}
+        {/* メインコンテンツ */}
         <div className="bg-white rounded-2xl shadow-sm border p-6">
-
           {/* Step 1: プロフィール */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -376,13 +380,20 @@ export default function OnboardingPage() {
               <div className="flex flex-col items-center">
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-28 h-28 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center cursor-pointer hover:scale-105 transition overflow-hidden border-4 border-white shadow-lg"
+                  className="relative w-28 h-28 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors overflow-hidden"
                 >
                   {avatarPreview ? (
-                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    <Camera className="h-10 w-10 text-orange-400" />
+                    <Camera className="h-8 w-8 text-gray-400" />
                   )}
+                  <div className="absolute bottom-0 right-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                    <Camera className="h-4 w-4 text-white" />
+                  </div>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -391,31 +402,36 @@ export default function OnboardingPage() {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                <p className="text-gray-500 text-sm mt-3">タップして写真を選択</p>
+                <p className="text-sm text-gray-500 mt-2">タップして画像を選択</p>
               </div>
 
               {/* 名前 */}
               <div>
-                <Label htmlFor="displayName" className="text-base">ニックネーム</Label>
+                <Label htmlFor="displayName" className="text-base font-medium">
+                  ニックネーム <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   id="displayName"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="例: たろう"
-                  className="mt-1 text-lg h-12"
+                  placeholder="みんなに表示される名前"
+                  className="mt-2 text-lg h-12"
                   maxLength={20}
                 />
-                <p className="text-xs text-gray-500 mt-1">後から変更できます</p>
+                <p className="text-xs text-gray-400 mt-1 text-right">
+                  {displayName.length}/20
+                </p>
               </div>
             </div>
           )}
 
-          {/* Step 2: カテゴリ選択 */}
+          {/* Step 2: カテゴリ */}
           {currentStep === 2 && (
             <div className="space-y-4">
               <p className="text-sm text-gray-600 text-center">
-                選択中: <span className="font-bold text-orange-500">{selectedCategories.length}</span> / 3+
+                興味のあるカテゴリを選んでね（{selectedCategories.length}/3以上）
               </p>
+
               <div className="grid grid-cols-3 gap-2">
                 {categories.map((cat) => {
                   const Icon = CATEGORY_ICONS[cat.slug] || Sparkles;
@@ -424,18 +440,15 @@ export default function OnboardingPage() {
                     <button
                       key={cat.id}
                       onClick={() => toggleCategory(cat.id)}
-                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
+                      className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
                         isSelected
-                          ? 'border-orange-500 bg-orange-50 scale-105'
-                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50/50'
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-300'
                       }`}
                     >
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100'
-                        }`}
-                        style={isSelected ? {} : { backgroundColor: `${cat.color}20`, color: cat.color }}
-                      >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'
+                      }`}>
                         <Icon className="h-5 w-5" />
                       </div>
                       <span className={`text-xs font-medium ${isSelected ? 'text-orange-700' : 'text-gray-700'}`}>
@@ -629,9 +642,15 @@ export default function OnboardingPage() {
 
       {/* 画像切り取りモーダル */}
       {showCropModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-4">
-            <div className="flex items-center justify-between mb-4">
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          style={{ touchAction: 'none' }}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full p-4 max-h-[90vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4 flex-shrink-0">
               <h3 className="font-bold text-lg">画像を調整</h3>
               <button
                 onClick={() => setShowCropModal(false)}
@@ -641,25 +660,41 @@ export default function OnboardingPage() {
               </button>
             </div>
 
-            <div className="flex justify-center mb-4">
+            {/* 切り取りエリア */}
+            <div 
+              className="flex-1 overflow-hidden flex items-center justify-center mb-4 min-h-0"
+              style={{ touchAction: 'none' }}
+            >
               <ReactCrop
                 crop={crop}
                 onChange={(_, percentCrop) => setCrop(percentCrop)}
                 onComplete={(c) => setCompletedCrop(c)}
                 aspect={1}
                 circularCrop
+                style={{ maxHeight: '100%', touchAction: 'none' }}
               >
                 <img
                   ref={imgRef}
                   src={imgSrc}
                   alt="Crop"
                   onLoad={onImageLoad}
-                  className="max-h-[60vh]"
+                  style={{ 
+                    maxHeight: '50vh',
+                    maxWidth: '100%',
+                    touchAction: 'none'
+                  }}
+                  draggable={false}
                 />
               </ReactCrop>
             </div>
 
-            <div className="flex gap-2">
+            {/* ヒント */}
+            <p className="text-xs text-gray-500 text-center mb-3 flex-shrink-0">
+              円をドラッグして調整できます
+            </p>
+
+            {/* ボタン */}
+            <div className="flex gap-2 flex-shrink-0">
               <Button
                 variant="outline"
                 onClick={() => setShowCropModal(false)}
@@ -670,6 +705,7 @@ export default function OnboardingPage() {
               <Button
                 onClick={handleCropComplete}
                 className="flex-1"
+                disabled={!completedCrop}
               >
                 決定
               </Button>
