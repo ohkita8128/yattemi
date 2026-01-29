@@ -7,7 +7,7 @@ import { getClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
+import {
   Camera, ChevronRight, ChevronLeft, Check, Loader2, X,
   ZoomIn, ZoomOut,
   Code, Palette, Music, Trophy, Globe, UtensilsCrossed,
@@ -214,7 +214,7 @@ export default function OnboardingPage() {
       setShowCropModal(true);
     };
     reader.readAsDataURL(file);
-    
+
     // inputをリセット（同じファイルを再選択可能に）
     e.target.value = '';
   };
@@ -370,13 +370,12 @@ export default function OnboardingPage() {
             {STEPS.map((step) => (
               <div
                 key={step.id}
-                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all ${
-                  step.id < currentStep
+                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all ${step.id < currentStep
                     ? 'bg-orange-500 text-white'
                     : step.id === currentStep
-                    ? 'bg-orange-500 text-white scale-110'
-                    : 'bg-gray-200 text-gray-500'
-                }`}
+                      ? 'bg-orange-500 text-white scale-110'
+                      : 'bg-gray-200 text-gray-500'
+                  }`}
               >
                 {step.id < currentStep ? <Check className="h-5 w-5" /> : step.id}
               </div>
@@ -454,16 +453,14 @@ export default function OnboardingPage() {
                     <button
                       key={cat.id}
                       onClick={() => toggleCategory(cat.id)}
-                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
-                        isSelected
+                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${isSelected
                           ? 'border-orange-500 bg-orange-50 scale-105'
                           : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50/50'
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                          isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100'
-                        }`}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100'
+                          }`}
                         style={isSelected ? {} : { backgroundColor: `${cat.color}20`, color: cat.color }}
                       >
                         <Icon className="h-5 w-5" />
@@ -490,16 +487,14 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setPreference('support')}
-                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${
-                  preference === 'support'
+                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'support'
                     ? 'border-green-500 bg-green-50'
                     : 'border-gray-200 hover:border-green-300'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
-                    preference === 'support' ? 'bg-green-500 text-white' : 'bg-green-100'
-                  }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${preference === 'support' ? 'bg-green-500 text-white' : 'bg-green-100'
+                    }`}>
                     🎓
                   </div>
                   <div>
@@ -512,16 +507,14 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setPreference('challenge')}
-                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${
-                  preference === 'challenge'
+                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'challenge'
                     ? 'border-orange-500 bg-orange-50'
                     : 'border-gray-200 hover:border-orange-300'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
-                    preference === 'challenge' ? 'bg-orange-500 text-white' : 'bg-orange-100'
-                  }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${preference === 'challenge' ? 'bg-orange-500 text-white' : 'bg-orange-100'
+                    }`}>
                     📚
                   </div>
                   <div>
@@ -534,16 +527,14 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setPreference('both')}
-                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${
-                  preference === 'both'
+                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'both'
                     ? 'border-purple-500 bg-purple-50'
                     : 'border-gray-200 hover:border-purple-300'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
-                    preference === 'both' ? 'bg-purple-500 text-white' : 'bg-purple-100'
-                  }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${preference === 'both' ? 'bg-purple-500 text-white' : 'bg-purple-100'
+                    }`}>
                     🔄
                   </div>
                   <div>

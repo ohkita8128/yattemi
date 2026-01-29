@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import Cropper, { Area } from 'react-easy-crop';
 import {
   ArrowLeft,
   Camera,
@@ -12,13 +13,66 @@ import {
   Twitter,
   Instagram,
   Globe,
+  X,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '@/hooks';
 import { getClient } from '@/lib/supabase/client';
-import { compressAvatar } from '@/lib/image-compression';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProfileImageGallery } from '@/components/profile/profile-image-gallery';
+
+// 切り取った画像を生成する関数
+async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
+
+  const size = Math.min(pixelCrop.width, 400);
+  canvas.width = size;
+  canvas.height = size;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    size,
+    size
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Canvas toBlob failed'));
+        }
+      },
+      'image/jpeg',
+      0.9
+    );
+  });
+}
+
+function createImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.crossOrigin = 'anonymous';
+    image.src = url;
+  });
+}
 
 export default function ProfileEditPage() {
   const router = useRouter();
@@ -32,18 +86,37 @@ export default function ProfileEditPage() {
   const [bio, setBio] = useState('');
   const [university, setUniversity] = useState('');
   const [department, setDepartment] = useState('');
-  const [grade, setGrade] = useState<number | ''>('');
+  const [grade, setGrade] = useState('');
   const [twitterUrl, setTwitterUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [isPublic, setIsPublic] = useState(true);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [croppedAvatar, setCroppedAvatar] = useState<Blob | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+
+  // 画像切り取り用（react-easy-crop）
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imgSrc, setImgSrc] = useState('');
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+  // モーダル開時に背景スクロールを止める
+  useEffect(() => {
+    if (!showCropModal) return;
+
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = prevOverflow || '';
+    };
+  }, [showCropModal]);
 
   // 認証チェック
   useEffect(() => {
@@ -60,7 +133,7 @@ export default function ProfileEditPage() {
       setBio(profile.bio || '');
       setUniversity(profile.university || '');
       setDepartment(profile.department || '');
-      setGrade(profile.grade || '');
+      setGrade(String(profile.grade || ''));
       setTwitterUrl(profile.twitter_url || '');
       setInstagramUrl(profile.instagram_url || '');
       setWebsiteUrl(profile.website_url || '');
@@ -69,6 +142,7 @@ export default function ProfileEditPage() {
     }
   }, [profile]);
 
+  // 画像選択 → 切り取りモーダルを開く
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -80,53 +154,77 @@ export default function ProfileEditPage() {
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      toast.error('ファイルサイズは5MB以下にしてください');
+      toast.error('ファイルサイズは10MB以下にしてください');
       return;
     }
 
-    setAvatarFile(file);
-    setAvatarPreview(URL.createObjectURL(file));
+    // リセット
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImgSrc(reader.result as string);
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(file);
+
+    e.target.value = '';
+  };
+
+  // クロップ完了時のコールバック
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  // 切り取り確定
+  const handleCropConfirm = async () => {
+    if (!croppedAreaPixels || !imgSrc) return;
+
+    try {
+      const croppedBlob = await getCroppedImg(imgSrc, croppedAreaPixels);
+      setCroppedAvatar(croppedBlob);
+      setAvatarPreview(URL.createObjectURL(croppedBlob));
+      setShowCropModal(false);
+    } catch (error) {
+      console.error('Crop error:', error);
+      toast.error('画像の切り取りに失敗しました');
+    }
   };
 
   const uploadAvatar = async (): Promise<string | null> => {
-      if (!avatarFile || !user) return avatarUrl;
-      
-      // 画像を圧縮
-      const compressedFile = await compressAvatar(avatarFile);
+    if (!croppedAvatar || !user) return avatarUrl;
 
     setIsUploadingAvatar(true);
     const supabase = supabaseRef.current;
-    const oldAvatarUrl = avatarUrl; // 古いURLを保存
+    const oldAvatarUrl = avatarUrl;
 
     try {
-      const fileExt = 'jpg'; // 圧縮後は常にjpg
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}.jpg`;
 
-      // 先に新しいアバターをアップロード
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, compressedFile, {
+        .upload(fileName, croppedAvatar, {
           cacheControl: '3600',
           upsert: true,
         });
 
       if (uploadError) throw uploadError;
 
-      // 公開URLを取得（キャッシュバスティング用のクエリパラメータ付き）
       const { data: urlData } = supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
 
       const newUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
-      // アップロード成功後に古いアバターを削除
+      // 古いアバターを削除
       if (oldAvatarUrl) {
-        const oldPath = oldAvatarUrl.split('/avatars/')[1]?.split('?')[0]; // クエリパラメータを除去
+        const oldPath = oldAvatarUrl.split('/avatars/')[1]?.split('?')[0];
         if (oldPath) {
           await supabase.storage.from('avatars').remove([oldPath]).catch(() => {
-            // 削除失敗しても新しい画像は使える
             console.warn('Failed to delete old avatar, but continuing...');
           });
         }
@@ -136,7 +234,7 @@ export default function ProfileEditPage() {
     } catch (err) {
       console.error('Avatar upload error:', err);
       toast.error('画像のアップロードに失敗しました');
-      return avatarUrl; // 失敗時は元のURLを維持
+      return avatarUrl;
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -148,7 +246,7 @@ export default function ProfileEditPage() {
     const supabase = supabaseRef.current;
 
     try {
-      const oldPath = avatarUrl.split('/avatars/')[1]?.split('?')[0]; // クエリパラメータを除去
+      const oldPath = avatarUrl.split('/avatars/')[1]?.split('?')[0];
       if (oldPath) {
         await supabase.storage.from('avatars').remove([oldPath]);
       }
@@ -160,7 +258,7 @@ export default function ProfileEditPage() {
 
       setAvatarUrl(null);
       setAvatarPreview(null);
-      setAvatarFile(null);
+      setCroppedAvatar(null);
       toast.success('プロフィール画像を削除しました');
 
       if (refreshProfile) await refreshProfile();
@@ -185,7 +283,6 @@ export default function ProfileEditPage() {
       return;
     }
 
-    // ユーザー名のバリデーション
     const usernameRegex = /^[a-z0-9_]+$/;
     if (!usernameRegex.test(username)) {
       toast.error('ユーザー名は小文字英数字とアンダースコアのみ使用できます');
@@ -196,10 +293,8 @@ export default function ProfileEditPage() {
     const supabase = supabaseRef.current;
 
     try {
-      // アバターをアップロード
       const newAvatarUrl = await uploadAvatar();
 
-      // プロフィールを更新
       const { error } = await (supabase as any)
         .from('profiles')
         .update({
@@ -226,13 +321,11 @@ export default function ProfileEditPage() {
       }
 
       toast.success('プロフィールを更新しました');
-      
-      // refreshProfile を待ってから遷移
+
       if (refreshProfile) {
         await refreshProfile();
       }
-      
-      // 少し待ってから遷移（状態更新を確実に）
+
       setTimeout(() => {
         router.push(`/users/${username}`);
       }, 100);
@@ -324,9 +417,9 @@ export default function ProfileEditPage() {
               </button>
             )}
           </div>
-          <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF（最大5MB）</p>
+          <p className="text-xs text-gray-500">JPEG, PNG, WebP, GIF（最大10MB）</p>
         </div>
-        
+
         {/* ギャラリー（複数枚） */}
         {user && (
           <div className="p-6 bg-gray-50 rounded-xl">
@@ -407,20 +500,13 @@ export default function ProfileEditPage() {
 
           <div className="space-y-2">
             <label className="block text-sm text-gray-600">学年</label>
-            <select
+            <input
+              type="text"
               value={grade}
-              onChange={(e) => setGrade(e.target.value ? Number(e.target.value) : '')}
+              onChange={(e) => setGrade(e.target.value)}
               className="w-full h-10 px-4 rounded-lg border focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="">選択してください</option>
-              <option value={1}>1年生</option>
-              <option value={2}>2年生</option>
-              <option value={3}>3年生</option>
-              <option value={4}>4年生</option>
-              <option value={5}>修士1年</option>
-              <option value={6}>修士2年</option>
-              <option value={7}>博士</option>
-            </select>
+              placeholder="例: 学部3年、M1"
+            />
           </div>
         </div>
 
@@ -480,14 +566,12 @@ export default function ProfileEditPage() {
           <button
             type="button"
             onClick={() => setIsPublic(!isPublic)}
-            className={`relative w-12 h-6 rounded-full transition-colors ${
-              isPublic ? 'bg-orange-500' : 'bg-gray-300'
-            }`}
+            className={`relative w-12 h-6 rounded-full transition-colors ${isPublic ? 'bg-orange-500' : 'bg-gray-300'
+              }`}
           >
             <span
-              className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                isPublic ? 'left-7' : 'left-1'
-              }`}
+              className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-transform ${isPublic ? 'left-7' : 'left-1'
+                }`}
             />
           </button>
         </div>
@@ -504,6 +588,63 @@ export default function ProfileEditPage() {
           {isSubmitting ? '保存中...' : '保存する'}
         </button>
       </form>
+
+      {/* 画像切り取りモーダル（react-easy-crop） */}
+      {showCropModal && (
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+          {/* ヘッダー */}
+          <div className="flex items-center justify-between p-4 bg-black text-white">
+            <button
+              onClick={() => setShowCropModal(false)}
+              className="p-2"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <h3 className="font-bold">画像を調整</h3>
+            <button
+              onClick={handleCropConfirm}
+              className="text-orange-400 font-bold"
+            >
+              完了
+            </button>
+          </div>
+
+          {/* Cropper */}
+          <div className="relative flex-1">
+            <Cropper
+              image={imgSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+            />
+          </div>
+
+          {/* ズームスライダー */}
+          <div className="p-4 bg-black">
+            <div className="flex items-center gap-4 max-w-xs mx-auto">
+              <ZoomOut className="h-5 w-5 text-white" />
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              />
+              <ZoomIn className="h-5 w-5 text-white" />
+            </div>
+            <p className="text-center text-gray-400 text-xs mt-2">
+              ピンチまたはスライダーで拡大縮小
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
