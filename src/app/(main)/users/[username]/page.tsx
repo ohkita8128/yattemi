@@ -17,6 +17,7 @@ import {
   User,
   MoreHorizontal,
   Flag,
+  Ban,
 } from 'lucide-react';
 import { ReportDialog } from '@/components/common/report-dialog';
 
@@ -115,7 +116,8 @@ export default function UserProfilePage() {
   const [showAllBadges, setShowAllBadges] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isReportOpen, setIsReportOpen] = useState(false);
-
+  const [isBlocked, setIsBlocked] = useState(false);  // ← 追加
+  const [blockLoading, setBlockLoading] = useState(false);  // ← 追加
   useEffect(() => {
     const fetchData = async () => {
       const supabase = supabaseRef.current;
@@ -146,6 +148,7 @@ export default function UserProfilePage() {
         followersResult,
         followingResult,
         followStatusResult,
+        blockStatusResult,
       ] = await Promise.all([
         // プロフィール画像
         (supabase as any)
@@ -191,7 +194,17 @@ export default function UserProfilePage() {
           .eq('follower_id', user.id)
           .eq('following_id', profileData.id)
           .maybeSingle() : Promise.resolve({ data: null }),
+
+        // ブロック状態
+        user ? (supabase as any)
+          .from('blocks')
+          .select('id')
+          .eq('blocker_id', user.id)
+          .eq('blocked_id', profileData.id)
+          .maybeSingle() : Promise.resolve({ data: null }),
       ]);
+
+
 
       // 結果をセット
       if (imagesResult.data) {
@@ -223,6 +236,7 @@ export default function UserProfilePage() {
       setFollowersCount(followersResult.count || 0);
       setFollowingCount(followingResult.count || 0);
       setIsFollowing(!!followStatusResult.data);
+      setIsBlocked(!!blockStatusResult.data);
 
       setLoading(false);
     };
@@ -261,6 +275,34 @@ export default function UserProfilePage() {
       console.error('Follow error:', error);
     } finally {
       setFollowLoading(false);
+    }
+  };
+
+  const handleBlock = async () => {
+    if (!currentUserId || !profile) return;
+
+    setBlockLoading(true);
+    const supabase = supabaseRef.current;
+
+    try {
+      if (isBlocked) {
+        await (supabase as any)
+          .from('blocks')
+          .delete()
+          .eq('blocker_id', currentUserId)
+          .eq('blocked_id', profile.id);
+        setIsBlocked(false);
+      } else {
+        await (supabase as any)
+          .from('blocks')
+          .insert({ blocker_id: currentUserId, blocked_id: profile.id });
+        setIsBlocked(true);
+      }
+      setIsMenuOpen(false);
+    } catch (error) {
+      console.error('Block error:', error);
+    } finally {
+      setBlockLoading(false);
     }
   };
 
@@ -361,6 +403,15 @@ export default function UserProfilePage() {
                             onClick={() => setIsMenuOpen(false)}
                           />
                           <div className="absolute right-0 top-full mt-1 w-36 bg-white rounded-xl shadow-lg border py-1 z-20">
+                            {/* ブロックボタン追加 */}
+                            <button
+                              onClick={handleBlock}
+                              disabled={blockLoading}
+                              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 w-full text-left"
+                            >
+                              <Ban className="h-4 w-4" />
+                              {isBlocked ? 'ブロック解除' : 'ブロック'}
+                            </button>
                             <button
                               onClick={() => {
                                 setIsMenuOpen(false);
