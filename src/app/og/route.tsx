@@ -17,7 +17,7 @@ export async function GET() {
         }}
       >
         <img
-          src="https://yattemi.vercel.app/logo.png"
+          src="https://yattemi.vercel.app/og-image"
           width={120}
           height={120}
         />
