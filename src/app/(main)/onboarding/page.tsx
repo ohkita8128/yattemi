@@ -214,7 +214,8 @@ export default function OnboardingPage() {
       setShowCropModal(true);
     };
     reader.readAsDataURL(file);
-
+    
+    // inputをリセット（同じファイルを再選択可能に）
     e.target.value = '';
   };
 
@@ -271,70 +272,75 @@ export default function OnboardingPage() {
   // 送信
   const handleSubmit = async () => {
     setLoading(true);
+    const supabase = supabaseRef.current;
 
     try {
-      const supabase = supabaseRef.current;
+      if (!userId) throw new Error('ログインが必要です');
 
-      // 画像アップロード
-      let avatarUrl = null;
-      if (croppedAvatar && userId) {
-        const fileName = `${userId}/avatar-${Date.now()}.jpg`;
-        const { error: uploadError } = await (supabase as any).storage
+      let avatar_url = null;
+
+      // アバターをアップロード
+      if (croppedAvatar) {
+        const fileName = `${userId}-${Date.now()}.jpg`;
+
+        const { error: uploadError } = await supabase.storage
           .from('avatars')
-          .upload(fileName, croppedAvatar, {
-            cacheControl: '3600',
-            upsert: true,
-          });
+          .upload(fileName, croppedAvatar);
 
         if (!uploadError) {
-          const { data: { publicUrl } } = (supabase as any).storage
+          const { data: { publicUrl } } = supabase.storage
             .from('avatars')
             .getPublicUrl(fileName);
-          avatarUrl = publicUrl;
+          avatar_url = publicUrl;
         }
       }
 
       // プロフィール更新
-      const updateData: any = {
-        display_name: displayName.trim(),
-        onboarding_completed: true,
+      const updateData: Record<string, any> = {
+        display_name: displayName,
+        university: formData.university || null,
+        faculty: formData.faculty || null,
+        grade: formData.grade || null,
         preference: preference,
+        onboarding_completed: true,
+        updated_at: new Date().toISOString(),
       };
 
-      if (avatarUrl) {
-        updateData.avatar_url = avatarUrl;
+      if (avatar_url) {
+        updateData.avatar_url = avatar_url;
       }
 
-      if (formData.university) {
-        updateData.university = formData.university;
-      }
-      if (formData.faculty) {
-        updateData.faculty = formData.faculty;
-      }
-      if (formData.grade) {
-        updateData.grade = formData.grade;
-      }
-
-      await (supabase as any)
+      const { error: profileError } = await (supabase as any)
         .from('profiles')
         .update(updateData)
         .eq('id', userId);
 
-      // user_interests に保存
+      if (profileError) throw profileError;
+
+      // 興味カテゴリを保存
       if (selectedCategories.length > 0) {
-        const interestRows = selectedCategories.map(categoryId => ({
+        // 既存を削除
+        await (supabase as any)
+          .from('user_interests')
+          .delete()
+          .eq('user_id', userId);
+
+        // 新規追加
+        const interestData = selectedCategories.map(categoryId => ({
           user_id: userId,
           category_id: categoryId,
         }));
 
-        await (supabase as any)
+        const { error: interestError } = await (supabase as any)
           .from('user_interests')
-          .upsert(interestRows, { onConflict: 'user_id,category_id' });
+          .insert(interestData);
+
+        if (interestError) throw interestError;
       }
 
       router.push('/explore');
     } catch (error) {
-      console.error('Onboarding error:', error);
+      console.error('Error:', error);
       alert('エラーが発生しました。もう一度お試しください。');
     } finally {
       setLoading(false);
@@ -343,7 +349,7 @@ export default function OnboardingPage() {
 
   if (checkingAuth) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
       </div>
     );
@@ -352,9 +358,10 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white py-8 px-4">
       <div className="max-w-md mx-auto">
-        {/* ロゴ */}
+        {/* ヘッダー */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-orange-500">YatteMi!</h1>
+          <h1 className="text-2xl font-bold text-gray-900">ようこそ！🎉</h1>
+          <p className="text-gray-600 mt-1">あと少しで準備完了</p>
         </div>
 
         {/* プログレスバー */}
@@ -363,19 +370,35 @@ export default function OnboardingPage() {
             {STEPS.map((step) => (
               <div
                 key={step.id}
-                className={`flex-1 h-1 mx-0.5 rounded-full transition-colors ${
-                  step.id <= currentStep ? 'bg-orange-500' : 'bg-gray-200'
+                className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all ${
+                  step.id < currentStep
+                    ? 'bg-orange-500 text-white'
+                    : step.id === currentStep
+                    ? 'bg-orange-500 text-white scale-110'
+                    : 'bg-gray-200 text-gray-500'
                 }`}
-              />
+              >
+                {step.id < currentStep ? <Check className="h-5 w-5" /> : step.id}
+              </div>
             ))}
           </div>
-          <p className="text-center text-sm text-gray-600">
-            {STEPS[currentStep - 1]?.title} - {STEPS[currentStep - 1]?.description}
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="h-2 bg-orange-500 rounded-full transition-all duration-500"
+              style={{ width: `${((currentStep) / STEPS.length) * 100}%` }}
+            />
+          </div>
+          <p className="text-center text-sm text-gray-600 mt-2 font-medium">
+            {STEPS[currentStep - 1]?.title}
+          </p>
+          <p className="text-center text-xs text-gray-500">
+            {STEPS[currentStep - 1]?.description}
           </p>
         </div>
 
-        {/* メインコンテンツ */}
+        {/* フォーム */}
         <div className="bg-white rounded-2xl shadow-sm border p-6">
+
           {/* Step 1: プロフィール */}
           {currentStep === 1 && (
             <div className="space-y-6">
@@ -383,20 +406,13 @@ export default function OnboardingPage() {
               <div className="flex flex-col items-center">
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="relative w-28 h-28 rounded-full bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer hover:border-orange-400 transition-colors overflow-hidden"
+                  className="w-28 h-28 rounded-full bg-gradient-to-br from-orange-100 to-orange-200 flex items-center justify-center cursor-pointer hover:scale-105 transition overflow-hidden border-4 border-white shadow-lg"
                 >
                   {avatarPreview ? (
-                    <img
-                      src={avatarPreview}
-                      alt="Avatar"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <Camera className="h-8 w-8 text-gray-400" />
+                    <Camera className="h-10 w-10 text-orange-400" />
                   )}
-                  <div className="absolute bottom-0 right-0 w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                    <Camera className="h-4 w-4 text-white" />
-                  </div>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -405,48 +421,31 @@ export default function OnboardingPage() {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                <p className="text-sm text-gray-500 mt-2">タップして画像を選択</p>
-                {avatarPreview && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAvatarPreview(null);
-                      setCroppedAvatar(null);
-                    }}
-                    className="text-xs text-red-500 mt-1 hover:underline"
-                  >
-                    画像を削除
-                  </button>
-                )}
+                <p className="text-gray-500 text-sm mt-3">タップして写真を選択</p>
               </div>
 
               {/* 名前 */}
               <div>
-                <Label htmlFor="displayName" className="text-base font-medium">
-                  ニックネーム <span className="text-red-500">*</span>
-                </Label>
+                <Label htmlFor="displayName" className="text-base">ニックネーム</Label>
                 <Input
                   id="displayName"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
-                  placeholder="みんなに表示される名前"
-                  className="mt-2 text-lg h-12"
+                  placeholder="例: たろう"
+                  className="mt-1 text-lg h-12"
                   maxLength={20}
                 />
-                <p className="text-xs text-gray-400 mt-1 text-right">
-                  {displayName.length}/20
-                </p>
+                <p className="text-xs text-gray-500 mt-1">後から変更できます</p>
               </div>
             </div>
           )}
 
-          {/* Step 2: カテゴリ */}
+          {/* Step 2: カテゴリ選択 */}
           {currentStep === 2 && (
             <div className="space-y-4">
               <p className="text-sm text-gray-600 text-center">
-                興味のあるカテゴリを選んでね（{selectedCategories.length}/3以上）
+                選択中: <span className="font-bold text-orange-500">{selectedCategories.length}</span> / 3+
               </p>
-
               <div className="grid grid-cols-3 gap-2">
                 {categories.map((cat) => {
                   const Icon = CATEGORY_ICONS[cat.slug] || Sparkles;
@@ -455,15 +454,18 @@ export default function OnboardingPage() {
                     <button
                       key={cat.id}
                       onClick={() => toggleCategory(cat.id)}
-                      className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
+                      className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${
                         isSelected
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200 hover:border-orange-300'
+                          ? 'border-orange-500 bg-orange-50 scale-105'
+                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50/50'
                       }`}
                     >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <div
+                        className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100'
+                        }`}
+                        style={isSelected ? {} : { backgroundColor: `${cat.color}20`, color: cat.color }}
+                      >
                         <Icon className="h-5 w-5" />
                       </div>
                       <span className={`text-xs font-medium ${isSelected ? 'text-orange-700' : 'text-gray-700'}`}>
