@@ -1,4 +1,10 @@
 /** @type {import('next').NextConfig} */
+
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
+
 const nextConfig = {
   // 🚀 SWCによる高速ミニファイ
   swcMinify: true,
@@ -36,6 +42,7 @@ const nextConfig = {
       'date-fns',
       '@radix-ui/react-icons',
       'sonner',
+      'zod',
     ],
   },
 
@@ -51,6 +58,13 @@ const nextConfig = {
           cacheGroups: {
             default: false,
             vendors: false,
+            // 画像圧縮は別チャンクに
+            imageCompression: {
+              name: 'image-compression',
+              test: /[\\/]node_modules[\\/]browser-image-compression[\\/]/,
+              chunks: 'all',
+              priority: 40,
+            },
             vendor: {
               name: 'vendor',
               chunks: 'all',
@@ -79,4 +93,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

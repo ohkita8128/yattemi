@@ -1,4 +1,6 @@
-import imageCompression from 'browser-image-compression';
+// src/lib/image-compression.ts
+
+// ❌ 削除: import imageCompression from 'browser-image-compression';
 
 export interface CompressOptions {
   maxSizeMB?: number;
@@ -6,8 +8,8 @@ export interface CompressOptions {
 }
 
 const defaultOptions: CompressOptions = {
-  maxSizeMB: 0.5,          // 最大500KB
-  maxWidthOrHeight: 1200,  // 最大1200px
+  maxSizeMB: 0.5,
+  maxWidthOrHeight: 1200,
 };
 
 export async function compressImage(
@@ -17,6 +19,9 @@ export async function compressImage(
   const mergedOptions = { ...defaultOptions, ...options };
   
   try {
+    // ✅ 動的import（使う時だけ読み込む）
+    const imageCompression = (await import('browser-image-compression')).default;
+    
     const compressedFile = await imageCompression(file, {
       maxSizeMB: mergedOptions.maxSizeMB,
       maxWidthOrHeight: mergedOptions.maxWidthOrHeight,
@@ -24,35 +29,34 @@ export async function compressImage(
       fileType: 'image/jpeg',
     });
     
-    // ファイル名を.jpgに変更
     const newFileName = file.name.replace(/\.[^/.]+$/, '.jpg');
     return new File([compressedFile], newFileName, { type: 'image/jpeg' });
   } catch (error) {
     console.error('Image compression error:', error);
-    return file; // 圧縮失敗時は元ファイルを返す
+    return file;
   }
 }
 
 // アバター用（小さめ）
 export async function compressAvatar(file: File): Promise<File> {
   return compressImage(file, {
-    maxSizeMB: 0.2,          // 最大200KB
-    maxWidthOrHeight: 400,   // 最大400px
+    maxSizeMB: 0.2,
+    maxWidthOrHeight: 400,
   });
 }
 
 // 投稿画像用
 export async function compressPostImage(file: File): Promise<File> {
   return compressImage(file, {
-    maxSizeMB: 0.5,          // 最大500KB
-    maxWidthOrHeight: 1200,  // 最大1200px
+    maxSizeMB: 0.5,
+    maxWidthOrHeight: 1200,
   });
 }
 
 // ギャラリー用
 export async function compressGalleryImage(file: File): Promise<File> {
   return compressImage(file, {
-    maxSizeMB: 0.5,          // 最大500KB
-    maxWidthOrHeight: 1200,  // 最大1200px
+    maxSizeMB: 0.5,
+    maxWidthOrHeight: 1200,
   });
 }
