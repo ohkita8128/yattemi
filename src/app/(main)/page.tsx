@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Sparkles, Users, Target, Palette, Loader2 } from 'lucide-react';
+import { ArrowRight, Sparkles, Users, Target, Palette, Loader2, Download, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { PostCard } from '@/components/posts';
 import { ROUTES, POST_TYPES } from '@/lib/constants';
@@ -91,9 +91,50 @@ export default function HomePage() {
   const [showTabs, setShowTabs] = useState(true);
   const lastScrollY = useRef(0);
 
+  // PWA関連
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [showPwaPrompt, setShowPwaPrompt] = useState(false);
+
   // おすすめフック
   const { posts: recommendedPosts, isLoading: recommendLoading } = useRecommendations(12);
-  const blockedIds = useBlockedUsers();  // スクロールでタブ出入り（スマホのみ）
+  const blockedIds = useBlockedUsers();
+
+  // PWA検出
+  useEffect(() => {
+    // 既にインストール済みならスキップ
+    if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
+      return;
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+
+      // 3日以内に閉じてたら表示しない
+      const dismissed = localStorage.getItem('pwa-dismissed');
+      if (!dismissed || Date.now() - parseInt(dismissed) > 3 * 24 * 60 * 60 * 1000) {
+        setShowPwaPrompt(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstallPwa = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    setDeferredPrompt(null);
+    setShowPwaPrompt(false);
+  };
+
+  const dismissPwa = () => {
+    setShowPwaPrompt(false);
+    localStorage.setItem('pwa-dismissed', Date.now().toString());
+  };
+
+  // スクロールでタブ出入り（スマホのみ）
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -282,6 +323,34 @@ export default function HomePage() {
               </Link>
             </div>
           </div>
+
+          {/* PWA誘導バナー */}
+          {showPwaPrompt && (
+            <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg p-4 mb-4 text-white relative">
+              <button
+                onClick={dismissPwa}
+                className="absolute top-2 right-2 p-1 hover:bg-white/20 rounded-full transition"
+                aria-label="閉じる"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-lg shrink-0">
+                  <Download className="h-5 w-5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-sm">アプリをホーム画面に追加 📱</p>
+                  <p className="text-xs opacity-90">サクッとアクセス！通知も届く</p>
+                </div>
+                <button
+                  onClick={handleInstallPwa}
+                  className="px-3 py-1.5 bg-white text-blue-600 rounded-lg font-semibold text-sm hover:bg-gray-100 transition shrink-0"
+                >
+                  追加
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* スマホ: タブ切り替え */}
           <div className="md:hidden">
