@@ -1,26 +1,25 @@
 ﻿import { Metadata } from 'next';
-import { createClient } from '@supabase/supabase-js';
 import { PostDetailClient } from '@/components/posts/post-detail-client';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+export const dynamic = 'force-dynamic';
 
 type Props = {
   params: { id: string };
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { data: post } = await supabase
-    .from('posts')
-    .select(`
-      id, title, description, type,
-      profiles (display_name, username),
-      categories (name)
-    `)
-    .eq('id', params.id)
-    .single();
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/posts?id=eq.${params.id}&select=id,title,description`,
+    {
+      headers: {
+        apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+      },
+      cache: 'no-store',
+    }
+  );
+
+  const [post] = await res.json();
 
   if (!post) {
     return {
@@ -29,8 +28,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const title = post.title;
-  const description = post.description?.slice(0, 100) || `${(post.profiles as any)?.display_name}さんの投稿`;
-  const ogImage = `https://yattemi.vercel.app/og-image.png`; // TODO: 投稿ごとのOG画像
+  const description = post.description?.slice(0, 100) || 'YatteMi!の投稿';
+  const ogImage = `https://yattemi.vercel.app/og-image.png?v=${post.id}`;
 
   return {
     title,
