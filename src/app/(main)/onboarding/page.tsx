@@ -2,14 +2,14 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
+import Cropper, { Area } from 'react-easy-crop';
 import { getClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
+import { 
   Camera, ChevronRight, ChevronLeft, Check, Loader2, X,
+  ZoomIn, ZoomOut,
   Code, Palette, Music, Trophy, Globe, UtensilsCrossed,
   Camera as CameraIcon, Briefcase, Brush, Gamepad2, Sparkles,
   BookOpen, Shirt, GraduationCap, Landmark, Heart
@@ -54,6 +54,58 @@ const GRADES = [
   { value: 'other', label: 'その他' },
 ];
 
+// 切り取った画像を生成する関数
+async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
+  const image = await createImage(imageSrc);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('No 2d context');
+  }
+
+  // 出力サイズ（最大400px）
+  const size = Math.min(pixelCrop.width, 400);
+  canvas.width = size;
+  canvas.height = size;
+
+  ctx.drawImage(
+    image,
+    pixelCrop.x,
+    pixelCrop.y,
+    pixelCrop.width,
+    pixelCrop.height,
+    0,
+    0,
+    size,
+    size
+  );
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Canvas toBlob failed'));
+        }
+      },
+      'image/jpeg',
+      0.9
+    );
+  });
+}
+
+function createImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.addEventListener('load', () => resolve(image));
+    image.addEventListener('error', (error) => reject(error));
+    image.crossOrigin = 'anonymous';
+    image.src = url;
+  });
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const supabaseRef = useRef(getClient());
@@ -69,12 +121,12 @@ export default function OnboardingPage() {
   const [croppedAvatar, setCroppedAvatar] = useState<Blob | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 画像切り取り用
+  // 画像切り取り用（react-easy-crop）
   const [showCropModal, setShowCropModal] = useState(false);
   const [imgSrc, setImgSrc] = useState('');
-  const [crop, setCrop] = useState<Crop>();
-  const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
-  const imgRef = useRef<HTMLImageElement>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   // Step 2: カテゴリ
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
@@ -94,13 +146,10 @@ export default function OnboardingPage() {
     if (!showCropModal) return;
 
     const prevOverflow = document.body.style.overflow;
-    const prevTouchAction = document.body.style.touchAction;
     document.body.style.overflow = 'hidden';
-    document.body.style.touchAction = 'none';
 
     return () => {
       document.body.style.overflow = prevOverflow || '';
-      document.body.style.touchAction = prevTouchAction || '';
     };
   }, [showCropModal]);
 
@@ -154,9 +203,10 @@ export default function OnboardingPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // crop状態をリセット
-    setCrop(undefined);
-    setCompletedCrop(undefined);
+    // リセット
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -165,107 +215,27 @@ export default function OnboardingPage() {
     };
     reader.readAsDataURL(file);
 
-    // inputをリセット（同じファイルを再選択可能に）
     e.target.value = '';
   };
 
-  // 画像ロード時にクロップ領域を設定
-  const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-    const img = e.currentTarget;
-    const { width, height } = img;
-
-    const cropSize = Math.min(width, height) * 0.9;
-    const x = (width - cropSize) / 2;
-    const y = (height - cropSize) / 2;
-
-    const newCrop: Crop = {
-      unit: 'px',
-      x,
-      y,
-      width: cropSize,
-      height: cropSize,
-    };
-
-    setCrop(newCrop);
-    setCompletedCrop({
-      unit: 'px',
-      x,
-      y,
-      width: cropSize,
-      height: cropSize,
-    });
+  // クロップ完了時のコールバック
+  const onCropComplete = useCallback((_croppedArea: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
   }, []);
 
-  // クロップ確定
-  const handleCropComplete = async () => {
-    if (!completedCrop || !imgRef.current) return;
+  // 切り取り確定
+  const handleCropConfirm = async () => {
+    if (!croppedAreaPixels || !imgSrc) return;
 
-    const imgEl = imgRef.current;
-    const scaleX = imgEl.naturalWidth / imgEl.width;
-    const scaleY = imgEl.naturalHeight / imgEl.height;
-    const pixelCrop = completedCrop;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.round(pixelCrop.width * scaleX);
-    canvas.height = Math.round(pixelCrop.height * scaleY);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.drawImage(
-      imgEl,
-      Math.round(pixelCrop.x * scaleX),
-      Math.round(pixelCrop.y * scaleY),
-      Math.round(pixelCrop.width * scaleX),
-      Math.round(pixelCrop.height * scaleY),
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-    // 正方形にリサイズ（最大400px）
-    const size = Math.min(canvas.width, 400);
-    const resizedCanvas = document.createElement('canvas');
-    resizedCanvas.width = size;
-    resizedCanvas.height = size;
-    const rctx = resizedCanvas.getContext('2d');
-    if (!rctx) return;
-    rctx.drawImage(canvas, 0, 0, size, size);
-
-    // toBlob が使えるならそちらを優先（非同期）
-    resizedCanvas.toBlob(
-      (blob) => {
-        if (blob) {
-          setCroppedAvatar(blob);
-          setAvatarPreview(URL.createObjectURL(blob));
-        } else {
-          // fallback: toDataURL -> convert to blob
-          try {
-            const dataUrl = resizedCanvas.toDataURL('image/jpeg', 0.9);
-            const base64Data = dataUrl.split(',')[1];
-            if (!base64Data) {
-              console.error('Invalid dataUrl');
-              setShowCropModal(false);
-              return;
-            }
-            const byteString = atob(base64Data);
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-              ia[i] = byteString.charCodeAt(i);
-            }
-            const fallbackBlob = new Blob([ab], { type: 'image/jpeg' });
-            setCroppedAvatar(fallbackBlob);
-            setAvatarPreview(URL.createObjectURL(fallbackBlob));
-          } catch (err) {
-            console.error('toBlob / fallback failed', err);
-          }
-        }
-        setShowCropModal(false);
-      },
-      'image/jpeg',
-      0.9
-    );
+    try {
+      const croppedBlob = await getCroppedImg(imgSrc, croppedAreaPixels);
+      setCroppedAvatar(croppedBlob);
+      setAvatarPreview(URL.createObjectURL(croppedBlob));
+      setShowCropModal(false);
+    } catch (error) {
+      console.error('Crop error:', error);
+      alert('画像の切り取りに失敗しました');
+    }
   };
 
   // カテゴリ選択
@@ -393,8 +363,9 @@ export default function OnboardingPage() {
             {STEPS.map((step) => (
               <div
                 key={step.id}
-                className={`flex-1 h-1 mx-0.5 rounded-full transition-colors ${step.id <= currentStep ? 'bg-orange-500' : 'bg-gray-200'
-                  }`}
+                className={`flex-1 h-1 mx-0.5 rounded-full transition-colors ${
+                  step.id <= currentStep ? 'bg-orange-500' : 'bg-gray-200'
+                }`}
               />
             ))}
           </div>
@@ -435,6 +406,18 @@ export default function OnboardingPage() {
                   className="hidden"
                 />
                 <p className="text-sm text-gray-500 mt-2">タップして画像を選択</p>
+                {avatarPreview && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvatarPreview(null);
+                      setCroppedAvatar(null);
+                    }}
+                    className="text-xs text-red-500 mt-1 hover:underline"
+                  >
+                    画像を削除
+                  </button>
+                )}
               </div>
 
               {/* 名前 */}
@@ -472,13 +455,15 @@ export default function OnboardingPage() {
                     <button
                       key={cat.id}
                       onClick={() => toggleCategory(cat.id)}
-                      className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${isSelected
-                        ? 'border-orange-500 bg-orange-50'
-                        : 'border-gray-200 hover:border-orange-300'
-                        }`}
+                      className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
+                        isSelected
+                          ? 'border-orange-500 bg-orange-50'
+                          : 'border-gray-200 hover:border-orange-300'
+                      }`}
                     >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'
-                        }`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'
+                      }`}>
                         <Icon className="h-5 w-5" />
                       </div>
                       <span className={`text-xs font-medium ${isSelected ? 'text-orange-700' : 'text-gray-700'}`}>
@@ -503,14 +488,16 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setPreference('support')}
-                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'support'
-                  ? 'border-green-500 bg-green-50'
-                  : 'border-gray-200 hover:border-green-300'
-                  }`}
+                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${
+                  preference === 'support'
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-gray-200 hover:border-green-300'
+                }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${preference === 'support' ? 'bg-green-500 text-white' : 'bg-green-100'
-                    }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
+                    preference === 'support' ? 'bg-green-500 text-white' : 'bg-green-100'
+                  }`}>
                     🎓
                   </div>
                   <div>
@@ -523,14 +510,16 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setPreference('challenge')}
-                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'challenge'
-                  ? 'border-orange-500 bg-orange-50'
-                  : 'border-gray-200 hover:border-orange-300'
-                  }`}
+                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${
+                  preference === 'challenge'
+                    ? 'border-orange-500 bg-orange-50'
+                    : 'border-gray-200 hover:border-orange-300'
+                }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${preference === 'challenge' ? 'bg-orange-500 text-white' : 'bg-orange-100'
-                    }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
+                    preference === 'challenge' ? 'bg-orange-500 text-white' : 'bg-orange-100'
+                  }`}>
                     📚
                   </div>
                   <div>
@@ -543,14 +532,16 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setPreference('both')}
-                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'both'
-                  ? 'border-purple-500 bg-purple-50'
-                  : 'border-gray-200 hover:border-purple-300'
-                  }`}
+                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${
+                  preference === 'both'
+                    ? 'border-purple-500 bg-purple-50'
+                    : 'border-gray-200 hover:border-purple-300'
+                }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${preference === 'both' ? 'bg-purple-500 text-white' : 'bg-purple-100'
-                    }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
+                    preference === 'both' ? 'bg-purple-500 text-white' : 'bg-purple-100'
+                  }`}>
                     🔄
                   </div>
                   <div>
@@ -664,90 +655,59 @@ export default function OnboardingPage() {
         )}
       </div>
 
-      {/* 画像切り取りモーダル */}
+      {/* 画像切り取りモーダル（react-easy-crop） */}
       {showCropModal && (
-        <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          onTouchMove={(e) => e.preventDefault()}
-        >
-          <div
-            className="bg-white rounded-2xl w-full max-w-sm p-4"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg">画像を調整</h3>
-              <button
-                onClick={() => setShowCropModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* 切り取りエリア - スタイルを追加 */}
-            <div
-              className="relative bg-gray-100 rounded-lg overflow-hidden mb-4"
-              onTouchMove={(e) => e.stopPropagation()}
+        <div className="fixed inset-0 z-50 bg-black flex flex-col">
+          {/* ヘッダー */}
+          <div className="flex items-center justify-between p-4 bg-black text-white">
+            <button
+              onClick={() => setShowCropModal(false)}
+              className="p-2"
             >
-              <style jsx global>{`
-                .ReactCrop {
-                  touch-action: none !important;
-                }
-                .ReactCrop__image {
-                  touch-action: none !important;
-                  user-select: none !important;
-                  -webkit-user-drag: none !important;
-                }
-                .ReactCrop__crop-selection {
-                  touch-action: none !important;
-                }
-              `}</style>
-              <ReactCrop
-                crop={crop}
-                onChange={(c) => setCrop(c)}
-                onComplete={(c) => setCompletedCrop(c)}
-                aspect={1}
-                circularCrop
-                className="max-w-full"
-              >
-                <img
-                  ref={imgRef}
-                  src={imgSrc}
-                  alt="Crop"
-                  onLoad={onImageLoad}
-                  className="max-w-full max-h-[50vh] mx-auto block select-none"
-                  style={{
-                    touchAction: 'none',
-                    userSelect: 'none',
-                    WebkitUserDrag: 'none'
-                  } as React.CSSProperties}
-                  draggable={false}
-                />
-              </ReactCrop>
-            </div>
+              <X className="h-6 w-6" />
+            </button>
+            <h3 className="font-bold">画像を調整</h3>
+            <button
+              onClick={handleCropConfirm}
+              className="text-orange-400 font-bold"
+            >
+              完了
+            </button>
+          </div>
 
-            {/* ヒント */}
-            <p className="text-xs text-gray-500 text-center mb-3">
-              円をドラッグして位置を調整、角をドラッグしてサイズを変更
+          {/* Cropper */}
+          <div className="relative flex-1">
+            <Cropper
+              image={imgSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              showGrid={false}
+              onCropChange={setCrop}
+              onCropComplete={onCropComplete}
+              onZoomChange={setZoom}
+            />
+          </div>
+
+          {/* ズームスライダー */}
+          <div className="p-4 bg-black">
+            <div className="flex items-center gap-4 max-w-xs mx-auto">
+              <ZoomOut className="h-5 w-5 text-white" />
+              <input
+                type="range"
+                min={1}
+                max={3}
+                step={0.1}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-orange-500"
+              />
+              <ZoomIn className="h-5 w-5 text-white" />
+            </div>
+            <p className="text-center text-gray-400 text-xs mt-2">
+              ピンチまたはスライダーで拡大縮小
             </p>
-
-            {/* ボタン */}
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowCropModal(false)}
-                className="flex-1"
-              >
-                キャンセル
-              </Button>
-              <Button
-                onClick={handleCropComplete}
-                className="flex-1"
-                disabled={!completedCrop}
-              >
-                決定
-              </Button>
-            </div>
           </div>
         </div>
       )}
