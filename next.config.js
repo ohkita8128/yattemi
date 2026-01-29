@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-
+console.log('🔥 next.config.js LOADED');
 const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
