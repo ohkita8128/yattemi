@@ -10,6 +10,7 @@ import { getClient } from '@/lib/supabase/client';
 import { formatRelativeTime } from '@/lib/utils';
 import { ROUTES } from '@/lib/constants';
 import Image from 'next/image'
+import { useBlockedUsers } from '@/hooks/use-blocked-users';
 
 type FilterType = 'all' | 'active' | 'completed';
 
@@ -54,6 +55,8 @@ export default function MatchesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<FilterType>('all');
   const supabase = getClient();
+  const blockedIds = useBlockedUsers();  // ← 追加
+
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -121,6 +124,11 @@ export default function MatchesPage() {
 
   // フィルター適用
   const filteredMatches = matches.filter((match) => {
+    // ブロックした相手を除外
+    const isPostOwner = match.application.post.user_id === user?.id;
+    const partnerId = isPostOwner ? match.application.applicant.id : match.post_owner?.id;
+    if (partnerId && blockedIds.includes(partnerId)) return false;
+
     if (filter === 'all') return true;
     if (filter === 'active') return match.status === 'active';
     if (filter === 'completed') return match.status === 'completed';

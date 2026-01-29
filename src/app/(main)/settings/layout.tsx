@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  User, 
-  Bell, 
-  Shield, 
+import {
+  User,
+  Bell,
+  Shield,
   AlertTriangle,
   ChevronRight,
-  Settings
+  Settings,
+  Ban,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +39,12 @@ const SETTINGS_MENU = [
     description: 'プロフィールの公開設定',
   },
   {
+    href: '/settings/blocked',  // ← 追加
+    label: 'ブロックリスト',
+    icon: Ban,
+    description: 'ブロック中のユーザー',
+  },
+  {
     href: '/settings/danger',
     label: 'アカウント管理',
     icon: AlertTriangle,
@@ -57,7 +64,7 @@ export default function SettingsLayout({
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
       <h1 className="text-2xl font-bold mb-6">設定</h1>
-      
+
       <div className="flex flex-col md:flex-row gap-6">
         {/* サイドメニュー（PC）/ トップメニュー（設定トップ時） */}
         <nav className={cn(
@@ -67,17 +74,17 @@ export default function SettingsLayout({
           <div className="bg-white rounded-xl border overflow-hidden">
             {SETTINGS_MENU.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || 
+              const isActive = pathname === item.href ||
                 (item.href !== '/profile/edit' && pathname?.startsWith(item.href));
-              
+
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
                     "flex items-center gap-3 p-4 border-b last:border-b-0 transition-colors",
-                    isActive 
-                      ? "bg-orange-50 border-l-2 border-l-orange-500" 
+                    isActive
+                      ? "bg-orange-50 border-l-2 border-l-orange-500"
                       : "hover:bg-gray-50",
                     item.danger && !isActive && "text-red-600 hover:bg-red-50"
                   )}

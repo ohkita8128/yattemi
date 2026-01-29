@@ -13,6 +13,7 @@ import { useTags } from '@/hooks/use-tags';
 import { getClient } from '@/lib/supabase/client';
 import { DAYS, TIMES } from '@/lib/constants/explore';
 import { formatDateShort } from '@/lib/utils/explore-date';
+import { useBlockedUsers } from '@/hooks/use-blocked-users';
 
 function ExploreContent() {
   const searchParams = useSearchParams();
@@ -34,6 +35,7 @@ function ExploreContent() {
   const filters = useExploreFilters(initialSearch, initialType, initialCategory ? Number(initialCategory) : null);
   const { popularTags } = useTags();
   const { categories } = useCategories();
+  const blockedIds = useBlockedUsers();
 
   const debouncedSearch = useDebounce(filters.searchQuery, 300);
   const { posts, isLoading, isLoadingMore, hasMore, loadMore } = usePosts({
@@ -120,6 +122,9 @@ function ExploreContent() {
 
   // フィルタリング
   const filteredPosts = posts.filter((post) => {
+    // ブロックしたユーザーの投稿を除外
+    if (blockedIds.includes(post.user_id)) return false;
+
     if (filters.hideApplied && appliedPostIds.has(post.id)) return false;
 
     const postLevel = post.my_level ?? 5;

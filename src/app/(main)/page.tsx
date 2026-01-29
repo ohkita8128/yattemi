@@ -9,6 +9,7 @@ import { ROUTES, POST_TYPES } from '@/lib/constants';
 import { getClient } from '@/lib/supabase/client';
 import { useRecommendations } from '@/hooks';
 import { cn } from '@/lib/utils';
+import { useBlockedUsers } from '@/hooks/use-blocked-users';
 
 const features = [
   {
@@ -92,8 +93,7 @@ export default function HomePage() {
 
   // おすすめフック
   const { posts: recommendedPosts, isLoading: recommendLoading } = useRecommendations(12);
-
-  // スクロールでタブ出入り（スマホのみ）
+  const blockedIds = useBlockedUsers();  // スクロールでタブ出入り（スマホのみ）
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -217,19 +217,24 @@ export default function HomePage() {
     }
   }, [recommendedPosts]);
 
-
   // タブに応じた投稿を取得
   const getPostsForTab = (tab: TabType) => {
+    let posts: any[] = [];
     switch (tab) {
       case 'recommend':
-        return recommendedPosts;
+        posts = recommendedPosts;
+        break;
       case 'recent':
-        return recentPosts;
+        posts = recentPosts;
+        break;
       case 'following':
-        return followingPosts;
+        posts = followingPosts;
+        break;
       default:
-        return [];
+        posts = [];
     }
+    // ブロックしたユーザーの投稿を除外
+    return posts.filter(post => !blockedIds.includes(post.user_id));
   };
 
   const isTabLoading = (tab: TabType): boolean => {
