@@ -234,7 +234,10 @@ export default function HomePage() {
         posts = [];
     }
     // ブロックしたユーザーの投稿を除外
-    return posts.filter(post => !blockedIds.includes(post.user_id || post.profile?.id));
+    return posts.filter(post => {
+      const postUserId = post.user_id || post.profile?.id;
+      return !blockedIds.includes(postUserId);
+    });
   };
 
   const isTabLoading = (tab: TabType): boolean => {
