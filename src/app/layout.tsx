@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: APP_CONFIG.name,
     description: APP_CONFIG.description,
-    images: ['https://yattemi.vercel.app/og-image.png'],
+    images: ['https://yattemi.vercel.app/og'],
   },
   robots: {
     index: true,
