@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     description: APP_CONFIG.description,
     images: [
       {
-        url: 'https://yattemi.vercel.app/og-image.png',
+        url: 'https://yattemi.vercel.app/og',
         width: 1200,
         height: 630,
         alt: 'YatteMi! - 好きを広めたい人と、新しいことを始めたい人を繋ぐ',

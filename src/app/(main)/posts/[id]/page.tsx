@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const title = post.title;
   const description = post.description?.slice(0, 100) || 'YatteMi!の投稿';
-  const ogImage = `https://yattemi.vercel.app/og-image.png?v=${post.id}`;
+  const ogImage = `https://yattemi.vercel.app/og/${params.id}`;
 
   return {
     title,
