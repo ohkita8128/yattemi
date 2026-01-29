@@ -11,7 +11,6 @@ import {
   Calendar,
   Loader2,
   Settings,
-  MessageCircle,
   ImageIcon,
   FileText,
   User,
@@ -382,9 +381,6 @@ export default function UserProfilePage() {
                       size="sm"
                     >
                       {isFollowing ? 'フォロー中' : 'フォロー'}
-                    </Button>
-                    <Button variant="outline" size="icon" className="h-9 w-9">
-                      <MessageCircle className="h-4 w-4" />
                     </Button>
                     {/* メニューボタン */}
                     <div className="relative">
