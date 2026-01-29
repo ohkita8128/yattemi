@@ -1,41 +1,18 @@
-import { ImageResponse } from '@vercel/og';
+import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
 export async function GET() {
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: '1200px',
-          height: '630px',
-          background: '#fff7ed',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-      >
-        <img
-          src="https://yattemi.vercel.app/og-image"
-          width={120}
-          height={120}
-        />
-        <div
-          style={{
-            marginTop: 32,
-            fontSize: 64,
-            fontWeight: 800,
-            color: '#f97316',
-          }}
-        >
-          YatteMi!
-        </div>
-      </div>
-    ),
-    {
-      width: 1200,
-      height: 630,
-    }
-  );
+  // public/og-image.png を取得して直接返す
+  const imageUrl = 'https://yattemi.vercel.app/og-image.png';
+  
+  const res = await fetch(imageUrl);
+  const imageBuffer = await res.arrayBuffer();
+
+  return new NextResponse(imageBuffer, {
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=31536000, immutable',
+    },
+  });
 }
