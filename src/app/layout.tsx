@@ -6,6 +6,8 @@ import { Toaster } from 'sonner';
 import '@/styles/globals.css';
 import { APP_CONFIG } from '@/lib/constants';
 import { ServiceWorkerRegister } from '@/components/ServiceWorkerRegister';
+import { ConsoleEasterEgg } from '@/components/console/ConsoleEasterEgg';
+
 
 export const metadata: Metadata = {
   title: {
@@ -70,6 +72,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-background font-sans antialiased">
         <ServiceWorkerRegister />
+        <ConsoleEasterEgg/>
         {children}
         <Toaster
           position="top-center"
