@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from 'react-image-crop';
+import ReactCrop, { Crop, PixelCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 import { getClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
+import {
   Camera, ChevronRight, ChevronLeft, Check, Loader2, X,
   Code, Palette, Music, Trophy, Globe, UtensilsCrossed,
   Camera as CameraIcon, Briefcase, Brush, Gamepad2, Sparkles,
@@ -89,18 +89,18 @@ export default function OnboardingPage() {
     grade: '',
   });
 
-  // モーダル表示時にbodyのスクロールを無効化
+  // モーダル開時に背景スクロールを止める
   useEffect(() => {
-    if (showCropModal) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.touchAction = 'none';
-    } else {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
-    }
+    if (!showCropModal) return;
+
+    const prevOverflow = document.body.style.overflow;
+    const prevTouchAction = document.body.style.touchAction;
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
     return () => {
-      document.body.style.overflow = '';
-      document.body.style.touchAction = '';
+      document.body.style.overflow = prevOverflow || '';
+      document.body.style.touchAction = prevTouchAction || '';
     };
   }, [showCropModal]);
 
@@ -164,7 +164,7 @@ export default function OnboardingPage() {
       setShowCropModal(true);
     };
     reader.readAsDataURL(file);
-    
+
     // inputをリセット（同じファイルを再選択可能に）
     e.target.value = '';
   };
@@ -173,12 +173,11 @@ export default function OnboardingPage() {
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
     const { width, height } = img;
-    
-    // 幅の90%を使用、アスペクト比1:1で中央配置
+
     const cropSize = Math.min(width, height) * 0.9;
     const x = (width - cropSize) / 2;
     const y = (height - cropSize) / 2;
-    
+
     const newCrop: Crop = {
       unit: 'px',
       x,
@@ -186,7 +185,7 @@ export default function OnboardingPage() {
       width: cropSize,
       height: cropSize,
     };
-    
+
     setCrop(newCrop);
     setCompletedCrop({
       unit: 'px',
@@ -201,23 +200,23 @@ export default function OnboardingPage() {
   const handleCropComplete = async () => {
     if (!completedCrop || !imgRef.current) return;
 
+    const imgEl = imgRef.current;
+    const scaleX = imgEl.naturalWidth / imgEl.width;
+    const scaleY = imgEl.naturalHeight / imgEl.height;
+    const pixelCrop = completedCrop;
+
     const canvas = document.createElement('canvas');
+    canvas.width = Math.round(pixelCrop.width * scaleX);
+    canvas.height = Math.round(pixelCrop.height * scaleY);
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const scaleX = imgRef.current.naturalWidth / imgRef.current.width;
-    const scaleY = imgRef.current.naturalHeight / imgRef.current.height;
-
-    const pixelCrop = completedCrop;
-    canvas.width = pixelCrop.width * scaleX;
-    canvas.height = pixelCrop.height * scaleY;
-
     ctx.drawImage(
-      imgRef.current,
-      pixelCrop.x * scaleX,
-      pixelCrop.y * scaleY,
-      pixelCrop.width * scaleX,
-      pixelCrop.height * scaleY,
+      imgEl,
+      Math.round(pixelCrop.x * scaleX),
+      Math.round(pixelCrop.y * scaleY),
+      Math.round(pixelCrop.width * scaleX),
+      Math.round(pixelCrop.height * scaleY),
       0,
       0,
       canvas.width,
@@ -229,16 +228,44 @@ export default function OnboardingPage() {
     const resizedCanvas = document.createElement('canvas');
     resizedCanvas.width = size;
     resizedCanvas.height = size;
-    const resizedCtx = resizedCanvas.getContext('2d');
-    resizedCtx?.drawImage(canvas, 0, 0, size, size);
+    const rctx = resizedCanvas.getContext('2d');
+    if (!rctx) return;
+    rctx.drawImage(canvas, 0, 0, size, size);
 
-    resizedCanvas.toBlob((blob) => {
-      if (blob) {
-        setCroppedAvatar(blob);
-        setAvatarPreview(URL.createObjectURL(blob));
-      }
-      setShowCropModal(false);
-    }, 'image/jpeg', 0.9);
+    // toBlob が使えるならそちらを優先（非同期）
+    resizedCanvas.toBlob(
+      (blob) => {
+        if (blob) {
+          setCroppedAvatar(blob);
+          setAvatarPreview(URL.createObjectURL(blob));
+        } else {
+          // fallback: toDataURL -> convert to blob
+          try {
+            const dataUrl = resizedCanvas.toDataURL('image/jpeg', 0.9);
+            const base64Data = dataUrl.split(',')[1];
+            if (!base64Data) {
+              console.error('Invalid dataUrl');
+              setShowCropModal(false);
+              return;
+            }
+            const byteString = atob(base64Data);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+              ia[i] = byteString.charCodeAt(i);
+            }
+            const fallbackBlob = new Blob([ab], { type: 'image/jpeg' });
+            setCroppedAvatar(fallbackBlob);
+            setAvatarPreview(URL.createObjectURL(fallbackBlob));
+          } catch (err) {
+            console.error('toBlob / fallback failed', err);
+          }
+        }
+        setShowCropModal(false);
+      },
+      'image/jpeg',
+      0.9
+    );
   };
 
   // カテゴリ選択
@@ -366,9 +393,8 @@ export default function OnboardingPage() {
             {STEPS.map((step) => (
               <div
                 key={step.id}
-                className={`flex-1 h-1 mx-0.5 rounded-full transition-colors ${
-                  step.id <= currentStep ? 'bg-orange-500' : 'bg-gray-200'
-                }`}
+                className={`flex-1 h-1 mx-0.5 rounded-full transition-colors ${step.id <= currentStep ? 'bg-orange-500' : 'bg-gray-200'
+                  }`}
               />
             ))}
           </div>
@@ -446,15 +472,13 @@ export default function OnboardingPage() {
                     <button
                       key={cat.id}
                       onClick={() => toggleCategory(cat.id)}
-                      className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${
-                        isSelected
-                          ? 'border-orange-500 bg-orange-50'
-                          : 'border-gray-200 hover:border-orange-300'
-                      }`}
+                      className={`flex flex-col items-center gap-1 p-3 rounded-xl border-2 transition-all ${isSelected
+                        ? 'border-orange-500 bg-orange-50'
+                        : 'border-gray-200 hover:border-orange-300'
+                        }`}
                     >
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isSelected ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'
+                        }`}>
                         <Icon className="h-5 w-5" />
                       </div>
                       <span className={`text-xs font-medium ${isSelected ? 'text-orange-700' : 'text-gray-700'}`}>
@@ -479,16 +503,14 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setPreference('support')}
-                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${
-                  preference === 'support'
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200 hover:border-green-300'
-                }`}
+                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'support'
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-200 hover:border-green-300'
+                  }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
-                    preference === 'support' ? 'bg-green-500 text-white' : 'bg-green-100'
-                  }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${preference === 'support' ? 'bg-green-500 text-white' : 'bg-green-100'
+                    }`}>
                     🎓
                   </div>
                   <div>
@@ -501,16 +523,14 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setPreference('challenge')}
-                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${
-                  preference === 'challenge'
-                    ? 'border-orange-500 bg-orange-50'
-                    : 'border-gray-200 hover:border-orange-300'
-                }`}
+                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'challenge'
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-gray-200 hover:border-orange-300'
+                  }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
-                    preference === 'challenge' ? 'bg-orange-500 text-white' : 'bg-orange-100'
-                  }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${preference === 'challenge' ? 'bg-orange-500 text-white' : 'bg-orange-100'
+                    }`}>
                     📚
                   </div>
                   <div>
@@ -523,16 +543,14 @@ export default function OnboardingPage() {
 
               <button
                 onClick={() => setPreference('both')}
-                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${
-                  preference === 'both'
-                    ? 'border-purple-500 bg-purple-50'
-                    : 'border-gray-200 hover:border-purple-300'
-                }`}
+                className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'both'
+                  ? 'border-purple-500 bg-purple-50'
+                  : 'border-gray-200 hover:border-purple-300'
+                  }`}
               >
                 <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${
-                    preference === 'both' ? 'bg-purple-500 text-white' : 'bg-purple-100'
-                  }`}>
+                  <div className={`w-14 h-14 rounded-full flex items-center justify-center text-2xl ${preference === 'both' ? 'bg-purple-500 text-white' : 'bg-purple-100'
+                    }`}>
                     🔄
                   </div>
                   <div>
@@ -650,8 +668,7 @@ export default function OnboardingPage() {
       {showCropModal && (
         <div
           className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-          style={{ touchAction: 'none' }}
-          onClick={() => setShowCropModal(false)}
+          onTouchMove={(e) => e.preventDefault()}
         >
           <div
             className="bg-white rounded-2xl w-full max-w-sm p-4"
@@ -667,11 +684,24 @@ export default function OnboardingPage() {
               </button>
             </div>
 
-            {/* 切り取りエリア */}
+            {/* 切り取りエリア - スタイルを追加 */}
             <div
               className="relative bg-gray-100 rounded-lg overflow-hidden mb-4"
-              style={{ touchAction: 'none' }}
+              onTouchMove={(e) => e.stopPropagation()}
             >
+              <style jsx global>{`
+                .ReactCrop {
+                  touch-action: none !important;
+                }
+                .ReactCrop__image {
+                  touch-action: none !important;
+                  user-select: none !important;
+                  -webkit-user-drag: none !important;
+                }
+                .ReactCrop__crop-selection {
+                  touch-action: none !important;
+                }
+              `}</style>
               <ReactCrop
                 crop={crop}
                 onChange={(c) => setCrop(c)}
@@ -685,8 +715,12 @@ export default function OnboardingPage() {
                   src={imgSrc}
                   alt="Crop"
                   onLoad={onImageLoad}
-                  className="max-w-full max-h-[50vh] mx-auto block"
-                  style={{ touchAction: 'none' }}
+                  className="max-w-full max-h-[50vh] mx-auto block select-none"
+                  style={{
+                    touchAction: 'none',
+                    userSelect: 'none',
+                    WebkitUserDrag: 'none'
+                  } as React.CSSProperties}
                   draggable={false}
                 />
               </ReactCrop>
@@ -694,7 +728,7 @@ export default function OnboardingPage() {
 
             {/* ヒント */}
             <p className="text-xs text-gray-500 text-center mb-3">
-              円をドラッグして調整できます
+              円をドラッグして位置を調整、角をドラッグしてサイズを変更
             </p>
 
             {/* ボタン */}
