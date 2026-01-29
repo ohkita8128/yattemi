@@ -7,63 +7,36 @@ export async function GET() {
     (
       <div
         style={{
-          width: '100%',
-          height: '100%',
-          background: 'linear-gradient(135deg, #f97316 0%, #fb923c 50%, #fbbf24 100%)',
+          width: '1200px',
+          height: '630px',
+          background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
           justifyContent: 'center',
+          alignItems: 'center',
+          fontSize: 60,
+          fontWeight: 800,
+          color: '#f97316',
         }}
       >
-        {/* ロゴ */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '20px',
-            marginBottom: '32px',
-          }}
-        >
-          <div
-            style={{
-              width: '100px',
-              height: '100px',
-              background: 'white',
-              borderRadius: '24px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '56px',
-              fontWeight: 'bold',
-              color: '#f97316',
-              boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-            }}
-          >
-            Y
-          </div>
-          <span
-            style={{
-              fontSize: '72px',
-              fontWeight: 'bold',
-              color: 'white',
-              textShadow: '0 2px 10px rgba(0,0,0,0.2)',
-            }}
-          >
-            YatteMi!
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          <img
+            src="https://yattemi.vercel.app/logo.png"
+            width={96}
+            height={96}
+          />
+          YatteMi!
         </div>
 
-        {/* キャッチコピー */}
         <div
           style={{
-            fontSize: '32px',
-            color: 'white',
-            textAlign: 'center',
-            opacity: 0.95,
+            marginTop: 40,
+            fontSize: 36,
+            color: '#374151',
+            fontWeight: 600,
           }}
         >
-          好きを広めたい人と、新しいことを始めたい人を繋ぐ
+          「やってみたい」を「やってみた」に
         </div>
       </div>
     ),
