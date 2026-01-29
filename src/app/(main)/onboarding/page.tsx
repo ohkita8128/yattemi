@@ -43,16 +43,6 @@ const STEPS = [
   { id: 4, title: '学校情報', description: '任意だよ' },
 ];
 
-const GRADES = [
-  { value: 'B1', label: '学部1年' },
-  { value: 'B2', label: '学部2年' },
-  { value: 'B3', label: '学部3年' },
-  { value: 'B4', label: '学部4年' },
-  { value: 'M1', label: '修士1年' },
-  { value: 'M2', label: '修士2年' },
-  { value: 'D', label: '博士課程' },
-  { value: 'other', label: 'その他' },
-];
 
 // 切り取った画像を生成する関数
 async function getCroppedImg(imageSrc: string, pixelCrop: Area): Promise<Blob> {
@@ -371,10 +361,10 @@ export default function OnboardingPage() {
               <div
                 key={step.id}
                 className={`flex items-center justify-center w-10 h-10 rounded-full text-sm font-medium transition-all ${step.id < currentStep
-                    ? 'bg-orange-500 text-white'
-                    : step.id === currentStep
-                      ? 'bg-orange-500 text-white scale-110'
-                      : 'bg-gray-200 text-gray-500'
+                  ? 'bg-orange-500 text-white'
+                  : step.id === currentStep
+                    ? 'bg-orange-500 text-white scale-110'
+                    : 'bg-gray-200 text-gray-500'
                   }`}
               >
                 {step.id < currentStep ? <Check className="h-5 w-5" /> : step.id}
@@ -454,8 +444,8 @@ export default function OnboardingPage() {
                       key={cat.id}
                       onClick={() => toggleCategory(cat.id)}
                       className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center gap-1.5 ${isSelected
-                          ? 'border-orange-500 bg-orange-50 scale-105'
-                          : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50/50'
+                        ? 'border-orange-500 bg-orange-50 scale-105'
+                        : 'border-gray-200 hover:border-orange-300 hover:bg-orange-50/50'
                         }`}
                     >
                       <div
@@ -488,8 +478,8 @@ export default function OnboardingPage() {
               <button
                 onClick={() => setPreference('support')}
                 className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'support'
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-gray-200 hover:border-green-300'
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-gray-200 hover:border-green-300'
                   }`}
               >
                 <div className="flex items-center gap-4">
@@ -508,8 +498,8 @@ export default function OnboardingPage() {
               <button
                 onClick={() => setPreference('challenge')}
                 className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'challenge'
-                    ? 'border-orange-500 bg-orange-50'
-                    : 'border-gray-200 hover:border-orange-300'
+                  ? 'border-orange-500 bg-orange-50'
+                  : 'border-gray-200 hover:border-orange-300'
                   }`}
               >
                 <div className="flex items-center gap-4">
@@ -528,8 +518,8 @@ export default function OnboardingPage() {
               <button
                 onClick={() => setPreference('both')}
                 className={`w-full p-5 rounded-2xl border-2 transition-all text-left ${preference === 'both'
-                    ? 'border-purple-500 bg-purple-50'
-                    : 'border-gray-200 hover:border-purple-300'
+                  ? 'border-purple-500 bg-purple-50'
+                  : 'border-gray-200 hover:border-purple-300'
                   }`}
               >
                 <div className="flex items-center gap-4">
@@ -580,19 +570,16 @@ export default function OnboardingPage() {
 
               <div>
                 <Label htmlFor="grade">学年</Label>
-                <select
+                <Input
                   id="grade"
                   name="grade"
                   value={formData.grade}
                   onChange={(e) => setFormData(prev => ({ ...prev, grade: e.target.value }))}
-                  className="w-full h-10 px-3 rounded-md border border-input bg-background mt-1"
-                >
-                  <option value="">選択してください</option>
-                  {GRADES.map(g => (
-                    <option key={g.value} value={g.value}>{g.label}</option>
-                  ))}
-                </select>
+                  placeholder="例: 学部3年、M1"
+                  className="mt-1"
+                />
               </div>
+
 
               <p className="text-xs text-gray-500 text-center pt-2">
                 ※ すべて任意です。後から設定できます。
