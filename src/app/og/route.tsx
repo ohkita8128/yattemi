@@ -9,34 +9,27 @@ export async function GET() {
         style={{
           width: '1200px',
           height: '630px',
-          background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
+          background: '#fff7ed',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'center',
           alignItems: 'center',
-          fontSize: 60,
-          fontWeight: 800,
-          color: '#f97316',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <img
-            src="https://yattemi.vercel.app/logo.png"
-            width={96}
-            height={96}
-          />
-          YatteMi!
-        </div>
-
+        <img
+          src="https://yattemi.vercel.app/logo.png"
+          width={120}
+          height={120}
+        />
         <div
           style={{
-            marginTop: 40,
-            fontSize: 36,
-            color: '#374151',
-            fontWeight: 600,
+            marginTop: 32,
+            fontSize: 64,
+            fontWeight: 800,
+            color: '#f97316',
           }}
         >
-          「やってみたい」を「やってみた」に
+          YatteMi!
         </div>
       </div>
     ),
